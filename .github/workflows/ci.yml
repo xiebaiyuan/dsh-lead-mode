@@ -35,7 +35,10 @@ jobs:
         run: node --check lib/index.js
 
       - name: Unit tests
-        run: node --test test/
+        # `node --test <dir>` 只在 Node 22+ 接受目录；Node 20 会把目录当模块路径
+        # 解析并报 MODULE_NOT_FOUND。用 shell glob 展开，两个版本都能跑，新加的
+        # test/*.test.mjs 也自动被包含。
+        run: node --test test/*.test.mjs
 
       # 走仓库内副本。~/.dsh/skills/plugin-write 是软链，用软链路径跑这个脚本
       # 会静默 exit 0 且零输出，等于没校验。
