@@ -135,11 +135,11 @@ test/                 行为断言，零依赖
 
 ```bash
 node --check lib/index.js
-node --test test/
+node --test test/*.test.mjs
 node scripts/check-patch.mjs
 ```
 
-测试零依赖，不用 `npm install`。
+测试零依赖，不用 `npm install`。`test/` 目录形式只在 Node 22+ 被接受，Node 20 会用 glob 展开。
 
 ## License
 
