@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "policy": "dsh-plugin-naming/v1",
+  "plugin": {
+    "namespace": "adonis",
+    "name": "lead-mode",
+    "coordinate": "adonis/lead-mode",
+    "packageName": "dsh-lead-mode"
+  },
+  "names": {
+    "pluginNames": [
+      "lead-mode"
+    ],
+    "loaderIds": [
+      "dsh-lead-mode"
+    ],
+    "services": [],
+    "tools": [],
+    "commands": [
+      "lead-mode"
+    ],
+    "skills": [
+      "lead-mode"
+    ],
+    "skillProviders": [],
+    "events": [],
+    "settingsNamespaces": [],
+    "routes": []
+  }
+}

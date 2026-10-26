@@ -1,0 +1,51 @@
+{
+  "name": "dsh-lead-mode",
+  "version": "0.1.0",
+  "description": "Lead 模式：一个 agent 预设、一个 skill、两条依赖提醒。预设与官方 standard 的差异只有 persona 一处。",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "skills",
+    "cordis.patch.yml",
+    "README.md",
+    "README.en.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20",
+    "dsh": ">=0.2.1-rc.2"
+  },
+  "dshTarget": "0.2.1-rc.3",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "dshtag",
+    "agent-teams",
+    "agent-preset",
+    "lead-mode"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xiebaiyuan/dsh-lead-mode.git"
+  },
+  "license": "MIT",
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.5",
+    "@deepseek-ai/dsh": ">=0.2.1-rc.2",
+    "@deepseek-ai/schemastery": "^3.18.5",
+    "@deepseek-ai/dsh-agent-preset-registry": ">=0.2.1-rc.2",
+    "@deepseek-ai/dsh-skill": ">=0.2.1-rc.2",
+    "@deepseek-ai/dsh-commands": ">=0.2.1-rc.2"
+  }
+}

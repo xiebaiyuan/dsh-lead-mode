@@ -1,0 +1,60 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['20', '22']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      # 本包没有 dependencies，测试与校验脚本只用 Node 内置模块。
+      # 跑 npm install 会为 peerDependencies 拉九百多个包，CI 里没这个必要。
+      # 真实的依赖解析留给发布前在装了宿主的环境里验。
+
+      # 校验器和 policy 是 vendored 副本，不是 npm 依赖。漏提交就静默降级，
+      # 所以先确认它们在，再往下跑。
+      - name: Vendored validator present
+        run: |
+          for f in scripts/validate-names.mjs references/naming-policy.v1.json; do
+            test -f "$f" || { echo "缺文件：$f"; exit 1; }
+          done
+
+      - name: Syntax check
+        run: node --check lib/index.js
+
+      - name: Unit tests
+        run: node --test test/
+
+      # 走仓库内副本。~/.dsh/skills/plugin-write 是软链，用软链路径跑这个脚本
+      # 会静默 exit 0 且零输出，等于没校验。
+      - name: Naming manifest
+        run: node scripts/validate-names.mjs --manifest ./dsh-plugin.naming.json
+
+      - name: Patch YAML parses
+        run: node scripts/check-patch.mjs
+
+      - name: Package contents
+        run: |
+          npm pack --dry-run 2>&1 | tee pack.txt
+          # files 只列 lib/skills/cordis.patch.yml/README*/LICENSE，
+          # 其余目录不该进包
+          for bad in 'test/' '.github/' 'scripts/' 'docs/' 'references/'; do
+            if grep -q " $bad" pack.txt; then
+              echo "不该进包：$bad"
+              exit 1
+            fi
+          done
+          # LICENSE 在 files 字段里，必须有
+          grep -q 'LICENSE' pack.txt || { echo "包里缺 LICENSE"; exit 1; }
