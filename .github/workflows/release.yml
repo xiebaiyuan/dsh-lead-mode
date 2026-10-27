@@ -1,5 +1,23 @@
 name: release
 
+# 打 `v*` tag 触发发布。发布靠 npm 的 Trusted Publishing（OIDC），不用存 token。
+#
+# 用之前要在 npmjs.com 配一次（只配一次）：
+#   包页面 → Settings → Trusted Publisher → 选 GitHub Actions，填：
+#     Organization or user  xiebaiyuan
+#     Repository            dsh-lead-mode
+#     Workflow filename     release.yml      ← 只写文件名，必须和本文件同名
+#     Allowed actions       勾上 "npm publish"（"npm stage publish" 是默认允许的，
+#                           只勾它的话 CI 只能暂存，还得人工 approve）
+#
+# 没配 Trusted Publisher 就发，会报 404/403，不是 workflow 写错了。
+#
+# 换 token 路子也行：建一个勾了 bypass 2FA 的 granular token，存成仓库 secret
+# NPM_TOKEN，然后把下面 Publish 步骤的 env 加回来：
+#   env:
+#     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+# 但**不能两个同时用**：NODE_AUTH_TOKEN 一旦有值，npm 就不走 OIDC 了。
+
 on:
   push:
     tags: ['v*']
@@ -9,31 +27,34 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write
+      id-token: write # OIDC 换取 npm 的发布凭据，Trusted Publishing 必需
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          # Node 24 带的 npm 一定 ≥ 11.5.1，这是 Trusted Publishing 的最低要求。
+          node-version: '24'
           registry-url: https://registry.npmjs.org
 
-      - name: Install dependencies
-        run: npm ci || npm install --no-audit --no-fund
+      # 故意不跑 npm install。本包零 dependencies，测试与脚本只用 Node 内置模块；
+      # 而 peerDependencies 里的 @deepseek-ai/* 会把九百多个包拉下来，白等几十分钟。
+      # 发布本身也不需要 node_modules。
 
-      - name: Test before publish
-        run: node --test test/
+      - name: 测试
+        run: node --test test/*.test.mjs
 
-      - name: Tag matches package.json version
+      - name: 语法
+        run: node --check lib/index.js
+
+      - name: tag 与 package.json 版本一致
         run: |
           tag="${GITHUB_REF_NAME#v}"
           pkg="$(node -p "require('./package.json').version")"
           if [ "$tag" != "$pkg" ]; then
-            echo "tag $tag != package.json $pkg"
+            echo "tag $tag 与 package.json 的 $pkg 不一致"
             exit 1
           fi
 
-      - name: Publish
+      - name: 发布
         run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
