@@ -161,7 +161,11 @@ teammate 继承你（Lead）在 spawn 那一刻的 provider 和 model。想换�
 
 ### 想看全局，用 dsh-context 的编队页
 
-工具调用只能一条条读。要看整队的工作与通信，让用户开 **dsh-context** 的编队页（另一个插件，不随本插件安装）：
+工具调用只能一条条读。要看整队的工作与通信，让用户开 **dsh-context** 的编队页。
+
+那是另一个项目，不随本插件安装，也不是本插件的依赖。仓库：https://github.com/bowenliang123/dsh-context（作者 bowenliang123，Apache-2.0）。
+
+装法：`dsh plugin --profile <你的 profile 名> add dsh-context`
 
 | 区块 | 看什么 |
 |---|---|
@@ -173,7 +177,7 @@ teammate 继承你（Lead）在 spawn 那一刻的 provider 和 model。想换�
 
 入口：任意会话点 **编队 / Fleet** 标签页（在 **Context** 右边）。右栏的 **Context** 面板里有同一张卡。
 
-装法：`dsh plugin --profile <你的 profile 名> add dsh-context`
+只有用户装了它，这个入口才存在。不确定就别让用户去找一个没有的页面。
 
 派活时可以直接告诉用户去这儿看进度，比自己复述一遍更清楚。
 

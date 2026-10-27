@@ -114,15 +114,24 @@ dsh plugin --profile <你的 profile 名> add https://github.com/xiebaiyuan/dsh-
 
 **3. 让模型干活。** 派活工具齐了，模型会自己拆活、派给 teammate、等齐再收尾。工具不齐，它第一句就是让你去开 Team 运行时。
 
-## 看工作和通信状态：配 dsh-context
+## 友链：dsh-context
 
-工具调用只能一条条读，Team 的状态与通信要一页看全，装 **dsh-context**（另一个插件，不随本插件安装）：
+本插件只做 Lead 模式。团队状态与通信的可视化是 **dsh-context** 的活，那是另一个项目：
 
-```bash
-dsh plugin --profile <你的 profile 名> add dsh-context
-```
+| 项 | 值 |
+|---|---|
+| 仓库 | https://github.com/bowenliang123/dsh-context |
+| 作者 | bowenliang123 |
+| 许可 | Apache-2.0 |
+| 装法 | `dsh plugin --profile <你的 profile 名> add dsh-context` |
 
-它在每个会话里加一个 **编队 / Fleet** 标签页（在 **Context** 右边），右栏的 **Context** 面板里有同一张卡。
+它不随本插件安装，也不是本插件的依赖。本插件只在文档和 skill 里指个路。
+
+### 为什么指到这里
+
+工具调用只能一条条读。`list_agents` 给一行状态，`team_task_list` 给任务归属。要看整队谁在干什么、谁跟谁说了什么，得开一页。
+
+dsh-context 在每个会话里加一个 **编队 / Fleet** 标签页（在 **Context** 右边），右栏的 **Context** 面板里有同一张卡。
 
 | 区块 | 看什么 |
 |---|---|
@@ -132,7 +141,7 @@ dsh plugin --profile <你的 profile 名> add dsh-context
 | Tasks | 团队任务与子代理派活放一起，按 owner 分组，带 blocked-by 链 |
 | Agent Comms | 谁跟谁说了什么。团队消息、邮箱投递、运行时的结算通知都在这里 |
 
-点图上的成员或成员卡，Tasks 与 Agent Comms 会收窄到那一个人。Agent Comms 里点开一条，能看到完整记录：来自哪个会话日志、第几号事件、是运行时写的结算通知还是子代理自己发的、完整收尾报告。
+点图上的成员或成员卡，Tasks 与 Agent Comms 会收窄到那一个人。Agent Comms 里点开一条能看到完整记录：来自哪个会话日志、第几号事件、是运行时写的结算通知还是子代理自己发的、完整收尾报告。
 
 Lead 模式 skill 里也写了这个入口，所以派活时模型会直接让你去这儿看进度。
 

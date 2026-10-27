@@ -293,16 +293,48 @@ test('skill 正文写明 teammate 不能单独指定模型', async () => {
 })
 
 // 看整队状态与通信的入口指向 dsh-context 的编队页。删掉友链就会红。
+const DSH_CONTEXT_REPO = 'https://github.com/bowenliang123/dsh-context'
+
 test('skill 正文给出编队页入口（dsh-context 友链）', async () => {
   const { body } = await readSkillBody()
 
   assert.ok(body.includes('dsh-context'), 'skill 必须点名 dsh-context 插件')
+  assert.ok(
+    body.includes(DSH_CONTEXT_REPO),
+    'skill 必须给出 dsh-context 的仓库地址，写清那是另一个项目',
+  )
+  assert.ok(body.includes('Apache-2.0'), 'skill 必须标出 dsh-context 的许可')
+  assert.ok(
+    /不随本插件安装/.test(body),
+    'skill 必须写明 dsh-context 不随本插件安装、也不是依赖',
+  )
   assert.ok(
     /编队|Fleet/.test(body),
     'skill 必须写出编队 / Fleet 这个标签页名',
   )
   for (const surface of ['Fleet Members', 'Tasks', 'Agent Comms']) {
     assert.ok(body.includes(surface), `skill 必须列出编队页的 ${surface} 区块`)
+  }
+})
+
+test('两份 README 都有 dsh-context 友链节', async () => {
+  const zh = await readFile(resolve(repoRoot, 'README.zh-CN.md'), 'utf8')
+  const en = await readFile(resolve(repoRoot, 'README.md'), 'utf8')
+
+  for (const [label, text, heading] of [
+    ['README.zh-CN.md', zh, '## 友链：dsh-context'],
+    ['README.md', en, '## Friendly link: dsh-context'],
+  ]) {
+    assert.ok(text.includes(heading), `${label} 必须有「${heading}」这一节`)
+    assert.ok(text.includes(DSH_CONTEXT_REPO), `${label} 必须给出仓库地址`)
+    assert.ok(text.includes('Apache-2.0'), `${label} 必须标出许可`)
+    assert.ok(
+      /dsh plugin --profile/.test(text),
+      `${label} 必须给出 dsh-context 的安装命令`,
+    )
+    for (const surface of ['Fleet Members', 'Tasks', 'Agent Comms']) {
+      assert.ok(text.includes(surface), `${label} 必须列出编队页的 ${surface} 区块`)
+    }
   }
 })
 

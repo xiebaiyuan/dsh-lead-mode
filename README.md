@@ -114,15 +114,24 @@ Three steps.
 
 **3. Let the model work.** With the delegation tools in place, the model splits the work, delegates to teammates, and waits for all of them before wrapping up. Without them, its first move is to tell you to enable the Team runtime.
 
-## Watching work and comms: pair with dsh-context
+## Friendly link: dsh-context
 
-Tool calls read one at a time. To see the whole Team's state and traffic on one page, install **dsh-context** (a separate plugin, not shipped here):
+This plugin only does Lead mode. Visualising Team state and comms is **dsh-context**'s job, and that is a separate project:
 
-```bash
-dsh plugin --profile <your profile name> add dsh-context
-```
+| Item | Value |
+|---|---|
+| Repository | https://github.com/bowenliang123/dsh-context |
+| Author | bowenliang123 |
+| License | Apache-2.0 |
+| Install | `dsh plugin --profile <your profile name> add dsh-context` |
 
-It adds a **Fleet / 编队** tab to every session (right of **Context**), and the right sidebar's **Context** panel carries the same card.
+It does not ship with this plugin, and it is not a dependency of it. This plugin only points at it from the docs and the skill.
+
+### Why point there at all
+
+Tool calls read one at a time. `list_agents` gives one line of status; `team_task_list` gives task ownership. Seeing who is doing what, and who said what to whom, takes a page.
+
+dsh-context adds a **Fleet / 编队** tab to every session (right of **Context**), and the right sidebar's **Context** panel carries the same card.
 
 | Surface | Shows |
 |---|---|
