@@ -38,12 +38,14 @@
 
 其中两条是读源码才确认的，容易踩：
 
-| 事实 | 后果 |
+| 事实 | 为什么重要 |
 |---|---|
-| 唤醒 Lead 的路径只有 teammate 主动 `send_message` | 派活 prompt 里不写回报要求，teammate 干完不吭声，Lead 一直睡着 |
-| task 变更只唤醒正在 `wait_agent` 的调用方 | 光靠 teammate 把 task 标 complete，唤不醒空闲的 Lead |
+| teammate 收工会自动通知你，通知里带它收尾那条消息 | 派完活结束回合就够，不用盯着等 |
+| task 变更不会唤醒空闲的 Lead | 别指望「它把 task 标 complete 了我就知道了」，那条路只唤醒正在 `wait_agent` 的调用方 |
 
-所以 skill 的默认建议是：派完活就结束回合等消息（用户立刻看到进展），只有本回合内就必须拿到结果时才用一次 `wait_agent`。不要 `wait_agent` 套循环，也不要反复 `list_agents` 轮询。
+所以 skill 的默认建议是：派完活就结束回合等通知（用户立刻看到进展），只有本回合内就必须拿到结果时才用一次 `wait_agent`。不要 `wait_agent` 套循环，也不要反复 `list_agents` 轮询。
+
+派活 prompt 里要要求 teammate **把交付物写进收尾那条消息**——那条消息会随通知回到你手上。
 
 ### 三、依赖自检命令
 

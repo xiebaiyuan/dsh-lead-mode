@@ -235,32 +235,42 @@ test('skill 正文来自 SKILL.md，不是空字符串也不是 frontmatter', as
 })
 
 // ---------------------------------------------------------------------------
-// 守住两条只有读源码才能确认的 team 行为。删掉对应文案就会红。
+// 守住三条只有读源码才能确认的 team 行为。删掉对应文案就会红。
 //
-// 1. 唤醒 Lead 的路径只有 teammate 的 send_message（agent-team/src/index.ts
-//    的 `root.steer(input)`）。task 变更只 resolve 正在 wait_agent 的调用方
-//    （activity.notify），不唤醒空闲的 Lead。所以派活 prompt 必须要求回报。
+// 1. teammate 收工会自然结算并唤醒 Lead，通知里带它的收尾消息。
+//    manager.ts 的 announce() 对 kind==='local' 调 watchLocalSettlement，
+//    后者在 whenIdle 且收件箱为空时走 finishDisposal → notifySettlement →
+//    sendWaking(parent, ..., 'queue') → followup（唤醒）。
+//    continuation-messages.ts 的 createSettlementMessage 把子代理最后的正文
+//    拼成「Its closing message:」带回。
 //
-// 2. teammate 常驻，收工不结清；notifySettlement 只在 activation 销毁时触发。
-//    因此「结束回合等消息」是可行的首选，而 wait_agent 套循环是空转。
+// 2. task 变更不唤醒空闲的 Lead。agent-team/src/index.ts 里唯一的唤醒动作是
+//    成员 send_message 时的 root.steer()；task 变更只走 activity.notify，它只
+//    resolve 正在 wait_agent 的调用方。
+//
+// 3. 所以「结束回合等通知」是默认做法，wait_agent 套循环和 list_agents 轮询
+//    都是空转。
 // ---------------------------------------------------------------------------
-test('skill 正文写明回报要求与唤醒规则', async () => {
+test('skill 正文写明唤醒规则与不要轮询', async () => {
   const { body } = await readSkillBody()
 
-  assert.ok(
-    /send_message\s*给\s*lead/.test(body),
-    'skill 必须要求 teammate 干完 send_message 给 lead，否则不会有通知',
-  )
   assert.ok(
     body.includes('唤醒'),
     'skill 必须说明什么事件会唤醒 Lead',
   )
   assert.ok(
-    /task 变更只唤醒正在 wait_agent 的调用方，不唤醒空闲的你/.test(body)
-      || /task 被 claim 或 complete \| \*\*不会\*\*/.test(body),
+    body.includes('Its closing message'),
+    'skill 必须写出结算通知带回子代理收尾正文的实际格式（Its closing message:）',
+  )
+  assert.ok(
+    /收工时，它\*\*最后那条消息\*\*会随通知回到你手上/.test(body),
+    'skill 必须写明 teammate 收尾那条消息随通知回到 Lead 手上',
+  )
+  assert.ok(
+    /task 被 claim 或 complete \| \*\*不会\*\*/.test(body),
     'skill 必须写明 task 变更不会唤醒空闲的 Lead',
   )
-  for (const word of ['轮询', 'list_agents']) {
+  for (const word of ['轮询', 'list_agents', 'wait_agent']) {
     assert.ok(body.includes(word), `skill 必须覆盖「不要用 ${word} 等」这条`)
   }
 })

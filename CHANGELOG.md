@@ -1,16 +1,40 @@
 # Changelog
 
+## 0.1.4
+
+纠正 0.1.3 里一条写错的事实。
+
+0.1.3 说「teammate 静默收工不产生通知」。**这条是错的。** 读 `dsh-subagent` 的
+`manager.ts` 才看清完整链路：
+
+- `announce()` 对 `kind === 'local'` 一律调 `watchLocalSettlement`。
+- 后者在子代理 `whenIdle` 且收件箱为空时判定 `ready`，走 `finishDisposal` →
+  `notifySettlement`。
+- `notifySettlement` 用 `sendWaking` 投递，空闲的 Lead 走 `followup`，会被唤醒。
+- `createSettlementMessage` 把子代理最后的正文拼成「Its closing message:」带回。
+
+所以 teammate 收工**会**通知 Lead，而且带回它收尾那条消息。我先前只看到
+`notifySettlement` 挂在销毁路径上，漏了 `watchLocalSettlement` 这条自然结算。
+
+改动：
+
+- skill 的唤醒规则表改对：teammate 收工与主动 `send_message` 都会唤醒 Lead。
+- skill 新增「收尾那条消息就是交付物」：派活时要求 teammate 把交付物写进收尾消息，比额外要求一次 `send_message` 省事。同时说明收尾正文在「刚发过消息」时会被省略。
+- 删掉「不写回报要求就不会有通知」这条错误因果。回报要求仍然建议写，理由是拿到的信息更结构化，不是「否则没通知」。
+- task 那条保留并写清：task 是账本，不是唤醒通道。
+- persona、两份 README 同步。
+- 测试断言换成唯一且精确的证据（通知格式串「Its closing message:」），三个变异各删一处都变红。
+
 ## 0.1.3
 
 按 dsh 0.2.1-rc.3 的源码核实了团队行为，修正 skill 里过时的等待方式。
 
-- skill 新增「等通知，别轮询」：唤醒 Lead 的路径只有 teammate 主动 `send_message`；task 变更只唤醒正在 `wait_agent` 的调用方；teammate 静默收工不产生通知。
-- skill 新增「派活的四个参数」与「prompt 里必须写回报要求」。漏掉回报要求会导致 teammate 干完不吭声。
+- skill 新增「等通知，别轮询」。**其中「teammate 静默收工不产生通知」一句是错的，已在 0.1.4 纠正。**
+- skill 新增「派活的四个参数」与 prompt 写法。
 - skill 新增「teammate 用什么模型」：`spawn_teammate` 无法单独指定模型，teammate 继承 Lead 的 provider/model。要按任务挑模型得改用经典 `subagent`。
 - skill 新增状态含义表，写清 `inactive` 不代表完成或失败。
-- persona 同步加入回报要求、唤醒规则、不要轮询、模型继承四条。
-- 两份 README 的 skill 覆盖描述同步，并列出两条只能读源码确认的事实。
-- 新增两条测试守住回报要求与模型继承文案；删掉对应文案会失败（已做变异验证）。
+- persona 同步加入唤醒规则、不要轮询、模型继承。
+- 两份 README 的 skill 覆盖描述同步。
 - 预设与官方 `standard` 的差异仍只有 persona 一处。
 
 ## 0.1.2

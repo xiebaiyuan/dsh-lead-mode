@@ -38,12 +38,14 @@ It covers: agreeing on the goal before starting, making a delegation self-contai
 
 Two of those facts only show up when you read the runtime source:
 
-| Fact | Consequence |
+| Fact | Why it matters |
 |---|---|
-| The only path that wakes the Lead is a teammate's own `send_message` | Omit the report-back requirement from the delegation prompt and the teammate finishes silently; the Lead stays asleep |
-| A task change only wakes a caller currently inside `wait_agent` | Marking a task complete alone cannot wake an idle Lead |
+| A teammate settling notifies you automatically, carrying its closing message | Finish your turn after delegating; you do not need to sit and watch |
+| A task change does not wake an idle Lead | Do not count on "it marked the task complete, so I know"; that path only wakes a caller currently inside `wait_agent` |
 
-So the skill's default is: finish your turn after delegating and let the message wake you (the user sees progress immediately), and use one `wait_agent` only when the current turn cannot continue without the result. Never loop `wait_agent`, and never poll with repeated `list_agents`.
+So the skill's default is: finish your turn after delegating and let the notification wake you (the user sees progress immediately), and use one `wait_agent` only when the current turn cannot continue without the result. Never loop `wait_agent`, and never poll with repeated `list_agents`.
+
+Tell the teammate to put the **deliverable in its closing message** — that message is what comes back to you with the notification.
 
 ### 3. The dependency self-check command
 

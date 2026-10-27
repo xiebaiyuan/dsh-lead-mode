@@ -31,6 +31,29 @@ dsh plugin --profile <你的 profile 名> add @deepseek-ai/dsh-experimental-agen
 
 目标或指令有疑问先问用户。别自己挑一个解释就开始干。
 
+## 等通知，别轮询
+
+teammate 干完你**会被唤醒**，不用自己盯着。
+
+| 事件 | 唤醒空闲的你吗 | 带回什么 |
+|---|---|---|
+| teammate 一轮干完、没有新消息 | 会 | 它收尾那条消息 |
+| teammate 主动 `send_message` 给你 | 会 | 那条消息 |
+| task 被 claim 或 complete | **不会** | 只唤醒正在 `wait_agent` 的调用方 |
+
+所以默认这么做：**派完活就结束回合。** 把「派了谁、等什么」写清楚，然后收工。用户立刻看到进展，你不空转。teammate 收工时你被唤醒，接着干。
+
+`wait_agent` 只在「本回合内就必须拿到结果才能继续」时用一次。它的好处是 task 变更也能唤醒它。默认等 30 秒，上限 1 小时。
+
+禁止这两件事：
+
+- 用 `wait_agent` 套循环
+- 反复 `list_agents` 轮询
+
+`list_agents` 只用来回答「谁在跑、谁卡住了」，不用来等。
+
+`wait_agent` 返回 `noProgress` 不是错误，是告诉你没人在跑，该换手段。
+
 ## 派活的四个参数
 
 `spawn_teammate` 只有 `name`、`description`、`prompt`、`context` 四个参数。
@@ -49,7 +72,7 @@ dsh plugin --profile <你的 profile 名> add @deepseek-ai/dsh-experimental-agen
 
 取名字前先 `list_agents` 看一眼，别撞已占用的名字。
 
-## 派活必须自包含
+## prompt 怎么写
 
 teammate 看不到你的上下文。它能看到的只有 `prompt`。
 
@@ -62,37 +85,25 @@ teammate 看不到你的上下文。它能看到的只有 `prompt`。
 
 写「按刚才说的做」等于没派。它不知道「刚才」。
 
-### prompt 里必须写回报要求
+### 收尾那条消息就是交付物
 
-这是最容易漏、后果最严重的一条：
+teammate 收工时，它**最后那条消息**会随通知回到你手上，格式是「Its closing message:」加正文。
+
+所以派活时直接要求它收尾写清：
 
 ```
-干完用 send_message 给 lead 发一条，写：结论 + 文件清单 + 验收输出 + 偏离规格的地方。
+收尾那条消息写四块：结论 / 文件清单 / 验收输出 / 偏离规格的地方。
 ```
 
-漏了这句，teammate 干完就不吭声，你会一直睡着。原因见下一节。
+这比你额外要求一次 `send_message` 省事，而且是你默认拿得到的东西。
 
-## 等通知，别轮询
+需要**中途**进度（干到一半问一句、或者要它先确认再继续）时，才另外要求它 `send_message` 给你。
 
-唤醒 Lead 的路径只有一条：**teammate 主动给你 `send_message`。**
+### 收尾消息可能被省掉
 
-三种事件的真实行为：
+如果 teammate 在收工前刚给你发过 `send_message`，通知里不会重复它的收尾正文，而是写「It sent you a message just before finishing, so its closing message is omitted.」。
 
-| 事件 | 会不会唤醒空闲的你 |
-|---|---|
-| teammate 给你发消息 | 会。新回合开始 |
-| task 被 claim 或 complete | **不会**。只唤醒正在 `wait_agent` 的调用方 |
-| teammate 静默收工 | **不会**。teammate 是常驻的，收工不结清 |
-
-所以等活按这个顺序选：
-
-1. **优选：派完活就结束回合。** 把「派了谁、等什么」写清楚，然后收工。用户立刻看到进展，你不空转。teammate 回报时你被唤醒，接着干。
-2. **次选：本回合内就必须拿到结果才继续时，用一次 `wait_agent`。** 它的好处是 task 变更也能唤醒。默认等 30 秒，上限 1 小时。
-3. **禁止：`wait_agent` 套循环，或反复 `list_agents` 轮询。** 那是空转。
-
-`list_agents` 只用来回答「谁在跑、谁卡住了」，不用来等。
-
-`wait_agent` 返回 `noProgress` 不是错误，是告诉你没人在跑，该换手段。
+也就是说：你要么拿到收尾消息，要么拿到它发的那条，不会两个都没。
 
 ## 写作用域不重叠
 
@@ -118,6 +129,8 @@ teammate 看不到你的上下文。它能看到的只有 `prompt`。
 
 task 描述就是完整规格。规格写细一点，teammate 少问一轮。
 
+task 是给人看的账本，不是唤醒通道。别指望「它把 task 标 complete 了我就知道了」。
+
 ## teammate 用什么模型
 
 **不能单独指定。** `spawn_teammate` 没有 model 或 provider 参数。
@@ -142,7 +155,7 @@ teammate 继承你（Lead）在 spawn 那一刻的 provider 和 model。想换�
 | `provisioning` | 正在创建 |
 | `failed` | 创建失败 |
 
-`inactive` 时它不吭声是正常的。想知道它干到哪，`list_agents` 看状态，`team_task_list` 看任务归属。
+`inactive` 有两种情况：teammate 已经收工（你收到过它的通知），或者它被存档了、等你再给它发消息才醒来。
 
 只有 Lead 能创建和打断 teammate（`interrupt_agent`）。打断不清空它排队的消息。
 
