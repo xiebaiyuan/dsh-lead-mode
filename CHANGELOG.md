@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.1
+
+- 发布改用 npm Trusted Publishing（OIDC）：打 tag 触发，不存 token，不弹 2FA。用之前要在 npmjs.com 配一次 Trusted Publisher。
+- `release.yml` 的 Node 从 22 提到 24，Trusted Publishing 要求 npm CLI ≥ 11.5.1。
+- `release.yml` 去掉 `npm install`。本包零 dependencies，而 peer 里的 `@deepseek-ai/*` 会拉九百多个包。
+- README 补「发新版本」一节，含 npm 侧要填的四个字段。
+
 ## 0.1.0
 
 首个版本。
