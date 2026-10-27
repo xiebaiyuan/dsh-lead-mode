@@ -1,7 +1,7 @@
 {
   "name": "dsh-lead-mode",
-  "version": "0.1.1",
-  "description": "Lead 模式：一个 agent 预设、一个 skill、两条依赖提醒。预设与官方 standard 的差异只有 persona 一处。",
+  "version": "0.1.2",
+  "description": "Lead mode for DSH: an agent preset, a working-method skill, a dependency self-check, and two reminders that tell you to enable the official Agent Teams. | 给 DSH 加 Lead 模式：预设、skill、依赖自检、两条前置提醒。",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -13,7 +13,7 @@
     "skills",
     "cordis.patch.yml",
     "README.md",
-    "README.en.md",
+    "README.zh-CN.md",
     "LICENSE"
   ],
   "engines": {

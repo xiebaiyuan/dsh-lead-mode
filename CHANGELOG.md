@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.2
+
+- 英文 README 改成默认的 `README.md`，中文改成 `README.zh-CN.md`。GitHub 页面和 npm 包页默认展示英文版。
+- 两份 README 标题下加语言切换入口。
+- 新增「提供的能力」一节，放在安装之前。四样能力各自说明入口、用法、缺了会怎样。
+- `package.json` 的 description 改成中英双语。
+
 ## 0.1.1
 
 - 发布改用 npm Trusted Publishing（OIDC）：打 tag 触发，不存 token，不弹 2FA。用之前要在 npmjs.com 配一次 Trusted Publisher。
