@@ -1,6 +1,6 @@
 {
   "name": "dsh-lead-mode",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Lead mode for DSH: an agent preset, a working-method skill, a dependency self-check, and two reminders that tell you to enable the official Agent Teams. | 给 DSH 加 Lead 模式：预设、skill、依赖自检、两条前置提醒。",
   "type": "module",
   "main": "lib/index.js",

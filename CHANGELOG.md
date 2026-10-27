@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.3
+
+按 dsh 0.2.1-rc.3 的源码核实了团队行为，修正 skill 里过时的等待方式。
+
+- skill 新增「等通知，别轮询」：唤醒 Lead 的路径只有 teammate 主动 `send_message`；task 变更只唤醒正在 `wait_agent` 的调用方；teammate 静默收工不产生通知。
+- skill 新增「派活的四个参数」与「prompt 里必须写回报要求」。漏掉回报要求会导致 teammate 干完不吭声。
+- skill 新增「teammate 用什么模型」：`spawn_teammate` 无法单独指定模型，teammate 继承 Lead 的 provider/model。要按任务挑模型得改用经典 `subagent`。
+- skill 新增状态含义表，写清 `inactive` 不代表完成或失败。
+- persona 同步加入回报要求、唤醒规则、不要轮询、模型继承四条。
+- 两份 README 的 skill 覆盖描述同步，并列出两条只能读源码确认的事实。
+- 新增两条测试守住回报要求与模型继承文案；删掉对应文案会失败（已做变异验证）。
+- 预设与官方 `standard` 的差异仍只有 persona 一处。
+
 ## 0.1.2
 
 - 英文 README 改成默认的 `README.md`，中文改成 `README.zh-CN.md`。GitHub 页面和 npm 包页默认展示英文版。

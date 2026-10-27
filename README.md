@@ -34,7 +34,16 @@ It is not tied to the preset. Any session can load it, two ways:
 - The model loads it when it judges the task needs it (the skill is marked model-invocable)
 - You run `/skill lead-mode` yourself
 
-It covers: agreeing on the goal before starting, making a delegation self-contained, keeping write scopes disjoint, the list/get/claim/complete flow for shared tasks, the rules for waiting on teammates, and doing the final verification yourself.
+It covers: agreeing on the goal before starting, making a delegation self-contained, keeping write scopes disjoint, the list/get/claim/complete flow for shared tasks, how to wait on teammates, where a teammate's model comes from, and doing the final verification yourself.
+
+Two of those facts only show up when you read the runtime source:
+
+| Fact | Consequence |
+|---|---|
+| The only path that wakes the Lead is a teammate's own `send_message` | Omit the report-back requirement from the delegation prompt and the teammate finishes silently; the Lead stays asleep |
+| A task change only wakes a caller currently inside `wait_agent` | Marking a task complete alone cannot wake an idle Lead |
+
+So the skill's default is: finish your turn after delegating and let the message wake you (the user sees progress immediately), and use one `wait_agent` only when the current turn cannot continue without the result. Never loop `wait_agent`, and never poll with repeated `list_agents`.
 
 ### 3. The dependency self-check command
 

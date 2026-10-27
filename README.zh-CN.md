@@ -34,7 +34,16 @@
 - 模型判断需要时自己加载（skill 标记为模型可调用）
 - 你直接敲 `/skill lead-mode`
 
-覆盖这些内容：开工前对齐目标、派活必须自包含、写作用域不重叠、共享任务的 list/get/claim/complete 流程、等 teammate 的规矩、最终验证自己做。
+覆盖这些内容：开工前对齐目标、派活必须自包含、写作用域不重叠、共享任务的 list/get/claim/complete 流程、怎么等 teammate、teammate 的模型从哪来、最终验证自己做。
+
+其中两条是读源码才确认的，容易踩：
+
+| 事实 | 后果 |
+|---|---|
+| 唤醒 Lead 的路径只有 teammate 主动 `send_message` | 派活 prompt 里不写回报要求，teammate 干完不吭声，Lead 一直睡着 |
+| task 变更只唤醒正在 `wait_agent` 的调用方 | 光靠 teammate 把 task 标 complete，唤不醒空闲的 Lead |
+
+所以 skill 的默认建议是：派完活就结束回合等消息（用户立刻看到进展），只有本回合内就必须拿到结果时才用一次 `wait_agent`。不要 `wait_agent` 套循环，也不要反复 `list_agents` 轮询。
 
 ### 三、依赖自检命令
 

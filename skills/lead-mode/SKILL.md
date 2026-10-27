@@ -31,18 +31,68 @@ dsh plugin --profile <你的 profile 名> add @deepseek-ai/dsh-experimental-agen
 
 目标或指令有疑问先问用户。别自己挑一个解释就开始干。
 
+## 派活的四个参数
+
+`spawn_teammate` 只有 `name`、`description`、`prompt`、`context` 四个参数。
+
+| 参数 | 要点 |
+|---|---|
+| `name` | 小写连字符。**永久，不可复用**，创建失败的名字也占着 |
+| `description` | 一行职责，给用户看，也给你后面对账 |
+| `prompt` | 全部指令。teammate 只看到这一段 |
+| `context` | `fresh`（默认）看不到你的历史；`fork` 继承你已完成的回合 |
+
+`context` 怎么挑：
+
+- **绝大多数用 `fresh`。** 活是自包含的，把上下文写进 prompt 就够。
+- 只有当活依赖你已经掌握、又写不进 prompt 的东西时，才用 `fork`。
+
+取名字前先 `list_agents` 看一眼，别撞已占用的名字。
+
 ## 派活必须自包含
 
-teammate 看不到你的上下文。它能看到的只有你写的那段 prompt。
+teammate 看不到你的上下文。它能看到的只有 `prompt`。
 
-派活时把这些写全：
+把这些写全：
 
 - 目标、约束、验收标准
 - 已知的失败现象和报错原文
 - 相关文件路径，用绝对路径
 - 环境坑，比如本机 `diff` 是坏的要用 `/usr/bin/diff`
 
-派活 prompt 里写「按刚才说的做」等于没派。它不知道「刚才」。
+写「按刚才说的做」等于没派。它不知道「刚才」。
+
+### prompt 里必须写回报要求
+
+这是最容易漏、后果最严重的一条：
+
+```
+干完用 send_message 给 lead 发一条，写：结论 + 文件清单 + 验收输出 + 偏离规格的地方。
+```
+
+漏了这句，teammate 干完就不吭声，你会一直睡着。原因见下一节。
+
+## 等通知，别轮询
+
+唤醒 Lead 的路径只有一条：**teammate 主动给你 `send_message`。**
+
+三种事件的真实行为：
+
+| 事件 | 会不会唤醒空闲的你 |
+|---|---|
+| teammate 给你发消息 | 会。新回合开始 |
+| task 被 claim 或 complete | **不会**。只唤醒正在 `wait_agent` 的调用方 |
+| teammate 静默收工 | **不会**。teammate 是常驻的，收工不结清 |
+
+所以等活按这个顺序选：
+
+1. **优选：派完活就结束回合。** 把「派了谁、等什么」写清楚，然后收工。用户立刻看到进展，你不空转。teammate 回报时你被唤醒，接着干。
+2. **次选：本回合内就必须拿到结果才继续时，用一次 `wait_agent`。** 它的好处是 task 变更也能唤醒。默认等 30 秒，上限 1 小时。
+3. **禁止：`wait_agent` 套循环，或反复 `list_agents` 轮询。** 那是空转。
+
+`list_agents` 只用来回答「谁在跑、谁卡住了」，不用来等。
+
+`wait_agent` 返回 `noProgress` 不是错误，是告诉你没人在跑，该换手段。
 
 ## 写作用域不重叠
 
@@ -51,6 +101,8 @@ teammate 看不到你的上下文。它能看到的只有你写的那段 prompt�
 派活前先分好文件归属，一人一块。分不开的活排成依赖，用 `team_task_create` 的 `blocked_by` 串起来。
 
 写作用域有重叠时，在 task 描述里写明重叠在哪、谁先谁后。别指望 teammate 自己协调。
+
+作用域只是提示，不是锁。bash、格式化工具、代码生成器都绕开文件版本检查，所以派完活要自己看最终 diff。
 
 ## 共享任务流程
 
@@ -66,13 +118,33 @@ teammate 看不到你的上下文。它能看到的只有你写的那段 prompt�
 
 task 描述就是完整规格。规格写细一点，teammate 少问一轮。
 
-## 等 teammate 的规矩
+## teammate 用什么模型
 
-`wait_agent` 前先 `list_agents`，确认有人正在 running。没人在跑，`wait_agent` 立刻返回 noProgress，白等。
+**不能单独指定。** `spawn_teammate` 没有 model 或 provider 参数。
 
-没人在跑就先 `send_message` 唤醒，再等。
+teammate 继承你（Lead）在 spawn 那一刻的 provider 和 model。想换只有两条路：
 
-`inactive` 只说明当前没有 turn 在执行，不代表活干完了、也不代表失败。看 task 状态判断。
+| 想要什么 | 怎么做 |
+|---|---|
+| 整队换模型 | 切 Lead 自己的模型。之后新 spawn 的 teammate 跟着变 |
+| 按任务挑模型 | 用不了 team，改用经典 `subagent` 工具 |
+
+经典 `subagent` 支持 `provider`、`model`、`reasoning_effort`、`agent_preset` 四个参数（本插件预设已开 `modelSelectionSettings`）。
+
+代价说清楚：经典 `subagent` 是一次性子代理，没有共享任务板，没有持久身份。要用团队就得接受统一模型。
+
+## 状态怎么看
+
+| 状态 | 含义 |
+|---|---|
+| `running` | 正在跑一个回合 |
+| `inactive` | 没有回合在执行。**不代表活干完、也不代表失败** |
+| `provisioning` | 正在创建 |
+| `failed` | 创建失败 |
+
+`inactive` 时它不吭声是正常的。想知道它干到哪，`list_agents` 看状态，`team_task_list` 看任务归属。
+
+只有 Lead 能创建和打断 teammate（`interrupt_agent`）。打断不清空它排队的消息。
 
 ## 给最终答复前
 

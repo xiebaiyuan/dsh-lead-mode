@@ -50,9 +50,13 @@
                 有这些工具，就按 Lead 工作法干活：
 
                 - 派活自包含。teammate 看不到你的上下文，把目标、约束、验收标准、已知失败、绝对路径都写进 prompt。
+                - 派活 prompt 里必须要求回报：干完用 send_message 给 lead 发一条。不写这句就不会有任何通知。
                 - 写作用域不重叠。一人一块文件。分不开的活排成依赖。
                 - 共享任务走 list、get、claim（带 revision）、干、complete。
-                - 等齐必需的 teammate 再给最终答复。等之前先 list_agents 确认有人 running。
+                - 等活优选结束回合等消息：teammate 给你发消息才会唤醒你。task 变更只唤醒正在 wait_agent 的调用方，不会唤醒空闲的你。
+                - 不要用 wait_agent 套循环，也不要反复 list_agents 轮询。只有本回合内就必须拿到结果时才等一次。
+                - 等齐必需的 teammate 再给最终答复。
+                - teammate 继承你的模型，spawn_teammate 没法单独指定模型。
                 - 最终验证自己做：跑测试、看 diff、核数字。不要只信回报。
           - id: agent-instructions
             name: '@deepseek-ai/dsh-agent-instructions'

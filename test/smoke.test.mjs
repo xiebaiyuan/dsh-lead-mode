@@ -234,6 +234,54 @@ test('skill 正文来自 SKILL.md，不是空字符串也不是 frontmatter', as
   assert.equal(skill.description, onDiskDescription, 'skill.description 必须等于 frontmatter 里的 description')
 })
 
+// ---------------------------------------------------------------------------
+// 守住两条只有读源码才能确认的 team 行为。删掉对应文案就会红。
+//
+// 1. 唤醒 Lead 的路径只有 teammate 的 send_message（agent-team/src/index.ts
+//    的 `root.steer(input)`）。task 变更只 resolve 正在 wait_agent 的调用方
+//    （activity.notify），不唤醒空闲的 Lead。所以派活 prompt 必须要求回报。
+//
+// 2. teammate 常驻，收工不结清；notifySettlement 只在 activation 销毁时触发。
+//    因此「结束回合等消息」是可行的首选，而 wait_agent 套循环是空转。
+// ---------------------------------------------------------------------------
+test('skill 正文写明回报要求与唤醒规则', async () => {
+  const { body } = await readSkillBody()
+
+  assert.ok(
+    /send_message\s*给\s*lead/.test(body),
+    'skill 必须要求 teammate 干完 send_message 给 lead，否则不会有通知',
+  )
+  assert.ok(
+    body.includes('唤醒'),
+    'skill 必须说明什么事件会唤醒 Lead',
+  )
+  assert.ok(
+    /task 变更只唤醒正在 wait_agent 的调用方，不唤醒空闲的你/.test(body)
+      || /task 被 claim 或 complete \| \*\*不会\*\*/.test(body),
+    'skill 必须写明 task 变更不会唤醒空闲的 Lead',
+  )
+  for (const word of ['轮询', 'list_agents']) {
+    assert.ok(body.includes(word), `skill 必须覆盖「不要用 ${word} 等」这条`)
+  }
+})
+
+test('skill 正文写明 teammate 不能单独指定模型', async () => {
+  const { body } = await readSkillBody()
+
+  assert.ok(
+    /不能单独指定|不能指定/.test(body),
+    'skill 必须写明 spawn_teammate 无法单独指定模型',
+  )
+  assert.ok(
+    body.includes('继承'),
+    'skill 必须写明 teammate 继承 Lead 的模型',
+  )
+  assert.ok(
+    body.includes('subagent'),
+    'skill 必须给出想按任务挑模型时的替代路径（经典 subagent）',
+  )
+})
+
 test('skills 服务晚到后 skill 仍会注册', async () => {
   const plugin = await loadPlugin()
   const fake = makeCtx({ services: { commands: {}, agentTeams: {} } })
