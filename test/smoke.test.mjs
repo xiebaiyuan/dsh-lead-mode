@@ -292,6 +292,20 @@ test('skill 正文写明 teammate 不能单独指定模型', async () => {
   )
 })
 
+// 看整队状态与通信的入口指向 dsh-context 的编队页。删掉友链就会红。
+test('skill 正文给出编队页入口（dsh-context 友链）', async () => {
+  const { body } = await readSkillBody()
+
+  assert.ok(body.includes('dsh-context'), 'skill 必须点名 dsh-context 插件')
+  assert.ok(
+    /编队|Fleet/.test(body),
+    'skill 必须写出编队 / Fleet 这个标签页名',
+  )
+  for (const surface of ['Fleet Members', 'Tasks', 'Agent Comms']) {
+    assert.ok(body.includes(surface), `skill 必须列出编队页的 ${surface} 区块`)
+  }
+})
+
 test('skills 服务晚到后 skill 仍会注册', async () => {
   const plugin = await loadPlugin()
   const fake = makeCtx({ services: { commands: {}, agentTeams: {} } })

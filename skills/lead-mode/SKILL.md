@@ -159,6 +159,24 @@ teammate 继承你（Lead）在 spawn 那一刻的 provider 和 model。想换�
 
 只有 Lead 能创建和打断 teammate（`interrupt_agent`）。打断不清空它排队的消息。
 
+### 想看全局，用 dsh-context 的编队页
+
+工具调用只能一条条读。要看整队的工作与通信，让用户开 **dsh-context** 的编队页（另一个插件，不随本插件安装）：
+
+| 区块 | 看什么 |
+|---|---|
+| 概要 | 成员状态、实时上下文、预估花费、任务进度 |
+| Agent Network | 当前 agent、父级、全部子代理，一人一张卡 |
+| Fleet Members | 每个成员的角色、模型、最新回复、运行时长、步数、在办任务数 |
+| Tasks | 团队任务与子代理派活放一起，按 owner 分组，带 blocked-by 链 |
+| Agent Comms | 谁跟谁说了什么。团队消息、邮箱投递、运行时的结算通知都在这里 |
+
+入口：任意会话点 **编队 / Fleet** 标签页（在 **Context** 右边）。右栏的 **Context** 面板里有同一张卡。
+
+装法：`dsh plugin --profile <你的 profile 名> add dsh-context`
+
+派活时可以直接告诉用户去这儿看进度，比自己复述一遍更清楚。
+
 ## 给最终答复前
 
 - 必需的 teammate 都等齐了再答。没等齐就说「还在跑」，别把半成品当结论。

@@ -114,6 +114,28 @@ dsh plugin --profile <你的 profile 名> add https://github.com/xiebaiyuan/dsh-
 
 **3. 让模型干活。** 派活工具齐了，模型会自己拆活、派给 teammate、等齐再收尾。工具不齐，它第一句就是让你去开 Team 运行时。
 
+## 看工作和通信状态：配 dsh-context
+
+工具调用只能一条条读，Team 的状态与通信要一页看全，装 **dsh-context**（另一个插件，不随本插件安装）：
+
+```bash
+dsh plugin --profile <你的 profile 名> add dsh-context
+```
+
+它在每个会话里加一个 **编队 / Fleet** 标签页（在 **Context** 右边），右栏的 **Context** 面板里有同一张卡。
+
+| 区块 | 看什么 |
+|---|---|
+| 概要 | 成员状态、实时上下文、预估花费、任务进度 |
+| Agent Network | 当前 agent、它的父级、全部子代理，一人一张卡 |
+| Fleet Members | 每个成员的角色、模型、最新回复、运行时长、步数、在办任务数 |
+| Tasks | 团队任务与子代理派活放一起，按 owner 分组，带 blocked-by 链 |
+| Agent Comms | 谁跟谁说了什么。团队消息、邮箱投递、运行时的结算通知都在这里 |
+
+点图上的成员或成员卡，Tasks 与 Agent Comms 会收窄到那一个人。Agent Comms 里点开一条，能看到完整记录：来自哪个会话日志、第几号事件、是运行时写的结算通知还是子代理自己发的、完整收尾报告。
+
+Lead 模式 skill 里也写了这个入口，所以派活时模型会直接让你去这儿看进度。
+
 ## 依赖的官方 bundle 与版本
 
 本插件不捆绑下面这些包。它们由宿主或官方 bundle 提供，本插件只在 `peerDependencies` 里声明版本要求。

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.5
+
+看整队状态与通信时，指向 dsh-context 的编队页。
+
+- skill 的「状态怎么看」新增「想看全局，用 dsh-context 的编队页」，列出编队页的五个区块（概要 / Agent Network / Fleet Members / Tasks / Agent Comms），并写明入口是「编队 / Fleet」标签页、右栏 Context 面板有同一张卡。
+- 两份 README 新增「看工作和通信状态：配 dsh-context」一节，含安装命令与区块表。
+- 新增一条测试守住友链、标签页名与三个区块名；删 dsh-context 或删 Agent Comms 都会红（已做变异验证）。
+- dsh-context 是另一个插件，不随本插件安装。
+- 预设与官方 `standard` 的差异仍只有 persona 一处。
+
 ## 0.1.4
 
 纠正 0.1.3 里一条写错的事实。

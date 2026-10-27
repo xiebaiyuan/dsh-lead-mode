@@ -114,6 +114,28 @@ Three steps.
 
 **3. Let the model work.** With the delegation tools in place, the model splits the work, delegates to teammates, and waits for all of them before wrapping up. Without them, its first move is to tell you to enable the Team runtime.
 
+## Watching work and comms: pair with dsh-context
+
+Tool calls read one at a time. To see the whole Team's state and traffic on one page, install **dsh-context** (a separate plugin, not shipped here):
+
+```bash
+dsh plugin --profile <your profile name> add dsh-context
+```
+
+It adds a **Fleet / 编队** tab to every session (right of **Context**), and the right sidebar's **Context** panel carries the same card.
+
+| Surface | Shows |
+|---|---|
+| Summary | Member status, live context, estimated cost, task progress |
+| Agent Network | The current agent, its parents, every subagent, one card each |
+| Fleet Members | Each member's role, model, latest reply, run time, steps, active task count |
+| Tasks | Team tasks and subagent delegations together, grouped by owner, with blocked-by chains |
+| Agent Comms | Who said what to whom. Team relays, mailbox deliveries, and the runtime's settlement notices |
+
+Picking a member on the graph or the member board narrows Tasks and Agent Comms to that one agent. Opening a message in Agent Comms shows the full record: which session log it came from, its sequence, whether the runtime wrote the settlement notice or the child sent it, and the complete closing report.
+
+The Lead mode skill names this entry point too, so the model points you here instead of restating progress itself.
+
 ## Required official bundles and versions
 
 This plugin ships none of the packages below. The host or an official bundle provides them; this plugin only declares version requirements in `peerDependencies`.
