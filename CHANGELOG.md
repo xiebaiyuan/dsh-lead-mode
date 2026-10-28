@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.1.7
+
+成员会话被压缩后，Lead 得知道细节已经变薄了，并且有固定的处置顺序。
+
+skill 新增「上下文变长怎么办：压缩、复用、交接、换人」一节，含五块：
+
+- **为什么会丢**：宿主对每个 agent 都自动压缩，会话 id 不变，早期节点被一条摘要替换。团队层关不掉，Lead 也没有压缩别人会话的通道。
+- **怎么检测**：三步配方。`list_agents` 取成员的 id，`session_event_search` 带 `event_types: ["compaction/start"]` 与 `surfaces: ["log-only"]` 查它，命中 ≥1 次就是已压缩。不写死阈值数字，各宿主不同，写死会过期。
+- **交接阶梯**：四级按代价升序 —— 继续跑、`send_message` 重发窄单给同一成员、写交接文档后 `interrupt_agent`、`spawn_teammate` 换人。换人固定用 `fresh`，理由写死：`fork` 拷的是 Lead 自己的历史，不是上一个成员的历史。
+- **工作日志与交接文档放哪**：固定 `.scratch/<effort>/`，一人一个 `worklog-<mate>.md`，换人写 `handoff-<mate>-<n>.md`。工作日志两段（状态摘要 + 只追加的轮次记录），交接文档六块（接手关系、任务与账本、文件账、验收、死路与决策、下一步）。
+- **换人操作清单**：先查名额，旧 task 先 `release` 再让续作成员 `claim`，续作成员名字加 `-r2` 后缀，`interrupt_agent` 不清空排队消息。
+
+派活那节加一条硬要求：开建工作日志是成员的第一件事，收尾前补完最后一轮。
+
+同一条要求也写进 persona prefix（`cordis.patch.yml`）。skill 是按需加载的，常驻 system prompt 里没有它，Lead 不加载 skill 就等于没有这条规矩。两处都留。
+
+新增六条测试：检测配方三步与「不要轮询」、阶梯四级与三个处置工具、命名约定与软链说明、第 4 级必须写 `fresh` 加 `fork` 的理由、正文不许出现 `0.8` / `65536` / `0.16` 三个阈值数字（以上五条在 `test/smoke.test.mjs`），以及 persona prefix 要求成员第一步建工作日志（`test/preset.test.mjs`）。测试按小节切片断言，不是全文碰运气。
+
+仓库根新增 `GLOSSARY.md`，定名十个术语：Lead、成员、成员名额、收尾消息、工作日志、状态摘要、上下文降级、交接文档、交接阶梯、续作成员。
+
+预设与官方 `standard` 的差异仍只有 persona 一处。
+
 ## 0.1.6
 
 把 dsh-context 写成正式友链，中英都标清它是另一个项目。

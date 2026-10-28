@@ -163,3 +163,20 @@ test('preset 只改了 persona，其余行与 standard 逐字段一致', async (
     assert.deepEqual(actual, expected, `行 ${expected.id} 与 standard 不一致`)
   }
 })
+
+// 「工作日志」这条硬要求必须同时在两处成立：skill 正文（按需加载）和
+// persona prefix（常驻 system prompt）。只写在 skill 里的话，Lead 没加载
+// skill 就看不见，成员被打断时账本也就没人建。
+test('persona prefix 要求成员第一步建工作日志', async () => {
+  const { preset } = findLeadPreset(await loadPatch())
+  const persona = preset.config.plugins.find((row) => row.name === '@deepseek-ai/dsh-persona')
+  const prefix = persona.config?.prefix
+  assert.equal(typeof prefix, 'string', 'persona.config.prefix 必须是字符串')
+
+  assert.ok(prefix.includes('worklog-'), 'prefix 必须给出工作日志的文件名约定 worklog-')
+  assert.ok(prefix.includes('.scratch/'), 'prefix 必须给出工作日志的所在目录 .scratch/')
+  assert.ok(
+    /第一步|第一件事/.test(prefix),
+    'prefix 必须写明建工作日志是成员第一步要做的事',
+  )
+})

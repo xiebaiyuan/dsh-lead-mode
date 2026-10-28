@@ -471,3 +471,104 @@ test('register() 收到的 skill 满足宿主加载期必填契约', async () =>
   // provider 由 registry 用 `skill.provider ?? 'runtime'` 兜底，两种都能过。
   assert.ok(skill.provider === undefined || typeof skill.provider === 'string')
 })
+
+// ---------------------------------------------------------------------------
+// 上下文变长那节是 Lead 的操作手册。它写错或写丢，Lead 会在成员会话已经被
+// 压缩、细节只剩摘要的情况下继续往里派活，然后拿一份掺了断层的结论当验收。
+// 这里只断言磁盘上的正文，不碰 lib/。
+// ---------------------------------------------------------------------------
+
+/** 从正文切出一节：从 heading 开始，到下一个同级或更高级标题前结束。 */
+function sliceHeading(body, heading) {
+  const start = body.indexOf(heading)
+  assert.notEqual(start, -1, `SKILL.md 必须有「${heading}」这一节`)
+  const level = /^#+/.exec(heading)[0].length
+  const rest = body.slice(start + heading.length)
+  const next = new RegExp(`\\n#{1,${level}} `).exec(rest)
+  assert.notEqual(next, null, `「${heading}」后面必须有下一节，否则切片会吃掉全文`)
+  return rest.slice(0, next.index)
+}
+
+test('skill 正文给出检测成员会话被压缩的三步配方', async () => {
+  const { body } = await readSkillBody()
+  const section = sliceHeading(body, '### 怎么检测')
+
+  for (const token of [
+    'list_agents',
+    'session_event_search',
+    'session_id',
+    'compaction/start',
+    'surfaces',
+  ]) {
+    assert.ok(section.includes(token), `检测配方必须出现 ${token}`)
+  }
+
+  const steps = [...section.matchAll(/^\d+\. /gm)].length
+  assert.ok(steps >= 3, `检测配方该写成有序步骤，实测 ${steps} 条`)
+  assert.ok(
+    /不要.{0,20}轮询|别.{0,20}轮询/.test(section),
+    '检测配方必须写明不要反复轮询，一次派活验收前查一次就够',
+  )
+})
+
+test('skill 正文的交接阶梯是四级有序表，覆盖三个处置工具', async () => {
+  const { body } = await readSkillBody()
+  const section = sliceHeading(body, '### 交接阶梯')
+
+  const levels = [...section.matchAll(/^\d+\. /gm)].length
+  assert.ok(levels >= 4, `交接阶梯按代价排四级，实测 ${levels} 条`)
+
+  for (const tool of ['send_message', 'interrupt_agent', 'spawn_teammate']) {
+    assert.ok(section.includes(tool), `四级阶梯里必须出现 ${tool}`)
+  }
+  assert.ok(section.includes('继续跑'), '第 1 级该是继续跑，交给自动压缩兜住')
+  assert.ok(section.includes('重发窄单'), '第 2 级该是给同一成员重发窄单')
+})
+
+test('skill 正文写明 worklog 与 handoff 的位置与文件名约定', async () => {
+  const { body } = await readSkillBody()
+  const section = sliceHeading(body, '### 工作日志与交接文档放哪')
+
+  for (const token of ['.scratch/', 'worklog-', 'handoff-']) {
+    assert.ok(section.includes(token), `命名约定必须出现 ${token}`)
+  }
+  assert.ok(
+    section.includes('obsidian-docs/scratch/'),
+    '.scratch 要说明它是指向笔记库的软链',
+  )
+  assert.ok(/不进 git/.test(section), '要写明 .scratch 不进 git')
+})
+
+test('skill 正文要求换人用 fresh，并写明 fork 拿不到前任历史', async () => {
+  const { body } = await readSkillBody()
+  const section = sliceHeading(body, '### 交接阶梯')
+
+  const lines = section.split('\n')
+  const start = lines.findIndex((line) => /^4\. /.test(line))
+  assert.notEqual(start, -1, '交接阶梯第 4 级必须是换新成员')
+
+  // 一条列表项可能续行，续到空行或下一个编号为止。
+  let item = lines[start]
+  for (
+    let i = start + 1;
+    i < lines.length && lines[i].trim() !== '' && !/^\d+\. /.test(lines[i]);
+    i++
+  ) {
+    item += ` ${lines[i]}`
+  }
+
+  assert.ok(item.includes('fresh'), '第 4 级必须写清 context 用 fresh')
+  assert.ok(item.includes('fork'), '第 4 级必须点名 fork 为什么不行')
+  assert.ok(/历史/.test(item), '第 4 级必须写出理由：fork 拷的是 Lead 自己的历史')
+})
+
+test('skill 正文不写死自动压缩的阈值数字', async () => {
+  const { body } = await readSkillBody()
+
+  for (const number of ['0.8', '65536', '0.16']) {
+    assert.ok(
+      !body.includes(number),
+      `SKILL.md 正文不该出现阈值数字 ${number}，各宿主阈值不同，写死会过期`,
+    )
+  }
+})
