@@ -142,7 +142,7 @@ teammate 收工时，它**最后那条消息**会随通知回到你手上，格�
 
 位置固定在 `.scratch/<effort>/`。一人一个 `worklog-<mate>.md`，换人时写 `handoff-<mate>-<n>.md`。
 
-`.scratch` 是 `obsidian-docs/scratch/` 的软链，笔记库能看见，不进 git。
+`.scratch` 存在就用（通常是 `obsidian-docs/scratch/` 的软链，笔记库能看见，不进 git）；不存在就先建目录，别假设它一定有。
 
 工作日志（worklog）分两段：
 
@@ -242,6 +242,10 @@ teammate 继承你（Lead）在 spawn 那一刻的 provider 和 model。想换�
 只有用户装了它，这个入口才存在。不确定就别让用户去找一个没有的页面。
 
 派活时可以直接告诉用户去这儿看进度，比自己复述一遍更清楚。
+
+## 收尾要写团队汇总
+
+本 effort 有 2 个以上成员或跨 2 轮以上时，收尾要写一份团队汇总。加载 `team-digest` skill：触发阈值、落盘路径、六块骨架、原料取法都在那里，这里不展开格式。
 
 ## 给最终答复前
 
