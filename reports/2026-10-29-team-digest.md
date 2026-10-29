@@ -2,7 +2,7 @@
 
 ## 结论
 
-Lead 收尾时不再临场拼装：插件新增 `team-digest` runtime skill，收尾一次成型写一份 `reports/<日期>-<effort>.md`；`lib/index.js` 从硬编码单 skill 改成扫目录注册多个。四条 CI 命令我全部复跑通过，34 个测试全绿，两个 skill 随包分发。
+Lead 收尾时不再临场拼装：插件新增 `team-digest` runtime skill，收尾一次成型写一份 `reports/<日期>-<effort>.md`；`lib/index.js` 从硬编码单 skill 改成扫目录注册多个。四条 CI 命令我全部复跑通过，34 个测试全绿，两个 skill 随包分发。已发 `0.2.0`，npm `latest` 指向它，从 registry 装回来验过两个 skill 都在。
 
 ## 谁干了什么
 
@@ -22,7 +22,10 @@ Lead 收尾时不再临场拼装：插件新增 `team-digest` runtime skill，�
 | `node scripts/validate-names.mjs --manifest ./dsh-plugin.naming.json` | compatible，4 条 `recommended-prefix` warn，exit 0（与改前同类） | Lead 复跑 |
 | `node scripts/check-patch.mjs` | `patch OK: 2 行 insert，preset lead-mode 有 22 个子行` | Lead 复跑 |
 | `npm pack --dry-run` | 8 个文件，含 `skills/team-digest/SKILL.md` 7.9kB；`test/` `scripts/` `docs/` `reports/` `.scratch` 均未进包 | Lead 复跑 |
-| 真目录注册 | `syncBundledSkills()` 返回 `['lead-mode','team-digest']`，warnings 为空 | plugin-core 跑过，Lead 未单独复跑（见未验证） |
+| 真目录注册 | `syncBundledSkills()` 返回 `['lead-mode','team-digest']`，warnings 为空 | Lead 在 tarball 副本上复跑过 |
+| `git push origin v0.2.0` | release workflow success，发布步输出 `+ dsh-lead-mode@0.2.0`，带 Sigstore provenance | CI |
+| `npm view dsh-lead-mode version dist-tags` | `0.2.0` / `latest: 0.2.0`，tarball URL 返回 200 | Lead |
+| 消费者装回 | `dsh plugin add dsh-lead-mode@0.2.0` 后注册出 `['lead-mode','team-digest']`，临时 profile 已删 | Lead |
 
 ## 偏离与未验证
 
@@ -39,9 +42,12 @@ Lead 收尾时不再临场拼装：插件新增 `team-digest` runtime skill，�
 
 ### 未验证清单
 
-- **Node 20 / 22 未跑**。本机只有 `node v26.12.0`，CI 矩阵是 20/22。代码只用 Node 20 就有的 API，未经实跑确认。
-- **真机加载未验**。只在假 ctx 和直接调用 `syncBundledSkills()` 两层验过，没有把插件装进 profile 后确认 `skill` 工具里能列出两个 skill。
 - **会话日志下钻（原料第 3 层）本 effort 没触发过**。三个成员都交了收尾消息并写了 worklog，第 1、2 层就够用，第 3 层只有代码事实支撑，没有实际使用记录。
+
+收尾时留着、发版前补验掉的两条（留在这让下次知道该怎么验）：
+
+- **Node 20 / 22**：`ci.yml` 的 matrix 在推 main 时跑过，`test (20)` 与 `test (22)` 都 success。
+- **真机加载**：tarball 装进 `rc-check`、npm 包装进 `rc-verify`，两次都注册出 `['lead-mode','team-digest']`；临时 profile 已删。
 
 ## 死路与决策
 
@@ -62,13 +68,11 @@ Lead 收尾时不再临场拼装：插件新增 `team-digest` runtime skill，�
 
 未决：
 
-- `package.json` 还是 `0.1.7`，CHANGELOG 写的是「未发布」。版本号改成什么没定。
-- `reports/` 进 git 已定（ADR 后果第三条），但 `reports/` 现在只有一个空目录，第一次真实回看发生在下一份汇总。
+- 仓库至今没有 GitHub Release 先例，0.1.x 全走 npm-only。要不要开始开 Release 页没定。
+- `reports/` 进 git 已落地，第一次真实回看发生在下一份汇总。
 
 下一步：
 
-1. 跑一次真机：装进 profile，确认 `skill` 工具列出 `lead-mode` 与 `team-digest` 两个。
-2. 定版本号、改 `package.json`、发版。
-3. 下一轮真实 multi-member 活里跑一次第 3 层下钻，验证 `session_event_search(session_id=<成员>)` 在真实成员 id 上确实读得到。
+1. 下一轮真实 multi-member 活里跑一次第 3 层下钻，验证 `session_event_search(session_id=<成员>)` 在真实成员 id 上读得到。
 
 明确不做：不加 `/digest` 命令；不做增量汇总；不把汇总内容塞进任务板 description。
