@@ -11,8 +11,10 @@
 //      RegistryService.inject）。
 //   2. `ctx.get(name)` 无依赖地读服务，服务不在返回 undefined。
 
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
-import { dirname, resolve } from 'node:path'
+import { tmpdir } from 'node:os'
+import { dirname, join, resolve } from 'node:path'
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { fileURLToPath } from 'node:url'
@@ -129,6 +131,40 @@ async function readSkillBody() {
   return { raw, frontmatter: match[1], body: raw.slice(match[0].length).trim() }
 }
 
+/**
+ * 磁盘上按契约真正能注册的 skill 名（= 目录名），排好序。
+ *
+ * 这里是契约的第二份独立实现，刻意不 import lib/：lib 按契约筛，测试也按契约
+ * 筛，两边对不上就说明某一侧走样了。
+ *
+ * 也不用写死 ['lead-mode', 'team-digest']：`skills/` 由别的成员并发写，写一半
+ * 的目录不该把断言变成噪声——只有写到能注册的形态才算数。
+ */
+function diskSkillNames() {
+  const root = resolve(repoRoot, 'skills')
+  return readdirSync(root, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .filter((dirName) => {
+      let raw
+      try {
+        raw = readFileSync(join(root, dirName, 'SKILL.md'), 'utf8')
+      } catch {
+        return false
+      }
+      const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(raw)
+      if (match === null) return false
+      const declared = /^name:\s*(.+)$/m.exec(match[1])?.[1]?.trim()
+      const description = /^description:\s*(.+)$/m.exec(match[1])?.[1]?.trim()
+      return (
+        declared === dirName &&
+        description !== undefined &&
+        raw.slice(match[0].length).trim().length > 0
+      )
+    })
+    .sort()
+}
+
 test('导出 name / apply，且不声明硬 inject', async () => {
   const plugin = await loadPlugin()
   assert.equal(plugin.name, 'lead-mode')
@@ -195,9 +231,13 @@ test('服务齐全时注册 skill 与 command，且不再 warn agentTeams', asyn
 
   plugin.apply(ctx)
 
-  assert.equal(registered.skills.length, 1, '该注册 1 个 skill')
-  const skill = registered.skills[0]
-  assert.equal(skill.name, 'lead-mode')
+  assert.deepEqual(
+    registered.skills.map((skill) => skill.name).sort(),
+    diskSkillNames(),
+    '磁盘上每个合规 skill 目录都该注册一个 skill，一个不多一个不少',
+  )
+  const skill = registered.skills.find((candidate) => candidate.name === 'lead-mode')
+  assert.ok(skill !== undefined, 'lead-mode 必须注册')
   assert.equal(typeof skill.description, 'string')
   assert.ok(skill.description.length > 0, 'skill description 不能为空')
   assert.equal(skill.invocation?.modelInvocable, true)
@@ -213,6 +253,118 @@ test('服务齐全时注册 skill 与 command，且不再 warn agentTeams', asyn
   assert.equal(teamWarnings.length, 0, '服务齐全时不该 warn agentTeams')
 })
 
+// ---------------------------------------------------------------------------
+// 多 skill 扫描：用临时目录造 skills/，不碰仓库里由别的成员写的真实内容。
+// ---------------------------------------------------------------------------
+
+/** 在临时目录里造一个 skill 子目录。 */
+function makeSkillDir(root, dirName, text) {
+  mkdirSync(join(root, dirName), { recursive: true })
+  if (text !== undefined) writeFileSync(join(root, dirName, 'SKILL.md'), text)
+}
+
+test('扫描 skills/ 时每个合规目录注册一个，坏目录只 warn 不炸', async () => {
+  const plugin = await loadPlugin()
+  assert.equal(typeof plugin.syncBundledSkills, 'function', 'lib 要导出扫描函数，测试才能喂假目录')
+  const root = mkdtempSync(join(tmpdir(), 'dsh-lead-mode-skills-'))
+  try {
+    const good = {
+      'alpha-skill': '---\nname: alpha-skill\ndescription: 第一个假 skill。\n---\n\n# alpha\n\n正文一。\n',
+      'beta-skill': '---\nname: beta-skill\ndescription: 第二个假 skill。\n---\n\n# beta\n\n正文二。\n',
+    }
+    const bad = {
+      'no-frontmatter': '# 没有 frontmatter\n\n正文。\n',
+      'no-description': '---\nname: no-description\n---\n\n# x\n\n正文。\n',
+      'empty-body': '---\nname: empty-body\ndescription: 空正文。\n---\n',
+      'renamed-dir': '---\nname: something-else\ndescription: 目录名与 name 不一致。\n---\n\n# x\n\n正文。\n',
+    }
+    for (const [dirName, text] of Object.entries(good)) makeSkillDir(root, dirName, text)
+    for (const [dirName, text] of Object.entries(bad)) makeSkillDir(root, dirName, text)
+    // 目录在、SKILL.md 不在
+    makeSkillDir(root, 'no-file')
+
+    const registered = []
+    const warnings = []
+    const names = plugin.syncBundledSkills(
+      root,
+      { register: (definition) => registered.push(definition) },
+      (message) => warnings.push(message),
+    )
+
+    assert.deepEqual(names, ['alpha-skill', 'beta-skill'], '两个合规 skill 都要注册，按目录名排序')
+    assert.equal(registered.length, 2, '坏目录不该混进注册列表')
+
+    for (const skill of registered) {
+      assert.equal(typeof skill.description, 'string')
+      assert.ok(skill.description.length > 0, `${skill.name} 的 description 不能为空`)
+      assert.ok(skill.content.startsWith('# '), `${skill.name} 的 content 不该带 frontmatter`)
+      assert.equal(skill.source, `dsh-lead-mode/skills/${skill.name}/SKILL.md`)
+      assert.equal(skill.path, join(root, skill.name, 'SKILL.md'))
+      assert.equal(skill.invocation?.modelInvocable, true)
+      assert.equal(skill.invocation?.userInvocable, true)
+    }
+
+    assert.equal(
+      warnings.length,
+      5,
+      `5 个坏目录各该 warn 一次，实测 ${warnings.length} 条：\n${warnings.join('\n')}`,
+    )
+    for (const dirName of [...Object.keys(bad), 'no-file']) {
+      assert.ok(
+        warnings.some((message) => message.includes(dirName)),
+        `${dirName} 被跳过时 warn 要点名它`,
+      )
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('skills/ 目录不存在时只 warn，不抛异常', async () => {
+  const plugin = await loadPlugin()
+  const warnings = []
+  const registered = []
+  const names = plugin.syncBundledSkills(
+    join(tmpdir(), 'dsh-lead-mode-no-such-skills-dir'),
+    { register: (definition) => registered.push(definition) },
+    (message) => warnings.push(message),
+  )
+
+  assert.deepEqual(names, [])
+  assert.equal(registered.length, 0)
+  assert.equal(warnings.length, 1, '目录不在只该 warn 一次')
+  assert.ok(warnings[0].includes('扫描'), 'warn 要说清是扫描失败')
+})
+
+test('单个 skill 注册抛错时其余照常注册', async () => {
+  const plugin = await loadPlugin()
+  const root = mkdtempSync(join(tmpdir(), 'dsh-lead-mode-throw-'))
+  try {
+    makeSkillDir(root, 'alpha-skill', '---\nname: alpha-skill\ndescription: 会抛错的那个。\n---\n\n# a\n\n正文。\n')
+    makeSkillDir(root, 'beta-skill', '---\nname: beta-skill\ndescription: 正常的那个。\n---\n\n# b\n\n正文。\n')
+
+    const warnings = []
+    const registered = []
+    const names = plugin.syncBundledSkills(
+      root,
+      {
+        register: (definition) => {
+          if (definition.name === 'alpha-skill') throw new Error('registry 拒收')
+          registered.push(definition)
+        },
+      },
+      (message) => warnings.push(message),
+    )
+
+    assert.deepEqual(names, ['beta-skill'], '抛错的那个跳过，后面的继续')
+    assert.deepEqual(registered.map((skill) => skill.name), ['beta-skill'])
+    assert.equal(warnings.length, 1)
+    assert.ok(warnings[0].includes('alpha-skill'), 'warn 要点名注册失败的那个 skill')
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
 test('skill 正文来自 SKILL.md，不是空字符串也不是 frontmatter', async () => {
   const plugin = await loadPlugin()
   const { ctx, registered } = makeCtx({
@@ -221,7 +373,8 @@ test('skill 正文来自 SKILL.md，不是空字符串也不是 frontmatter', as
 
   plugin.apply(ctx)
 
-  const skill = registered.skills[0]
+  const skill = registered.skills.find((candidate) => candidate.name === 'lead-mode')
+  assert.ok(skill !== undefined, 'lead-mode 必须注册')
   assert.equal(typeof skill.content, 'string', 'skill.content 必须是字符串')
   assert.ok(skill.content.length > 0, 'skill.content 不能为空')
 
@@ -347,7 +500,11 @@ test('skills 服务晚到后 skill 仍会注册', async () => {
 
   const fired = fake.provide('skills', {})
   assert.equal(fired, 1, '补上 skills 服务后该跑掉一条 pending 注入')
-  assert.equal(fake.registered.skills.length, 1, '服务晚到后 skill 必须补注册')
+  assert.deepEqual(
+    fake.registered.skills.map((skill) => skill.name).sort(),
+    diskSkillNames(),
+    '服务晚到后每个合规 skill 都必须补注册',
+  )
 })
 
 test('/lead-mode 依赖齐全时返回 success', async () => {
@@ -420,14 +577,17 @@ test('agentPresets 服务不在时 handler 不抛异常', async () => {
   assert.ok(result.text.includes('查不到'), 'agentPresets 不在时报告查不到')
 })
 
-test('注册的 skill 名与 command 名都是 lead-mode', async () => {
+test('注册的 command 名是 lead-mode，skills 里也带 lead-mode', async () => {
   const plugin = await loadPlugin()
   const { ctx, registered } = makeCtx({
     services: { skills: {}, commands: {}, agentTeams: {} },
   })
 
   plugin.apply(ctx)
-  assert.equal(registered.skills[0]?.name, 'lead-mode')
+  assert.ok(
+    registered.skills.some((skill) => skill.name === 'lead-mode'),
+    'lead-mode 这个 skill 必须在注册列表里',
+  )
   assert.equal(registered.commands[0]?.name, 'lead-mode')
 })
 
@@ -454,22 +614,32 @@ test('register() 收到的 skill 满足宿主加载期必填契约', async () =>
   })
   plugin.apply(ctx)
 
-  assert.equal(registered.skills.length, 1)
-  const skill = registered.skills[0]
+  assert.deepEqual(
+    registered.skills.map((skill) => skill.name).sort(),
+    diskSkillNames(),
+    '每个注册的 skill 都来自磁盘上的合规目录',
+  )
 
   // Mirrors dsh-skill/lib/index.js validateDefinition:472-490.
-  for (const field of ['name', 'description', 'source', 'content']) {
+  for (const skill of registered.skills) {
+    for (const field of ['name', 'description', 'source', 'content']) {
+      assert.equal(
+        typeof skill[field],
+        'string',
+        `skill.${field} 必须是 string，否则加载期 validateDefinition 抛错`,
+      )
+    }
+    assert.notEqual(skill.source.length, 0, 'source 不能是空串')
+    assert.notEqual(skill.content.length, 0, 'content 不能是空串')
     assert.equal(
-      typeof skill[field],
-      'string',
-      `skill.${field} 必须是 string，否则加载期 validateDefinition 抛错`,
+      skill.source,
+      `dsh-lead-mode/skills/${skill.name}/SKILL.md`,
+      'source 必须按包内相对路径写，且与 skill 名一致',
     )
-  }
-  assert.notEqual(skill.source.length, 0, 'source 不能是空串')
-  assert.notEqual(skill.content.length, 0, 'content 不能是空串')
 
-  // provider 由 registry 用 `skill.provider ?? 'runtime'` 兜底，两种都能过。
-  assert.ok(skill.provider === undefined || typeof skill.provider === 'string')
+    // provider 由 registry 用 `skill.provider ?? 'runtime'` 兜底，两种都能过。
+    assert.ok(skill.provider === undefined || typeof skill.provider === 'string')
+  }
 })
 
 // ---------------------------------------------------------------------------
