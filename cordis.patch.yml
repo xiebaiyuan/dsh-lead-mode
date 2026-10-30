@@ -16,10 +16,13 @@
 # agent, so it belongs to the host plane, not to a preset row. Users turn it on
 # with the official profile package:
 #
-#   dsh plugin --profile <name> add @deepseek-ai/dsh-experimental-agent-team-profile@0.2.1-rc.3
+#   dsh plugin --profile <name> add @deepseek-ai/dsh-experimental-agent-team-profile@0.2.1-rc.5
 #
 # The version pin matters: bare `npm i` resolves `latest`, which is 0.1.5-alpha.2
-# and does not mount on a 0.2.1 host. `next` points at 0.2.1-rc.3.
+# and does not mount on a 0.2.1 host. `next` points at 0.2.1-rc.5. The pin must
+# equal the host version (`dsh --version`): the team packages pin exact `dsh-*`
+# peers, so a profile built for an older rc installs peers this host does not
+# satisfy.
 - insert:
     - id: dsh-lead-mode
       name: 'dsh-lead-mode'
@@ -41,9 +44,9 @@
 
                 没有的话，停下。只做一件事：告诉用户去开 dsh 官方的 Agent Teams，命令是
 
-                    dsh plugin --profile <你的 profile 名> add @deepseek-ai/dsh-experimental-agent-team-profile@0.2.1-rc.3
+                    dsh plugin --profile <你的 profile 名> add @deepseek-ai/dsh-experimental-agent-team-profile@0.2.1-rc.5
 
-                不带版本号会装到 0.1.5-alpha.2，和 0.2.1 宿主对不上。装完重启 dsh。
+                不带版本号会装到 0.1.5-alpha.2，和 0.2.1 宿主对不上。版本号要跟 `dsh --version` 的输出一致。装完重启 dsh。
 
                 这是本插件存在的主要理由。没有这些工具，你派不了活。不要自己硬干，不要假装能派活，也不要拿 subagent 凑数顶替 teammate。
 

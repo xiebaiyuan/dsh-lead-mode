@@ -22,7 +22,7 @@ import { fileURLToPath } from 'node:url'
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
 /** 官方 profile 包的版本，命令文本必须带。 */
-const TEAM_VERSION = '0.2.1-rc.3'
+const TEAM_VERSION = '0.2.1-rc.5'
 
 /**
  * 造一个假 ctx。

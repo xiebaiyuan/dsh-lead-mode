@@ -1,6 +1,9 @@
 # 官方 standard 预设的逐字节副本，用作对比基线。
 #
 # 来源：DeepSeek Harness 0.2.1-rc.3 的 app.asar
+#
+# 2026-10-29 复核：在 0.2.1-rc.5 的 app.asar 里按同一字节串定位，切出的块与本文件
+# 逐字节相同（含末尾两行 disabled: true）。预设没有漂移，本基线继续用。
 #   /Applications/DeepSeek Harness.app/Contents/Resources/app.asar
 #
 # 切法（2026-10-26）：

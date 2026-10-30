@@ -47,6 +47,12 @@ jobs:
       - name: 语法
         run: node --check lib/index.js
 
+      - name: 命名清单
+        run: node scripts/validate-names.mjs --manifest ./dsh-plugin.naming.json
+
+      - name: patch 能解析
+        run: node scripts/check-patch.mjs
+
       - name: tag 与 package.json 版本一致
         run: |
           tag="${GITHUB_REF_NAME#v}"
@@ -55,6 +61,25 @@ jobs:
             echo "tag $tag 与 package.json 的 $pkg 不一致"
             exit 1
           fi
+
+      - name: latest 不回退
+        run: |
+          new="$(node -p "require('./package.json').version")"
+          cur="$(npm view dsh-lead-mode dist-tags.latest 2>/dev/null || true)"
+          if [ -z "$cur" ]; then
+            echo "查不到已发布的 latest，跳过比较"
+            exit 0
+          fi
+          if [ "$new" = "$cur" ]; then
+            echo "版本 $new 已经是 latest，不重复发布"
+            exit 1
+          fi
+          highest="$(printf '%s\n%s\n' "$cur" "$new" | sort -V | tail -n 1)"
+          if [ "$highest" != "$new" ]; then
+            echo "新版本 $new 低于已发布 latest $cur，拒绝发布"
+            exit 1
+          fi
+          echo "已发布 latest 是 $cur，本次发 $new"
 
       - name: 发布
         run: npm publish --access public

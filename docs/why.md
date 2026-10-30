@@ -21,7 +21,7 @@ DSH 有两套派活的工具。
 官方 Team 运行时由 profile 包提供：
 
 ```
-dsh plugin --profile <你的 profile 名> add @deepseek-ai/dsh-experimental-agent-team-profile@0.2.1-rc.3
+dsh plugin --profile <你的 profile 名> add @deepseek-ai/dsh-experimental-agent-team-profile@0.2.1-rc.5
 ```
 
 用户不知道这条命令。模型也不知道，因为它拿到的 system prompt 里没有任何一句说「本会话缺 Team 工具，你应该让用户去开」。
@@ -61,12 +61,14 @@ prefix 开头就是那段提醒：开工先查有没有 `spawn_teammate`、`send
 | dist-tag | 版本 | 说明 |
 |---|---|---|
 | `latest` | 0.1.5-alpha.2 | 旧版，配 0.1.x 宿主 |
-| `alpha` | 0.2.1-alpha.5 | 预发布线 |
-| `next` | 0.2.1-rc.3 | 配 0.2.1 宿主 |
+| `alpha` | 0.2.2-alpha.2 | 0.2.2 线，别和 0.2.1 宿主混用 |
+| `next` | 0.2.1-rc.5 | 配 0.2.1 宿主 |
 
 裸写包名安装，npm 解析 `latest`，装到 0.1.5-alpha.2。这个版本和 0.2.1 宿主对不上，装完不挂。
 
-所以插件里所有出现安装命令的地方都带 `@0.2.1-rc.3`，且 `test/preset.test.mjs` 与 `test/smoke.test.mjs` 都断言这个字符串在。防止以后有人图省事把版本号删掉。
+所以插件里所有出现安装命令的地方都带 `@0.2.1-rc.5`，且 `test/preset.test.mjs` 与 `test/smoke.test.mjs` 都断言这个字符串在。防止以后有人图省事把版本号删掉。版本号还必须等于宿主版本（`dsh --version`）：团队包把 peer 钉死到具体版本，钉错 peer 对不上。
+
+下面两处实测数据（manifest 对照、tarball 对比）是在 rc.3 上做的，保留原值作为证据。现在钉的 rc.5 结构相同：同样没写 `engines.dsh`，peer 里同样只有 `cordis`，同样把 `dsh-*` peer 钉到具体版本。
 
 ### 兼容性预检为什么拦不住装错
 

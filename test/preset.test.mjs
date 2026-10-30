@@ -20,7 +20,7 @@ const patchPath = resolve(repoRoot, 'cordis.patch.yml')
 const fixturePath = resolve(repoRoot, 'test/fixtures/standard-preset.yml')
 
 /** 官方 profile 包的版本。prefix 与命令文本都要带，防止被改成裸包名。 */
-const TEAM_VERSION = '0.2.1-rc.3'
+const TEAM_VERSION = '0.2.1-rc.5'
 
 /** Team 运行时的三个包。它们属宿主平面，不该出现在本插件的 patch 里。 */
 const TEAM_RUNTIME_PACKAGES = [

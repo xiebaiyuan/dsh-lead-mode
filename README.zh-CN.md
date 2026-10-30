@@ -101,10 +101,10 @@
 Lead 模式靠 `spawn_teammate`、`send_message`、`team_task_*` 这些工具派活。它们由 dsh 官方的 Team 运行时提供，本插件不带。
 
 ```bash
-dsh plugin --profile <你的 profile 名> add @deepseek-ai/dsh-experimental-agent-team-profile@0.2.1-rc.3
+dsh plugin --profile <你的 profile 名> add @deepseek-ai/dsh-experimental-agent-team-profile@0.2.1-rc.5
 ```
 
-**必须带版本号。** 不带会装到 `latest` 上的 0.1.5-alpha.2，那是给 0.1.x 宿主用的，在 0.2.1 宿主上挂不上。`next` 指向的 0.2.1-rc.3 才对。装完重启 dsh。
+**必须带版本号。** 不带会装到 `latest` 上的 0.1.5-alpha.2，那是给 0.1.x 宿主用的，在 0.2.1 宿主上挂不上。`next` 指向的 0.2.1-rc.5 才对。版本号还要等于你的宿主版本（`dsh --version`）：团队包把 `dsh-*` 的 peer 钉死到具体版本，老 rc 装到新宿主上，peer 对不上。装完重启 dsh。
 
 不确定装没装？进 dsh 敲 `/lead-mode`，它会报依赖状态。
 
@@ -181,7 +181,7 @@ Lead 模式 skill 里也写了这个入口，所以派活时模型会直接让�
 
 | 包 | 版本要求 | 谁提供 | 缺了会怎样 |
 |---|---|---|---|
-| `@deepseek-ai/dsh-experimental-agent-team-profile` | `0.2.1-rc.3` | 用户显式安装 | 派不了活，`/lead-mode` 报 error，启动 warn |
+| `@deepseek-ai/dsh-experimental-agent-team-profile` | `0.2.1-rc.5` | 用户显式安装 | 派不了活，`/lead-mode` 报 error，启动 warn |
 | `@deepseek-ai/dsh` | `>=0.2.1-rc.2` | 宿主 | 装不上 |
 | `@deepseek-ai/cordis` | `^4.0.5` | 宿主 | 装不上 |
 | `@deepseek-ai/schemastery` | `^3.18.5` | 宿主 | 装不上 |
@@ -189,7 +189,7 @@ Lead 模式 skill 里也写了这个入口，所以派活时模型会直接让�
 | `@deepseek-ai/dsh-skill` | `>=0.2.1-rc.2` | 宿主 | skill 不注册，启动 warn |
 | `@deepseek-ai/dsh-commands` | `>=0.2.1-rc.2` | 宿主 | `/lead-mode` 不注册，启动 warn |
 
-目标宿主版本写在 `package.json` 的 `dshTarget` 字段：`0.2.1-rc.3`。
+目标宿主版本写在 `package.json` 的 `dshTarget` 字段：`0.2.1-rc.5`。
 
 ## 为什么安装命令要带版本号
 
@@ -198,8 +198,8 @@ Lead 模式 skill 里也写了这个入口，所以派活时模型会直接让�
 | dist-tag | 版本 | 配哪个宿主 |
 |---|---|---|
 | `latest` | 0.1.5-alpha.2 | 0.1.x |
-| `alpha` | 0.2.1-alpha.5 | 0.2.1 预发布线 |
-| `next` | 0.2.1-rc.3 | 0.2.1 |
+| `alpha` | 0.2.2-alpha.2 | 0.2.2 线，别和 0.2.1 宿主混用 |
+| `next` | 0.2.1-rc.5 | 0.2.1 |
 
 裸写包名，npm 解析 `latest`，装到 0.1.5-alpha.2。这个版本是给 0.1.x 宿主用的，在 0.2.1 宿主上挂不上。装完 dsh 里看不到 Team 工具，`/lead-mode` 还是报「未挂载」。
 
@@ -210,9 +210,9 @@ $ npm view @deepseek-ai/dsh-experimental-agent-team-profile version
 0.1.5-alpha.2
 ```
 
-所以本插件里所有出现安装命令的地方都带 `@0.2.1-rc.3`：persona prefix、`/lead-mode` 输出、启动 warn、SKILL.md。`test/preset.test.mjs` 与 `test/smoke.test.mjs` 都断言这个字符串在，防止以后被改回裸包名。
+所以本插件里所有出现安装命令的地方都带 `@0.2.1-rc.5`：persona prefix、`/lead-mode` 输出、启动 warn、SKILL.md。`test/preset.test.mjs` 与 `test/smoke.test.mjs` 都断言这个字符串在，防止以后被改回裸包名。
 
-要装 `alpha` 线的话自己换成 `@0.2.1-alpha.5`，别用裸名。
+`alpha` 现在指向 `0.2.2-alpha.2`，属于 0.2.2 线；0.2.1 宿主继续用钉死的 rc.5 版本。
 
 ## 与官方 standard 预设的差异
 

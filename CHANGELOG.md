@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.2
+
+修的是版本钉过期，不是功能。
+
+- **团队运行时从 `0.2.1-rc.3` 改钉 `0.2.1-rc.5`**。团队包把 `dsh-*` 的 peer 钉到具体版本，rc.3 的包在 rc.5 宿主上 peer 对不上。宿主升到 rc.5 后，照旧提示装 rc.3 会把 Team 运行时装成对不上的版本。改动覆盖 persona prefix、`/lead-mode` 输出、启动 warn、`SKILL.md`、两份 README、`docs/why.md`、两条测试常量。
+- **`dshTarget` 跟着改成 `0.2.1-rc.5`**，提示文案补一句「版本号要跟 `dsh --version` 的输出一致」，下次宿主升版至少知道该改哪。
+- **两份 README 的 dist-tag 数字更新**：`next` 现在指 `0.2.1-rc.5`；`alpha` 已经跳到 `0.2.2-alpha.2`，属于 0.2.2 线，不能和 0.2.1 宿主混用。
+- **`standard` 预设基线在 rc.5 上复核**：从 rc.5 的 app.asar 按同一字节串切出的块与 `test/fixtures/standard-preset.yml` 逐字节相同，预设没有漂移。
+- **补 `npm test` / `npm run check`**：以前只有 CI 直接调 node，仓库里没有 scripts 字段，`npm test` 会报缺脚本。
+- **release workflow 补门禁**：发布前跑命名清单校验与 patch 解析；加一步拒绝低于已发布 `latest` 的版本。
+
 ## 0.2.1
 
 README 补上定位与 `team-digest` 的说明。代码与 0.2.0 相同，只改文档。

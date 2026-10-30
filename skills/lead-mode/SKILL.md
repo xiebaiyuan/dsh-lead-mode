@@ -14,10 +14,10 @@ description: Lead 工作法。当你要拆活、派活给 teammate、用共享�
 没有就停下。只做一件事：让用户去开 dsh 官方 Agent Teams，命令是
 
 ```
-dsh plugin --profile <你的 profile 名> add @deepseek-ai/dsh-experimental-agent-team-profile@0.2.1-rc.3
+dsh plugin --profile <你的 profile 名> add @deepseek-ai/dsh-experimental-agent-team-profile@0.2.1-rc.5
 ```
 
-不带版本号会装到 0.1.5-alpha.2，和 0.2.1 宿主对不上。
+不带版本号会装到 0.1.5-alpha.2，和 0.2.1 宿主对不上。版本号要跟 `dsh --version` 的输出一致。
 
 不要自己硬干，也不要假装能派活。
 
