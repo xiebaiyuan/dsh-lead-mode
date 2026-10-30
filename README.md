@@ -2,20 +2,29 @@
 
 English | [中文](README.zh-CN.md)
 
-Adds a Lead mode to DSH. One preset, one skill, one self-check command, two reminders.
+Adds a Lead mode to DSH. One preset, two skills, one self-check command, two reminders.
+
+The official Team runtime ships tools: `spawn_teammate`, `send_message`, `team_task_*`. When to delegate, whom to delegate to, how to wait for a result, how to write the closing message, how to merge several members' output: none of that is in the tools. This plugin adds that layer. It does not replace the official Team mode; it sits on top of it.
 
 Once installed, the model works the way a Lead does: split the work, delegate it, accept the result. It delegates hands-on work instead of doing everything alone.
 
 ## What you get
 
-Four things. None of them touch dsh itself.
+Five things. None of them touch dsh itself.
 
 | Capability | Entry point | What you do |
 |---|---|---|
 | Lead mode preset | "Lead 模式" in the preset list | Switch to it |
 | Lead working method skill | `/skill lead-mode`; the model also loads it on its own | Nothing |
+| Team digest skill | `/skill team-digest`; the model decides at wrap-up whether to write one | Nothing |
 | Dependency self-check | `/lead-mode` | Run it when dependencies look wrong |
 | Two upfront reminders | Automatic | Nothing |
+
+Additive only. `cordis.patch.yml` holds exactly two `insert` rows: this plugin, and a new `lead-mode` preset. The official `standard` preset is untouched; the new one copies 21 of its rows field for field and swaps only the persona.
+
+It registers no tools, listens to no agent lifecycle events, and intercepts no requests. `lib/index.js` writes to two registries only: `skills` (two entries) and `commands` (one), plus a single warn at startup. Uninstall the plugin and those entries are gone; official behaviour goes back to what it was.
+
+The one place it can collide is a skill or command with the same name. If you already have `lead-mode` or `team-digest`, the host takes the first one it sees, warns, and ignores ours; a collision means we step aside.
 
 ### 1. The Lead mode preset
 
@@ -47,7 +56,20 @@ So the skill's default is: finish your turn after delegating and let the notific
 
 Tell the teammate to put the **deliverable in its closing message** — that message is what comes back to you with the notification.
 
-### 3. The dependency self-check command
+### 3. The team digest skill
+
+At wrap-up the team's output sits in N closing messages and N worklogs, with nothing merging them. This skill writes it into one `reports/<YYYY-MM-DD>-<effort>.md`.
+
+| Item | Rule |
+|---|---|
+| When | Before the final answer, when the effort had 2 or more members, or ran 2 or more rounds |
+| Where | `reports/<YYYY-MM-DD>-<effort>.md`, one path, written once at wrap-up |
+| Six blocks | 结论 / 谁干了什么 / 验收证据 / 偏离与未验证 / 死路与决策 / 未决与下一步 (conclusion, who did what, acceptance evidence, deviations and unverified, dead ends and decisions, open items and next steps) |
+| Source layers | Closing messages build the skeleton, worklogs add process detail, session logs as the fallback |
+
+The six headings are fixed Chinese strings; an empty block says 无. Take the layers in order and stop at the first one that is enough. Details are in the `team-digest` skill.
+
+### 4. The dependency self-check command
 
 `/lead-mode` reports the current dependency state.
 
@@ -59,9 +81,9 @@ Tell the teammate to put the **deliverable in its closing message** — that mes
 
 Everything in place returns success. Anything missing returns error. Nothing is skipped silently.
 
-### 4. Two upfront reminders
+### 5. Two upfront reminders
 
-This is the main reason the plugin exists: **when the session has no Team tools, it tells you to enable the official Agent Teams instead of letting the model work alone.**
+**When the session has no Team tools, it tells you to enable the official Agent Teams instead of letting the model work alone.**
 
 Two channels:
 
@@ -113,6 +135,14 @@ Three steps.
 **2. Run `/lead-mode` to check dependencies.** This command delegates nothing; it only reports state. When something is missing it prints the version-pinned install command.
 
 **3. Let the model work.** With the delegation tools in place, the model splits the work, delegates to teammates, and waits for all of them before wrapping up. Without them, its first move is to tell you to enable the Team runtime.
+
+## Using the skills without switching presets
+
+You do not have to touch your preset. Install the plugin, keep `standard` or whatever you already use, and run `/skill lead-mode` in any session to load the method; the model also loads it when it judges the task needs it.
+
+One thing is missing: the upfront reminder lives in the persona, so it appears only under the `lead-mode` preset. Run `/lead-mode` once before you start to check the dependencies; it prints the version-pinned install command when the Team runtime is absent.
+
+`team-digest` works the same way. It is not tied to a preset, any session can use it, and the model decides at wrap-up whether a digest is worth writing.
 
 ## Friendly link: dsh-context
 
@@ -199,15 +229,16 @@ The four classic subagent rows (`tool-subagent-control`, `tool-subagent-list-age
 
 `apply()` in `@deepseek-ai/dsh-experimental-tool-agent-team` listens on the global `agent/created` event and installs Team tools on every agent. It is a host-plane plugin; putting it in a preset would leak it into every session.
 
-So this plugin stays at: preset, skill, reminder. Whether the Team runtime is on is decided by the user through the official profile package.
+So this plugin stays at: preset, two skills, reminder. Whether the Team runtime is on is decided by the user through the official profile package.
 
 ## Layout
 
 ```
 package.json            package metadata; dsh.bundle.patch points at cordis.patch.yml
 cordis.patch.yml        two insert rows: this plugin and the lead-mode preset
-lib/index.js            host half: register the skill, register the command, startup check
+lib/index.js            host half: scan skills/, register each one, register the command, startup check
 skills/lead-mode/       the Lead working method
+skills/team-digest/     the team digest method
 dsh-plugin.naming.json  naming manifest
 test/                   behaviour assertions, zero dependencies
 ```

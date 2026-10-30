@@ -2,20 +2,29 @@
 
 中文 | [English](README.md)
 
-给 DSH 加一个 Lead 模式。一个预设、一个 skill、一个自检命令、两条前置提醒。
+给 DSH 加一个 Lead 模式。一个预设、两个 skill、一个自检命令、两条前置提醒。
+
+官方 Team 运行时只给工具：`spawn_teammate`、`send_message`、`team_task_*`。什么时候派活、派给谁、怎么等结果、收尾怎么写、多成员的产出怎么合并，这些方法它不管。本插件补的就是这一层。它不替代官方 Team 模式，是配套。
 
 装好后模型能按 Lead 的方式干活：拆活、派活、验收。动手的活尽量派出去。
 
 ## 提供的能力
 
-四样东西，都不碰 dsh 本体。
+五样东西，都不碰 dsh 本体。
 
 | 能力 | 入口 | 你要做什么 |
 |---|---|---|
 | Lead 模式预设 | 预设下拉里的「Lead 模式」 | 切过去 |
 | Lead 工作法 skill | `/skill lead-mode`，模型也会自己加载 | 不用管 |
+| 团队汇总 skill | `/skill team-digest`，模型收尾前自己判断写不写 | 不用管 |
 | 依赖自检 | `/lead-mode` | 依赖不对时敲一下 |
 | 两层前置提醒 | 自动 | 不用管 |
+
+只新增，不修改。`cordis.patch.yml` 全文只有两行 `insert`：一行本插件，一行新建的 `lead-mode` 预设。官方 `standard` 预设一个字没动，新预设的 21 行逐字段照抄它，只换 persona。
+
+不注册任何工具，不监听 agent 生命周期，不拦截任何请求。`lib/index.js` 只往两个注册表写：`skills`（两个 skill）与 `commands`（一个命令）；启动时另打一条 warn。卸载后这些条目全部消失，官方行为回到原样。
+
+唯一可能撞的地方是同名 skill 或命令。你已经装了 `lead-mode` 或 `team-digest` 时，宿主按先到先得处理，打一条 warn，忽略本插件那条；撞了也只是我们让位。
 
 ### 一、Lead 模式预设
 
@@ -47,7 +56,20 @@
 
 派活 prompt 里要要求 teammate **把交付物写进收尾那条消息**——那条消息会随通知回到你手上。
 
-### 三、依赖自检命令
+### 三、团队汇总 skill
+
+收尾时全队产出散在 N 条收尾消息和 N 份工作日志里，没人合并，过一周想回看就得重新查一遍。这个 skill 把它们合成一份 `reports/<YYYY-MM-DD>-<effort>.md`。
+
+| 项 | 规则 |
+|---|---|
+| 什么时候写 | 给最终答复前，本 effort 有 2 个以上成员，或跨 2 轮以上 |
+| 写到哪 | `reports/<YYYY-MM-DD>-<effort>.md`，单一路径，收尾一次成型 |
+| 六块骨架 | 结论 / 谁干了什么 / 验收证据 / 偏离与未验证 / 死路与决策 / 未决与下一步 |
+| 原料分层 | 收尾消息做骨架，工作日志补过程细节，会话日志兜底 |
+
+六块标题写死，某块没内容就写「无」。原料按顺序取，上层够用就不下钻。细节看 `team-digest` skill。
+
+### 四、依赖自检命令
 
 `/lead-mode` 报告当前依赖状态。
 
@@ -59,9 +81,9 @@
 
 依赖齐全返回 success，缺东西返回 error。不会静默跳过。
 
-### 四、两层前置提醒
+### 五、两层前置提醒
 
-这是本插件存在的主要理由：**本会话没有 Team 工具时，提醒你去开官方 Agent Teams，而不是让模型硬干。**
+**本会话没有 Team 工具时，提醒你去开官方 Agent Teams，而不是让模型硬干。**
 
 走两条路：
 
@@ -113,6 +135,14 @@ dsh plugin --profile <你的 profile 名> add https://github.com/xiebaiyuan/dsh-
 **2. 敲 `/lead-mode` 查依赖。** 这条命令不派活，只报状态。缺东西时它给出带版本号的安装命令。
 
 **3. 让模型干活。** 派活工具齐了，模型会自己拆活、派给 teammate、等齐再收尾。工具不齐，它第一句就是让你去开 Team 运行时。
+
+## 只用 skill，不换预设
+
+预设不动也能用。插件装好，预设保持 `standard` 或你自己的，任何会话敲 `/skill lead-mode` 就加载那套方法；模型判断任务需要时也会自己加载。
+
+少了一样东西：persona 里那段前置提醒只在 `lead-mode` 预设里，不切过去就看不到。所以第一次先敲 `/lead-mode` 看依赖，缺 Team 运行时会给出带版本号的安装命令。
+
+`team-digest` 同理。它不绑预设，任何会话可用，收尾时模型自己判断要不要写汇总。
 
 ## 友链：dsh-context
 
@@ -199,15 +229,16 @@ classic subagent 四行（`tool-subagent-control`、`tool-subagent-list-agents`�
 
 `@deepseek-ai/dsh-experimental-tool-agent-team` 的 `apply()` 监听全局 `agent/created`，给每一个 agent 装 Team 工具。它是 host 平面的插件，放进预设会漏到所有会话。
 
-所以本插件的定位是：预设 + skill + 提醒。开不开 Team 运行时，用户用官方 profile 包决定。
+所以本插件的定位是：预设 + 两个 skill + 提醒。开不开 Team 运行时，用户用官方 profile 包决定。
 
 ## 目录
 
 ```
 package.json          包元数据，dsh.bundle.patch 指向 cordis.patch.yml
 cordis.patch.yml      两行 insert：本插件 + lead-mode 预设
-lib/index.js          host 半边：注册 skill、注册命令、启动自检
+lib/index.js          host 半边：扫 skills/ 逐个注册、注册命令、启动自检
 skills/lead-mode/     Lead 工作法正文
+skills/team-digest/   团队汇总正文
 dsh-plugin.naming.json  命名清单
 test/                 行为断言，零依赖
 ```
