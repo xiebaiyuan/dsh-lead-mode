@@ -101,10 +101,10 @@ The model will not pretend it can delegate, and it will not pass `subagent` off 
 Lead mode delegates through `spawn_teammate`, `send_message`, and `team_task_*`. Those come from the official dsh Team runtime, which this plugin does not ship.
 
 ```bash
-dsh plugin --profile <your profile name> add @deepseek-ai/dsh-experimental-agent-team-profile@0.2.1-rc.5
+dsh plugin --profile <your profile name> add @deepseek-ai/dsh-experimental-agent-team-profile@0.2.2-rc.1
 ```
 
-**The version pin is required.** Without it npm resolves `latest`, which is 0.1.5-alpha.2 — built for 0.1.x hosts and it will not mount on a 0.2.1 host. `next` points at 0.2.1-rc.5, which is the correct one. The pin also has to equal your host version (`dsh --version`): the team packages pin exact `dsh-*` peers, so an older rc installs a peer set the newer host does not satisfy. Restart dsh afterwards.
+**The version pin is required.** Without it npm resolves `latest`, which is 0.1.5-alpha.2 — built for 0.1.x hosts and it will not mount on a 0.2.2 host. `next` points at 0.2.2-rc.1, which is the correct one. The pin also has to equal your host version (`dsh --version`): the team packages pin exact `dsh-*` peers, so an older rc installs a peer set the newer host does not satisfy. Restart dsh afterwards.
 
 Not sure whether it is installed? Run `/lead-mode` in dsh; it reports dependency state.
 
@@ -181,15 +181,15 @@ This plugin ships none of the packages below. The host or an official bundle pro
 
 | Package | Requirement | Provided by | When missing |
 |---|---|---|---|
-| `@deepseek-ai/dsh-experimental-agent-team-profile` | `0.2.1-rc.5` | You install it explicitly | Cannot delegate; `/lead-mode` returns error; startup warn |
-| `@deepseek-ai/dsh` | `>=0.2.1-rc.2` | Host | Will not install |
+| `@deepseek-ai/dsh-experimental-agent-team-profile` | `0.2.2-rc.1` | You install it explicitly | Cannot delegate; `/lead-mode` returns error; startup warn |
+| `@deepseek-ai/dsh` | `>=0.2.2-rc.1` | Host | Will not install |
 | `@deepseek-ai/cordis` | `^4.0.5` | Host | Will not install |
 | `@deepseek-ai/schemastery` | `^3.18.5` | Host | Will not install |
-| `@deepseek-ai/dsh-agent-preset-registry` | `>=0.2.1-rc.2` | Host | Preset row does not take effect; `/lead-mode` reports unknown |
-| `@deepseek-ai/dsh-skill` | `>=0.2.1-rc.2` | Host | Skill not registered; startup warn |
-| `@deepseek-ai/dsh-commands` | `>=0.2.1-rc.2` | Host | `/lead-mode` not registered; startup warn |
+| `@deepseek-ai/dsh-agent-preset-registry` | `>=0.2.2-rc.1` | Host | Preset row does not take effect; `/lead-mode` reports unknown |
+| `@deepseek-ai/dsh-skill` | `>=0.2.2-rc.1` | Host | Skill not registered; startup warn |
+| `@deepseek-ai/dsh-commands` | `>=0.2.2-rc.1` | Host | `/lead-mode` not registered; startup warn |
 
-The target host version is `dshTarget` in `package.json`: `0.2.1-rc.5`.
+The target host version is `dshTarget` in `package.json`: `0.2.2-rc.1`.
 
 ## Why the install command pins a version
 
@@ -198,10 +198,10 @@ The target host version is `dshTarget` in `package.json`: `0.2.1-rc.5`.
 | dist-tag | Version | Host it fits |
 |---|---|---|
 | `latest` | 0.1.5-alpha.2 | 0.1.x |
-| `alpha` | 0.2.2-alpha.2 | the 0.2.2 line — do not mix it with a 0.2.1 host |
-| `next` | 0.2.1-rc.5 | 0.2.1 |
+| `alpha` | 0.2.2-alpha.3 | an earlier preview of the 0.2.2 line |
+| `next` | 0.2.2-rc.1 | 0.2.2 |
 
-Bare package name resolves `latest`, which installs 0.1.5-alpha.2. That build targets 0.1.x hosts and does not mount on a 0.2.1 host. After installing it, no Team tools appear in dsh and `/lead-mode` still reports "not mounted".
+Bare package name resolves `latest`, which installs 0.1.5-alpha.2. That build targets 0.1.x hosts and does not mount on a 0.2.2 host. After installing it, no Team tools appear in dsh and `/lead-mode` still reports "not mounted".
 
 Measured on 2026-10-26 with npm 11.20.0:
 
@@ -210,9 +210,9 @@ $ npm view @deepseek-ai/dsh-experimental-agent-team-profile version
 0.1.5-alpha.2
 ```
 
-So every install command in this plugin carries `@0.2.1-rc.5`: the persona prefix, the `/lead-mode` output, the startup warn, and SKILL.md. `test/preset.test.mjs` and `test/smoke.test.mjs` both assert that string, so a future edit cannot quietly drop back to the bare name.
+So every install command in this plugin carries `@0.2.2-rc.1`: the persona prefix, the `/lead-mode` output, the startup warn, and SKILL.md. `test/preset.test.mjs` and `test/smoke.test.mjs` both assert that string, so a future edit cannot quietly drop back to the bare name.
 
-`alpha` now points at `0.2.2-alpha.2`, which belongs to the 0.2.2 line; on a 0.2.1 host keep using the pinned rc.5 build.
+`next` now points at `0.2.2-rc.1`, the build this plugin pins; `alpha` (`0.2.2-alpha.3`) is an earlier preview of the same line.
 
 ## Difference from the official standard preset
 
@@ -223,7 +223,7 @@ One place only: the persona. The other 21 rows are copied field for field from `
 | persona prefix | `You are a coding agent powered by the {{model}} model.` | Chinese Lead persona plus an Agent Teams precondition check |
 | other 21 rows | — | identical to standard, field for field |
 
-The four classic subagent rows (`tool-subagent-control`, `tool-subagent-list-agents`, `tool-subagent`, `tool-subagent-fork`) stay enabled. Nothing is disabled. The Team tools are a host decision, not a preset decision.
+The three classic subagent rows (`tool-subagent-control`, `tool-subagent`, `tool-subagent-fork`) stay enabled. `list_agents` now comes from `tool-subagent-control` itself, so there is no separate row for it. Nothing is disabled. The Team tools are a host decision, not a preset decision.
 
 ## Why the preset does not carry the Team runtime
 

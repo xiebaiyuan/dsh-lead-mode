@@ -14,10 +14,10 @@ description: Lead 工作法。当你要拆活、派活给 teammate、用共享�
 没有就停下。只做一件事：让用户去开 dsh 官方 Agent Teams，命令是
 
 ```
-dsh plugin --profile <你的 profile 名> add @deepseek-ai/dsh-experimental-agent-team-profile@0.2.1-rc.5
+dsh plugin --profile <你的 profile 名> add @deepseek-ai/dsh-experimental-agent-team-profile@0.2.2-rc.1
 ```
 
-不带版本号会装到 0.1.5-alpha.2，和 0.2.1 宿主对不上。版本号要跟 `dsh --version` 的输出一致。
+不带版本号会装到 0.1.5-alpha.2，和 0.2.2 宿主对不上。版本号要跟 `dsh --version` 的输出一致。
 
 不要自己硬干，也不要假装能派活。
 
@@ -204,7 +204,7 @@ teammate 继承你（Lead）在 spawn 那一刻的 provider 和 model。想换�
 | 整队换模型 | 切 Lead 自己的模型。之后新 spawn 的 teammate 跟着变 |
 | 按任务挑模型 | 用不了 team，改用经典 `subagent` 工具 |
 
-经典 `subagent` 支持 `provider`、`model`、`reasoning_effort`、`agent_preset` 四个参数（本插件预设已开 `modelSelectionSettings`）。
+经典 `subagent` 支持 `provider`、`model`、`reasoning_effort`、`agent_preset` 四个参数（本插件预设已开 `modelSelection` 与 `modelDiscovery`）。
 
 代价说清楚：经典 `subagent` 是一次性子代理，没有共享任务板，没有持久身份。要用团队就得接受统一模型。
 

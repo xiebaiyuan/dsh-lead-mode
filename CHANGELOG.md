@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.3
+
+适配宿主 0.2.2-rc.1。修的是升级后 Lead 模式面板显示「加载失败」。
+
+- **根因**：0.2.2 删掉了 `@deepseek-ai/dsh-tool-subagent-control` 的 `/list-agents` 子路径导出，`list_agents` 并进主入口的 `apply()`。预设还照抄着 0.2.1 的 `tool-subagent-list-agents` 行，import 解析不到，那行 fiber 停在 `never started`，整个 `preset-lead-mode` 跟着加载失败。上游 `v0.2.1-rc.1/subagent-control-tools` 升级指南写明这三件事。
+- **删掉 `tool-subagent-list-agents` 行**。`list_agents` 现在由 `tool-subagent-control` 自己注册，delegation 组内子行从 6 行降到 5 行。
+- **`modelSelectionSettings: true` 换成 `modelSelection: true` + `modelDiscovery: true`**。上游把路由选择与发现拆成两个开关，旧键名不再读。工具参数名没变，仍是 `provider`、`model`、`reasoning_effort`、`agent_preset`。
+- **`tool-fs` 补 `applyPatch: false`，`tool-plugin-manager` 的 `disabled` 改成 `!!js "!ctx.get('profileContext')"`**。这两处是 standard 预设本次的改动，逐字段对齐的测试要求跟着改。
+- **基线重切**：`test/fixtures/standard-preset.yml` 换成 0.2.2-rc.1 的 app.asar 切块。块 md5 `34ddbab4cf5f76afbf055b61c8501659`，130 行，22 个顶层行。
+- **版本跟着走**：`dshTarget` 与 `engines.dsh` 改 `0.2.2-rc.1`，团队运行时钉 `@deepseek-ai/dsh-experimental-agent-team-profile@0.2.2-rc.1`（正好是 npm 的 `next`）。persona prefix、`/lead-mode` 输出、启动 warn、`SKILL.md`、两份 README、`docs/why.md` 一起改。`0.2.1` 宿主请继续用 0.2.2 那版。
+- **验证**：`npm test` 34 条全绿，`npm run check` 通过。
+
 ## 0.2.2
 
 修的是版本钉过期，不是功能。

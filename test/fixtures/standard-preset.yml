@@ -1,20 +1,19 @@
 # 官方 standard 预设的逐字节副本，用作对比基线。
 #
-# 来源：DeepSeek Harness 0.2.1-rc.3 的 app.asar
-#
-# 2026-10-29 复核：在 0.2.1-rc.5 的 app.asar 里按同一字节串定位，切出的块与本文件
-# 逐字节相同（含末尾两行 disabled: true）。预设没有漂移，本基线继续用。
+# 来源：DeepSeek Harness 0.2.2-rc.1 的 app.asar
 #   /Applications/DeepSeek Harness.app/Contents/Resources/app.asar
+#   路径：dsh/node_modules/@deepseek-ai/dsh-web-app/presets/standard.patch.yml
 #
-# 切法（2026-10-26）：
-#   1. 在 app.asar 里定位字节串 "# Agent preset standard: one"，得偏移 104086585
-#   2. 从该偏移取到第一个 "disabled: true\n" 结束（含该换行），得 6799 字节 / 128 行
-#   3. 校验：解析后 insert[0].config.plugins 有 22 行；末行是
-#      {id: tool-plugin-market, disabled: true}，disabled 是布尔 true 不是字符串
-#   4. 交叉验证：本仓库 test/support/yaml-lite.mjs 与 js-yaml + !!js 自定义 tag
-#      分别解析本文件，JSON.stringify 输出逐字节相同
+# 2026-11-06 复核：0.2.2-rc.1 把 list_agents 并进 tool-subagent-control 主入口，
+# 删掉 /list-agents 子路径导出。本基线随之少一行 tool-subagent-list-agents，
+# tool-subagent 的 modelSelectionSettings 拆成 modelSelection + modelDiscovery，
+# tool-fs 显式写 applyPatch: false，tool-plugin-manager 的 disabled 改成表达式。
+# 顶层 plugins 仍是 22 行；delegation 组内子行从 6 行降到 5 行。
 #
-# 本文件 md5: 81d8a9ab05923d2a402b308ab1259a56
+# 切法：整个文件即块。从 "# Agent preset standard: one" 到第一个 "disabled: true\n"
+# 结束（含该换行）。块内出现 disabled: true 的只有末行 tool-plugin-market。
+#
+# 块 md5: 34ddbab4cf5f76afbf055b61c8501659
 #
 # 注意：不要用 /tmp/wa/standard.patch.yml 作基线。那份首字节是垃圾字符 "e"，
 # 末行被截成 "disabled: tru"（少了 e，解析成字符串 "tru" 而非布尔 true）。
@@ -47,6 +46,9 @@
             disabled: !!js process.platform !== 'win32'
           - id: tool-fs
             name: '@deepseek-ai/dsh-tool-fs'
+            config:
+              # Set false to drop the apply_patch tool beside edit.
+              applyPatch: false
           - id: tool-fs-search
             name: '@deepseek-ai/dsh-tool-fs-search'
             config:
@@ -109,14 +111,13 @@
             config:
               - id: tool-subagent-control
                 name: '@deepseek-ai/dsh-tool-subagent-control'
-              - id: tool-subagent-list-agents
-                name: '@deepseek-ai/dsh-tool-subagent-control/list-agents'
               - id: tool-subagent
                 name: '@deepseek-ai/dsh-tool-subagent'
                 config:
                   provider: spawn
                   toolName: subagent
-                  modelSelectionSettings: true
+                  modelSelection: true
+                  modelDiscovery: true
               - id: tool-subagent-fork
                 name: '@deepseek-ai/dsh-tool-subagent'
                 config:
@@ -143,7 +144,7 @@
             name: '@deepseek-ai/dsh-tool-present'
           - id: tool-plugin-manager
             name: '@deepseek-ai/dsh-plugin-manager/tools'
-            disabled: true
+            disabled: !!js "!ctx.get('profileContext')"
           - id: tool-plugin-market
             name: '@deepseek-ai/dsh-plugin-market/tools'
             disabled: true
