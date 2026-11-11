@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.4
+
+兼容新一代 Agent Teams 定义（尚未发版的 subagent 式 teammate）：teammate 从 `spawn_teammate` 换成 `subagent`。老一代宿主（≤ 0.2.2-rc.1，工具里还有 `spawn_teammate`）的行为不变：装包命令、`/lead-mode` 老分支输出、skill 老分支步骤语义都不动，只修了一处版本说明的笔误。
+
+- **两代定义分开写**。老一代的 teammate 由 `spawn_teammate` 建，是持久命名的成员，`send_message` 用 `target`，`wait_agent` 属 team 工具、等成员状态与任务变更、没人能产出变更时立刻回 `noProgress`。新一代的 teammate 由 `subagent` 建（要继承历史用 `subagent_fork`），成员身份是 Session id 加一个从根算起的 agent 名（根固定叫 `lead`），`send_message` 与 `interrupt_agent` 改用 `agent` 参数，`wait_agent` 搬进 subagent 控制工具，只等调用者自己的收件箱，只回 `{ timedOut }`。
+- **任务变更不再指望唤醒**。新一代里 task 变更不唤醒任何等待、也不启动空闲成员；要成员处理任务就得 `send_message` 叫它。老一代仍是「task 变更只唤醒正在 `wait_agent` 的调用方」。
+- **成员可以单独挑模型**。新一代的 `subagent` 接受 `provider`、`model`、`reasoning_effort`（`standard` 预设已开 `modelSelection`），`agent_preset` 可指定预设。老的「teammate 继承 Lead、不能单独指定模型」只对老一代成立。
+- **任务板字段**。四个 `team_task_*` 工具名字不变，`claim` 照旧要带当前 `revision`；新一代 owner 可以填成员名或 Session id，判据字段是 `ownerId` 而不是 `ownerName`。
+- **新宿主不要再装 profile 包**。`@deepseek-ai/dsh-experimental-agent-team-profile` 已进 `RETIRED_BUNDLES`，app-boot 会把它从 profile 里删掉，装了也白装。新一代的 Team 插件随 base 与 web 组合下发，按会话在「模型与推理等级」菜单里打开「使用智能体团队」。装包命令只留给老一代宿主，版本号要跟 `dsh --version` 的输出一致。
+- **判定按工具清单，不按版本号**。新一代只在 master 上，没有版本号可指，`@deepseek-ai/dsh-tool-agent-team` 在 npm 上也不存在，所以别用版本边界去判代际。有 `spawn_teammate` 是老一代；没有它但有 `subagent` 和 `team_task_*` 是新一代；`team_task_*` 一个都没有是 Team 没开，先提示会话开关，确认是老宿主才给装包命令。
+- **修一处版本说明的笔误**。`VERSION_NOTE` 里写的是「不带版本号会装到 0.1.5-alpha.2，和 0.2.1 宿主对不上」，这条线是 0.2.2，改成「和 0.2.2 宿主对不上」。
+- **文档**。两份 README 各增一节「两代 Agent Teams 定义 / Two generations of Agent Teams」，十一行对照：定义位置、建成员、成员身份、发消息、打断、名册、等待语义、任务板 owner、开启方式、成员模型、成员上限；另加一张「怎么知道自己属于哪一代」的判定表，以及老一代装包、新一代开会话开关两段分开的开启步骤。`docs/why.md` 只修正依赖老 API 的断言，不扩写。
+- **版本**。`package.json` 到 `0.2.4`；`engines.dsh` 与 `dshTarget` 不动，仍是 `>=0.2.2-rc.1` 与 `0.2.2-rc.1`。
+
 ## 0.2.3
 
 适配宿主 0.2.2-rc.1。修的是升级后 Lead 模式面板显示「加载失败」。

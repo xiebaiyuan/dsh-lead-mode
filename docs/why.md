@@ -6,11 +6,11 @@ DSH 有两套派活的工具。
 
 | | classic subagent | Agent Teams |
 |---|---|---|
-| 工具名 | `subagent`、`subagent_fork` | `spawn_teammate`、`send_message`、`team_task_*` |
+| 工具名 | `subagent`、`subagent_fork` | 老一代：`spawn_teammate`、`send_message`、`team_task_*`；新一代：`subagent`、`send_message`、`team_task_*` |
 | 子 agent 之间 | 互相看不见 | 共享任务板，能互相发消息 |
 | 谁派活 | 父 agent 一次派一个，拿回结果就结束 | Lead 常驻，teammate 也常驻，可以多轮 |
 | 能不能中途改主意 | 不能，子 agent 跑完才回来 | 能，`send_message` 在下一个 step 边界改方向 |
-| 默认装不装 | 装，官方 `standard` 预设自带 | 不装，要单独加 profile 包 |
+| 默认装不装 | 装，官方 `standard` 预设自带 | 不装。老一代要单独加 profile 包；新一代随 base 与 web 组合下发，按会话打开开关 |
 
 用 `standard` 预设开会话，模型手里只有 `subagent`。想干「三个人并行改三个模块、中途还能调整」这种活，模型只能拿 `subagent` 凑：派三个子 agent，等它们各自跑完，中间插不进话，也看不到彼此进度。
 
@@ -18,13 +18,19 @@ DSH 有两套派活的工具。
 
 ## 问题二：提醒没地方放
 
-官方 Team 运行时由 profile 包提供：
+官方 Team 运行时在两代宿主上来源不同。
+
+老一代（≤ 0.2.2-rc.1）由 profile 包提供，要用户显式安装：
 
 ```
 dsh plugin --profile <你的 profile 名> add @deepseek-ai/dsh-experimental-agent-team-profile@0.2.2-rc.1
 ```
 
-用户不知道这条命令。模型也不知道，因为它拿到的 system prompt 里没有任何一句说「本会话缺 Team 工具，你应该让用户去开」。
+`0.2.2-rc.1` 是当前宿主线，按 `dsh --version` 的输出替换。
+
+新一代不走这个包。Team 插件随 base 与 web 组合下发，只是会话里默认不开，开关在「模型与推理等级」菜单里，叫「使用智能体团队」。`@deepseek-ai/dsh-experimental-agent-team-profile` 已进 `RETIRED_BUNDLES`，新宿主上不要装。
+
+用户不知道这一步。模型也不知道，因为它拿到的 system prompt 里没有任何一句说「本会话缺 Team 工具，你应该让用户去开」。
 
 于是常见结果是：用户说「你找几个人并行干」，模型硬着头皮用 `subagent` 顶替，或者干脆自己串行做完。两种都不对。
 
@@ -36,7 +42,7 @@ dsh plugin --profile <你的 profile 名> add @deepseek-ai/dsh-experimental-agen
 
 `cordis.patch.yml` 里插一行 `@deepseek-ai/dsh-agent-preset`。它的 `config.plugins` 逐行照抄官方 `standard` 预设的 22 个插件行，只改一处：persona 的 prefix 换成 Lead 人设。
 
-prefix 开头就是那段提醒：开工先查有没有 `spawn_teammate`、`send_message`、`team_task_create`、`team_task_update`。没有就停下，让用户去开官方 Team 模式，给出带版本号的安装命令。
+prefix 开头就是那段提醒：开工先查工具清单。有 `spawn_teammate` 是老一代；没有它、但有 `subagent` 和 `team_task_*` 是新一代；`team_task_*` 一个都没有就是 Team 没开。没开时停下，让用户去开官方 Team 模式：新宿主先开会话开关，确认是老一代宿主才给带版本号的安装命令。
 
 这段 prefix 进 system prompt 的 `DEPLOYMENT_PERSONA_PREFIX` 段，模型一定看得见。
 
@@ -50,11 +56,11 @@ prefix 开头就是那段提醒：开工先查有没有 `spawn_teammate`、`send
 
 ### 3. 一个 `/lead-mode` 斜杠命令
 
-用户敲 `/lead-mode`，返回当前依赖状态：Team 运行时挂没挂、`lead-mode` 预设注册没注册、缺什么、怎么装。
+用户敲 `/lead-mode`，返回当前依赖状态：Team 运行时挂没挂、`lead-mode` 预设注册没注册、缺什么、下一步怎么开。
 
-装了就能用，没装就告诉你怎么装。不用翻文档。
+开了就能用，没开就告诉你怎么开。不用翻文档。
 
-## 为什么安装命令要带版本号
+## 为什么老一代的安装命令要带版本号
 
 `@deepseek-ai/dsh-experimental-agent-team-profile` 在 npm 上有三个 dist-tag：
 
@@ -66,7 +72,7 @@ prefix 开头就是那段提醒：开工先查有没有 `spawn_teammate`、`send
 
 裸写包名安装，npm 解析 `latest`，装到 0.1.5-alpha.2。这个版本和 0.2.2 宿主对不上，装完不挂。
 
-所以插件里所有出现安装命令的地方都带 `@0.2.2-rc.1`，且 `test/preset.test.mjs` 与 `test/smoke.test.mjs` 都断言这个字符串在。防止以后有人图省事把版本号删掉。版本号还必须等于宿主版本（`dsh --version`）：团队包把 peer 钉死到具体版本，钉错 peer 对不上。
+所以插件里所有出现安装命令的地方都带 `@0.2.2-rc.1`，且 `test/preset.test.mjs` 与 `test/smoke.test.mjs` 都断言这个字符串在。防止以后有人图省事把版本号删掉。版本号还必须等于宿主版本（`dsh --version`）：团队包把 peer 钉死到具体版本，钉错 peer 对不上。新一代宿主不装这个包，这一节对它不适用。
 
 下面两处实测数据（manifest 对照、tarball 对比）是在 rc.3 上做的，保留原值作为证据。现在钉的 rc.1 结构相同：同样没写 `engines.dsh`，peer 里同样只有 `cordis`，同样把 `dsh-*` peer 钉到具体版本。
 
@@ -123,7 +129,7 @@ dsh 在装插件前会做一次兼容性预检。看上去这该拦住装错版�
 
 塞进预设的结果是双挂：宿主已经有一份，预设再挂一份，工具注册冲突。用 `!!js` 守卫判断「已存在就禁用」能绕开，但这是在跟宿主的装配方式较劲，不是解决问题。
 
-所以定位收窄：本插件只负责预设、skill、提醒三件事。Team 运行时由官方 profile 包提供，用户显式装。插件负责让用户和模型都知道该装、怎么装。
+所以定位收窄：本插件只负责预设、skill、提醒三件事。Team 运行时：老一代由官方 profile 包提供、用户显式装，新一代随 base 与 web 下发、按会话开开关。插件负责让用户和模型都知道该怎么开。
 
 ## 和手写 patch 比
 
@@ -144,5 +150,5 @@ dsh 在装插件前会做一次兼容性预检。看上去这该拦住装错版�
 ## 边界
 
 - 不改宿主行为。只插入预设行、注册 skill 和命令。
-- 不代开 Team 模式。安装官方 profile 包是用户显式动作。
+- 不代开 Team 模式。老一代装 profile 包、新一代开会话开关，都是用户显式动作。
 - 缺服务只警告，不阻断。`skills` / `commands` / `agentTeams` 任一缺失时插件照常挂载，只丢掉对应的面。

@@ -4,7 +4,7 @@
 
 给 DSH 加一个 Lead 模式。一个预设、两个 skill、一个自检命令、两条前置提醒。
 
-官方 Team 运行时只给工具：`spawn_teammate`、`send_message`、`team_task_*`。什么时候派活、派给谁、怎么等结果、收尾怎么写、多成员的产出怎么合并，这些方法它不管。本插件补的就是这一层。它不替代官方 Team 模式，是配套。
+官方 Team 运行时只给工具。老一代是 `spawn_teammate`、`send_message`、`team_task_*`；新一代改成用 `subagent` 建成员，`send_message`、`team_task_*`、`wait_agent` 从 subagent 体系下发。什么时候派活、派给谁、怎么等结果、收尾怎么写、多成员的产出怎么合并，这些方法它不管。本插件补的就是这一层。它不替代官方 Team 模式，是配套。
 
 装好后模型能按 Lead 的方式干活：拆活、派活、验收。动手的活尽量派出去。
 
@@ -43,14 +43,14 @@
 - 模型判断需要时自己加载（skill 标记为模型可调用）
 - 你直接敲 `/skill lead-mode`
 
-覆盖这些内容：开工前对齐目标、派活必须自包含、写作用域不重叠、共享任务的 list/get/claim/complete 流程、怎么等 teammate、teammate 的模型从哪来、最终验证自己做。
+覆盖这些内容：开工前对齐目标、派活必须自包含、写作用域不重叠、共享任务的 list/get/claim/complete 流程、怎么等 teammate（两代答案不同，见「两代 Agent Teams 定义」）、teammate 的模型从哪来、最终验证自己做。
 
 其中两条是读源码才确认的，容易踩：
 
 | 事实 | 为什么重要 |
 |---|---|
 | teammate 收工会自动通知你，通知里带它收尾那条消息 | 派完活结束回合就够，不用盯着等 |
-| task 变更不会唤醒空闲的 Lead | 别指望「它把 task 标 complete 了我就知道了」，那条路只唤醒正在 `wait_agent` 的调用方 |
+| task 变更不会唤醒空闲的 Lead | 别指望「它把 task 标 complete 了我就知道了」。老一代只唤醒正在 `wait_agent` 的调用方；新一代谁都不唤醒，`wait_agent` 只等自己的收件箱 |
 
 所以 skill 的默认建议是：派完活就结束回合等通知（用户立刻看到进展），只有本回合内就必须拿到结果时才用一次 `wait_agent`。不要 `wait_agent` 套循环，也不要反复 `list_agents` 轮询。
 
@@ -75,9 +75,9 @@
 
 | 报什么 | 内容 |
 |---|---|
-| Team 运行时 | 挂没挂；挂了报 `maxMembers` |
+| Team 运行时 | 挂没挂；老一代挂了再报 `maxMembers` |
 | lead-mode 预设 | 注册没注册 |
-| 缺东西时 | 给带版本号的安装命令 |
+| 缺东西时 | 按代际给下一步：新一代先提示会话开关，老一代给带版本号的安装命令 |
 
 依赖齐全返回 success，缺东西返回 error。不会静默跳过。
 
@@ -92,21 +92,59 @@
 | persona 第一段 | 模型 | 一切到 Lead 模式就在。system prompt 的第 0 段 |
 | 启动 warn 与 `/lead-mode` | 用户 | 检测到 Team 运行时缺失时 |
 
-两条讲同一件事：没有 `spawn_teammate` 这套工具就先停下来，告诉你装什么、怎么装。
+两条讲同一件事：Team 工具不齐就先停下来，告诉你下一步怎么开。新宿主去打开会话开关，老宿主去装 profile 包。
 
-模型不会假装能派活，也不会拿 `subagent` 顶替 teammate。
+老一代宿主上，模型不会假装能派活，也不会拿 `subagent` 顶替 teammate；新一代的 teammate 本来就是 `subagent` 建的，这条不适用。
 
-## 装之前先开 Team 运行时
+## 两代 Agent Teams 定义
 
-Lead 模式靠 `spawn_teammate`、`send_message`、`team_task_*` 这些工具派活。它们由 dsh 官方的 Team 运行时提供，本插件不带。
+Lead 模式靠 dsh 官方的 Team 运行时派活，本插件不带它。这套运行时在两代宿主上是两套 API：老一代是已发布的 0.2.2-rc.1；新一代只在本地 master 上，还没发版，没有版本号可指。
+
+| 维度 | 老一代：已发布宿主 0.2.2-rc.1 | 新一代：本地 master，未发布 |
+|---|---|---|
+| 定义在哪 | 桌面端 asar 内的 `@deepseek-ai/dsh-experimental-tool-agent-team@0.2.2-rc.1` | `packages/team/tool-agent-team` 与 `packages/subagent/*` |
+| 建成员 | `spawn_teammate({ name, description, prompt, context })` | `subagent({ name?, description, prompt, cwd?, agent_preset?, provider?, model?, reasoning_effort? })`；要继承历史用 `subagent_fork` |
+| 成员身份 | 持久命名的成员，带 `target` | Session id 加一个 agent 名；名字是从根算起的路径（如 `reviewer/checker`），根固定叫 `lead` |
+| 发消息 | `send_message({ target, message })` | `send_message({ agent, message })`，返回 `{ messageId }` |
+| 打断 | `interrupt_agent({ target })` | `interrupt_agent({ agent })`，返回 `{ accepted }` |
+| 名册 | `list_agents({})` 列 Lead 加成员 | `list_agents({})` 列整棵树，每行 `{ name, status, description? }`，状态多了 `corrupt`、`unsupported`、`unavailable` |
+| 等待语义 | team 作用域：等成员状态、消息、任务变更；没人能产出变更时立刻回 `noProgress` | 普通 subagent 控制工具：等调用者自己的下一条输入（成员消息、完成通知、用户插话），只回 `{ timedOut }`，没有 `noProgress` |
+| 任务板 owner | `team_task_*` 四个工具，owner 填成员名 | 同样四个工具，owner 填成员名或 Session id；判据字段从 `ownerName` 变成 `ownerId` |
+| 开启方式 | 装 profile 包 `@deepseek-ai/dsh-experimental-agent-team-profile@0.2.2-rc.1` | 不要装这个包：它已进 `RETIRED_BUNDLES`，app-boot 会把 profile 里的它删掉。Team 插件随 base 与 web 组合下发，按会话开：模型与推理等级菜单里的「使用智能体团队」 |
+| 成员模型 | 继承 Lead，`spawn_teammate` 没有模型参数 | `subagent` 有 `provider`、`model`、`reasoning_effort`（`standard` 预设已开 `modelSelection`）；`agent_preset` 可指定预设 |
+| 成员上限 | `agentTeams.config.maxMembers` | 配置键 `maxMembers` 已被拒绝，读不到上限 |
+
+新一代删掉了 `spawn_teammate`；`wait_agent` 从 team 工具搬到 subagent 控制工具，语义换成「等自己的收件箱」。
+
+### 怎么知道自己属于哪一代
+
+不按版本号认，按工具清单认。
+
+| 你看到的 | 属于 | 下一步 |
+|---|---|---|
+| 有 `spawn_teammate` | 老一代 | 装 profile 包，见下一节 |
+| 没有 `spawn_teammate`，但有 `subagent` 和 `team_task_*` | 新一代 | 不用装，确认会话开关已开 |
+| `team_task_*` 一个都没有 | Team 没开 | 先找会话开关；确认是老一代宿主没有这个开关，才去装包 |
+
+顺序不能反。新一代宿主上让人去装 profile 包是错的：那个包会被 app-boot 移除，装了也白装。
+
+### 老一代：装 profile 包
 
 ```bash
 dsh plugin --profile <你的 profile 名> add @deepseek-ai/dsh-experimental-agent-team-profile@0.2.2-rc.1
 ```
 
-**必须带版本号。** 不带会装到 `latest` 上的 0.1.5-alpha.2，那是给 0.1.x 宿主用的，在 0.2.2 宿主上挂不上。`next` 指向的 0.2.2-rc.1 才对。版本号还要等于你的宿主版本（`dsh --version`）：团队包把 `dsh-*` 的 peer 钉死到具体版本，老 rc 装到新宿主上，peer 对不上。装完重启 dsh。
+上面写的 `0.2.2-rc.1` 是当前宿主线，按你自己 `dsh --version` 的输出替换。
+
+**必须带版本号，而且要和宿主版本一致。** 不带会装到 `latest` 上的 0.1.5-alpha.2，那是给 0.1.x 宿主用的，在 0.2.2 宿主上挂不上。`next` 指向的 0.2.2-rc.1 才是这条线现在对的版本，也是本插件文案里钉的那个。团队包把 `dsh-*` 的 peer 钉死到具体版本，老 rc 装到新宿主上，peer 对不上。装完重启 dsh。
 
 不确定装没装？进 dsh 敲 `/lead-mode`，它会报依赖状态。
+
+### 新一代：不要装 profile 包，开会话开关
+
+新一代宿主上不要执行上面那条命令。`@deepseek-ai/dsh-experimental-agent-team-profile` 已进官方的 `RETIRED_BUNDLES`，app-boot 会把它从 profile 里删掉。Team 插件随 base 与 web 组合下发。
+
+开法是按会话开：打开「模型与推理等级」菜单，把「使用智能体团队」开关打开。这个开关是会话级的，不是 profile 级的。
 
 ## 装本插件
 
@@ -132,7 +170,7 @@ dsh plugin --profile <你的 profile 名> add https://github.com/xiebaiyuan/dsh-
 
 **1. 切到 Lead 模式。** 新会话的预设列表里选「Lead 模式」。切过去之后，模型 system prompt 的第一段就换成 Lead 人设，开头那段提醒跟着进去。
 
-**2. 敲 `/lead-mode` 查依赖。** 这条命令不派活，只报状态。缺东西时它给出带版本号的安装命令。
+**2. 敲 `/lead-mode` 查依赖。** 这条命令不派活，只报状态。缺东西时它按代际给下一步：新一代提示会话开关，老一代给出带版本号的安装命令。
 
 **3. 让模型干活。** 派活工具齐了，模型会自己拆活、派给 teammate、等齐再收尾。工具不齐，它第一句就是让你去开 Team 运行时。
 
@@ -140,7 +178,7 @@ dsh plugin --profile <你的 profile 名> add https://github.com/xiebaiyuan/dsh-
 
 预设不动也能用。插件装好，预设保持 `standard` 或你自己的，任何会话敲 `/skill lead-mode` 就加载那套方法；模型判断任务需要时也会自己加载。
 
-少了一样东西：persona 里那段前置提醒只在 `lead-mode` 预设里，不切过去就看不到。所以第一次先敲 `/lead-mode` 看依赖，缺 Team 运行时会给出带版本号的安装命令。
+少了一样东西：persona 里那段前置提醒只在 `lead-mode` 预设里，不切过去就看不到。所以第一次先敲 `/lead-mode` 看依赖：缺 Team 运行时它会给下一步，新一代是会话开关，老一代才是带版本号的安装命令。
 
 `team-digest` 同理。它不绑预设，任何会话可用，收尾时模型自己判断要不要写汇总。
 
@@ -177,11 +215,11 @@ Lead 模式 skill 里也写了这个入口，所以派活时模型会直接让�
 
 ## 依赖的官方 bundle 与版本
 
-本插件不捆绑下面这些包。它们由宿主或官方 bundle 提供，本插件只在 `peerDependencies` 里声明版本要求。
+本插件不捆绑下面这些包。它们由宿主或官方 bundle 提供；带版本约束的那些写在 `peerDependencies` 里，profile 包不在其中，要用户自己装。
 
 | 包 | 版本要求 | 谁提供 | 缺了会怎样 |
 |---|---|---|---|
-| `@deepseek-ai/dsh-experimental-agent-team-profile` | `0.2.2-rc.1` | 用户显式安装 | 派不了活，`/lead-mode` 报 error，启动 warn |
+| `@deepseek-ai/dsh-experimental-agent-team-profile` | `0.2.2-rc.1` | 用户显式安装，只给老一代宿主 | 只在老一代宿主上：派不了活，`/lead-mode` 报 error，启动 warn |
 | `@deepseek-ai/dsh` | `>=0.2.2-rc.1` | 宿主 | 装不上 |
 | `@deepseek-ai/cordis` | `^4.0.5` | 宿主 | 装不上 |
 | `@deepseek-ai/schemastery` | `^3.18.5` | 宿主 | 装不上 |
@@ -191,7 +229,9 @@ Lead 模式 skill 里也写了这个入口，所以派活时模型会直接让�
 
 目标宿主版本写在 `package.json` 的 `dshTarget` 字段：`0.2.2-rc.1`。
 
-## 为什么安装命令要带版本号
+第一行只管老一代宿主。新一代宿主上这个包已进 `RETIRED_BUNDLES`，不需要装，也装不住。
+
+## 为什么老一代的安装命令要带版本号
 
 `@deepseek-ai/dsh-experimental-agent-team-profile` 在 npm 上有三个 dist-tag：
 
@@ -210,7 +250,7 @@ $ npm view @deepseek-ai/dsh-experimental-agent-team-profile version
 0.1.5-alpha.2
 ```
 
-所以本插件里所有出现安装命令的地方都带 `@0.2.2-rc.1`：persona prefix、`/lead-mode` 输出、启动 warn、SKILL.md。`test/preset.test.mjs` 与 `test/smoke.test.mjs` 都断言这个字符串在，防止以后被改回裸包名。
+所以本插件文案里所有出现安装命令的地方都带 `@0.2.2-rc.1`：persona prefix、`/lead-mode` 输出、启动 warn、SKILL.md，也就是当前的 `dshTarget`。`test/preset.test.mjs` 与 `test/smoke.test.mjs` 都断言这个字符串在，防止以后被改回裸包名。
 
 `next` 现在指向 `0.2.2-rc.1`，就是本插件钉的版本；`alpha`（`0.2.2-alpha.3`）是同一条线的早期预览。
 
@@ -229,7 +269,7 @@ classic subagent 三行（`tool-subagent-control`、`tool-subagent`、`tool-suba
 
 `@deepseek-ai/dsh-experimental-tool-agent-team` 的 `apply()` 监听全局 `agent/created`，给每一个 agent 装 Team 工具。它是 host 平面的插件，放进预设会漏到所有会话。
 
-所以本插件的定位是：预设 + 两个 skill + 提醒。开不开 Team 运行时，用户用官方 profile 包决定。
+所以本插件的定位是：预设 + 两个 skill + 提醒。开不开 Team 运行时：老一代宿主由用户装官方 profile 包决定，新一代由会话开关决定。
 
 ## 目录
 

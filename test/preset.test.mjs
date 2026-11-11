@@ -95,7 +95,7 @@ test('persona prefix 含提醒关键词与带版本号的安装命令', async ()
   assert.ok(prefix.includes('Agent Teams'), 'prefix 必须提到 Agent Teams')
 
   // 第三个词防止安装命令被改成裸包名：npm 上 latest 是 0.1.5-alpha.2，
-  // 裸装会挂到和 0.2.1 宿主对不上的版本。
+  // 裸装会挂到和 0.2.2 宿主对不上的版本。
   assert.ok(prefix.includes(TEAM_VERSION), `prefix 必须带版本号 ${TEAM_VERSION}`)
 })
 

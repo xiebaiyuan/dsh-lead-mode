@@ -4,7 +4,7 @@ English | [中文](README.zh-CN.md)
 
 Adds a Lead mode to DSH. One preset, two skills, one self-check command, two reminders.
 
-The official Team runtime ships tools: `spawn_teammate`, `send_message`, `team_task_*`. When to delegate, whom to delegate to, how to wait for a result, how to write the closing message, how to merge several members' output: none of that is in the tools. This plugin adds that layer. It does not replace the official Team mode; it sits on top of it.
+The official Team runtime ships the tools. The older generation has `spawn_teammate`, `send_message` and `team_task_*`; the newer one builds members with `subagent`, and `send_message`, `team_task_*` and `wait_agent` come from the subagent tooling. When to delegate, whom to delegate to, how to wait for a result, how to write the closing message, how to merge several members' output: none of that is in the tools. This plugin adds that layer. It does not replace the official Team mode; it sits on top of it.
 
 Once installed, the model works the way a Lead does: split the work, delegate it, accept the result. It delegates hands-on work instead of doing everything alone.
 
@@ -43,14 +43,14 @@ It is not tied to the preset. Any session can load it, two ways:
 - The model loads it when it judges the task needs it (the skill is marked model-invocable)
 - You run `/skill lead-mode` yourself
 
-It covers: agreeing on the goal before starting, making a delegation self-contained, keeping write scopes disjoint, the list/get/claim/complete flow for shared tasks, how to wait on teammates, where a teammate's model comes from, and doing the final verification yourself.
+It covers: agreeing on the goal before starting, making a delegation self-contained, keeping write scopes disjoint, the list/get/claim/complete flow for shared tasks, how to wait on teammates (the two generations answer differently; see "Two generations of Agent Teams"), where a teammate's model comes from, and doing the final verification yourself.
 
 Two of those facts only show up when you read the runtime source:
 
 | Fact | Why it matters |
 |---|---|
 | A teammate settling notifies you automatically, carrying its closing message | Finish your turn after delegating; you do not need to sit and watch |
-| A task change does not wake an idle Lead | Do not count on "it marked the task complete, so I know"; that path only wakes a caller currently inside `wait_agent` |
+| A task change does not wake an idle Lead | Do not count on "it marked the task complete, so I know". The older generation wakes only a caller currently inside `wait_agent`; the newer one wakes nobody, because `wait_agent` only waits for your own inbox |
 
 So the skill's default is: finish your turn after delegating and let the notification wake you (the user sees progress immediately), and use one `wait_agent` only when the current turn cannot continue without the result. Never loop `wait_agent`, and never poll with repeated `list_agents`.
 
@@ -75,9 +75,9 @@ The six headings are fixed Chinese strings; an empty block says 无. Take the la
 
 | Reported | Content |
 |---|---|
-| Team runtime | Mounted or not; its `maxMembers` when mounted |
+| Team runtime | Mounted or not; on the older generation, its `maxMembers` too |
 | lead-mode preset | Registered or not |
-| Missing pieces | The version-pinned install command |
+| Missing pieces | The next step by generation: the session switch first on the newer one, the version-pinned install command on the older one |
 
 Everything in place returns success. Anything missing returns error. Nothing is skipped silently.
 
@@ -92,21 +92,59 @@ Two channels:
 | First persona section | The model | As soon as you switch to Lead mode. It is section 0 of the system prompt |
 | Startup warn and `/lead-mode` | You | When the Team runtime is detected missing |
 
-Both say the same thing: without the `spawn_teammate` tool set, stop and tell the user what to install.
+Both say the same thing: when the Team tools are missing, stop and tell the user how to turn them on — the session switch on a newer host, the profile package on an older one.
 
-The model will not pretend it can delegate, and it will not pass `subagent` off as a teammate.
+On an older host the model will not pretend it can delegate, and it will not pass `subagent` off as a teammate. On a newer host `subagent` is how a teammate is built, so that caution does not apply.
 
-## Enable the Team runtime first
+## Two generations of Agent Teams
 
-Lead mode delegates through `spawn_teammate`, `send_message`, and `team_task_*`. Those come from the official dsh Team runtime, which this plugin does not ship.
+Lead mode delegates through the official dsh Team runtime, which this plugin does not ship. That runtime comes in two shapes: the older one in the published host 0.2.2-rc.1, and the newer one on master only, not released, with no version number to point at.
+
+| Dimension | Older generation: published host 0.2.2-rc.1 | Newer generation: master, unreleased |
+|---|---|---|
+| Defined in | `@deepseek-ai/dsh-experimental-tool-agent-team@0.2.2-rc.1` inside the desktop app.asar | `packages/team/tool-agent-team` and `packages/subagent/*` |
+| Creating a member | `spawn_teammate({ name, description, prompt, context })` | `subagent({ name?, description, prompt, cwd?, agent_preset?, provider?, model?, reasoning_effort? })`; `subagent_fork` when the child inherits your history |
+| Member identity | A durable named member carrying a `target` | A session id plus an agent name; the name is a path from the root (e.g. `reviewer/checker`), and the root is always `lead` |
+| Sending a message | `send_message({ target, message })` | `send_message({ agent, message })`, returns `{ messageId }` |
+| Interrupting | `interrupt_agent({ target })` | `interrupt_agent({ agent })`, returns `{ accepted }` |
+| Roster | `list_agents({})` lists the Lead and its members | `list_agents({})` lists the whole tree; rows are `{ name, status, description? }`, and status gains `corrupt`, `unsupported`, `unavailable` |
+| Waiting semantics | Team-scoped: waits for member status, messages or task changes; returns `noProgress` at once when nobody can produce a change | An ordinary subagent control tool: waits for the caller's own next input (a member message, a completion notice, the user cutting in); returns only `{ timedOut }`, never `noProgress` |
+| Task board owner | The four `team_task_*` tools; owner is a member name | The same four tools; owner is a member name or a session id, and the check field is `ownerId` instead of `ownerName` |
+| Turning it on | Install the profile package `@deepseek-ai/dsh-experimental-agent-team-profile@0.2.2-rc.1` | Do not install it: it is in `RETIRED_BUNDLES`, and app-boot removes it from the profile. The Team plugins ship with the base and web bundles; turn it on per session with the agent team switch in the model-and-reasoning menu (Chinese UI: 模型与推理等级 → 使用智能体团队) |
+| Member model | Inherits the Lead; `spawn_teammate` takes no model parameter | `subagent` takes `provider`, `model` and `reasoning_effort` (the `standard` preset already enables `modelSelection`); `agent_preset` picks a preset |
+| Member cap | `agentTeams.config.maxMembers` | The `maxMembers` config key is rejected, so there is no cap to read |
+
+The newer generation drops `spawn_teammate`; `wait_agent` moves out of the Team tools into the subagent control tools, and its meaning becomes "wait for my own inbox".
+
+### Telling the two apart
+
+Do not go by version string. Go by the tool list.
+
+| What you see | Generation | Next step |
+|---|---|---|
+| `spawn_teammate` is there | Older | Install the profile package, next section |
+| No `spawn_teammate`, but `subagent` and `team_task_*` are there | Newer | Nothing to install; make sure the session switch is on |
+| No `team_task_*` at all | Team is off | Look for the session switch first; install the package only after confirming this is an older host that has no such switch |
+
+The order matters. Telling someone on a newer host to install the profile package is wrong: app-boot removes that package, so it buys nothing.
+
+### Older generation: install the profile package
 
 ```bash
 dsh plugin --profile <your profile name> add @deepseek-ai/dsh-experimental-agent-team-profile@0.2.2-rc.1
 ```
 
-**The version pin is required.** Without it npm resolves `latest`, which is 0.1.5-alpha.2 — built for 0.1.x hosts and it will not mount on a 0.2.2 host. `next` points at 0.2.2-rc.1, which is the correct one. The pin also has to equal your host version (`dsh --version`): the team packages pin exact `dsh-*` peers, so an older rc installs a peer set the newer host does not satisfy. Restart dsh afterwards.
+`0.2.2-rc.1` above is the current host line; replace it with your own `dsh --version` output.
+
+**The version pin is required, and it must equal the host version.** Without it npm resolves `latest`, which is 0.1.5-alpha.2 — built for 0.1.x hosts, and it will not mount on a 0.2.2 host. `next` points at 0.2.2-rc.1, the right build for this line and the one this plugin's own text pins. The team packages pin exact `dsh-*` peers, so an older rc installs a peer set the newer host does not satisfy. Restart dsh afterwards.
 
 Not sure whether it is installed? Run `/lead-mode` in dsh; it reports dependency state.
+
+### Newer generation: do not install the package, flip the session switch
+
+On a newer host, do not run the command above. `@deepseek-ai/dsh-experimental-agent-team-profile` sits in the official `RETIRED_BUNDLES`, and app-boot removes it from the profile. The Team plugins ship with the base and web bundles.
+
+Turning it on is per session: open the model-and-reasoning menu and switch on the agent team option (Chinese UI: 模型与推理等级 → 使用智能体团队). The switch is session-scoped, not profile-scoped.
 
 ## Install this plugin
 
@@ -132,7 +170,7 @@ Three steps.
 
 **1. Switch to Lead mode.** Pick "Lead 模式" in a new session's preset list. The first system-prompt section becomes the Lead persona, and the reminder at its top goes in with it.
 
-**2. Run `/lead-mode` to check dependencies.** This command delegates nothing; it only reports state. When something is missing it prints the version-pinned install command.
+**2. Run `/lead-mode` to check dependencies.** This command delegates nothing; it only reports state. When something is missing it gives the next step by generation: the session switch on a newer host, the version-pinned install command on an older one.
 
 **3. Let the model work.** With the delegation tools in place, the model splits the work, delegates to teammates, and waits for all of them before wrapping up. Without them, its first move is to tell you to enable the Team runtime.
 
@@ -140,7 +178,7 @@ Three steps.
 
 You do not have to touch your preset. Install the plugin, keep `standard` or whatever you already use, and run `/skill lead-mode` in any session to load the method; the model also loads it when it judges the task needs it.
 
-One thing is missing: the upfront reminder lives in the persona, so it appears only under the `lead-mode` preset. Run `/lead-mode` once before you start to check the dependencies; it prints the version-pinned install command when the Team runtime is absent.
+One thing is missing: the upfront reminder lives in the persona, so it appears only under the `lead-mode` preset. Run `/lead-mode` once before you start to check the dependencies; when the Team runtime is absent it gives the next step — the session switch on a newer host, the version-pinned install command on an older one.
 
 `team-digest` works the same way. It is not tied to a preset, any session can use it, and the model decides at wrap-up whether a digest is worth writing.
 
@@ -177,11 +215,11 @@ The Lead mode skill names this entry point too, so the model points you here ins
 
 ## Required official bundles and versions
 
-This plugin ships none of the packages below. The host or an official bundle provides them; this plugin only declares version requirements in `peerDependencies`.
+This plugin ships none of the packages below. The host or an official bundle provides them; the ones with a version constraint are declared in `peerDependencies`, and the profile package is not among them — you install it yourself.
 
 | Package | Requirement | Provided by | When missing |
 |---|---|---|---|
-| `@deepseek-ai/dsh-experimental-agent-team-profile` | `0.2.2-rc.1` | You install it explicitly | Cannot delegate; `/lead-mode` returns error; startup warn |
+| `@deepseek-ai/dsh-experimental-agent-team-profile` | `0.2.2-rc.1` | You install it explicitly, older-generation hosts only | On an older host only: cannot delegate; `/lead-mode` returns error; startup warn |
 | `@deepseek-ai/dsh` | `>=0.2.2-rc.1` | Host | Will not install |
 | `@deepseek-ai/cordis` | `^4.0.5` | Host | Will not install |
 | `@deepseek-ai/schemastery` | `^3.18.5` | Host | Will not install |
@@ -191,7 +229,9 @@ This plugin ships none of the packages below. The host or an official bundle pro
 
 The target host version is `dshTarget` in `package.json`: `0.2.2-rc.1`.
 
-## Why the install command pins a version
+The first row holds for older-generation hosts only. On a newer host that package is in `RETIRED_BUNDLES`; there is nothing to install, and installing it does not stick.
+
+## Why the older generation's install command pins a version
 
 `@deepseek-ai/dsh-experimental-agent-team-profile` has three dist-tags on npm:
 
@@ -210,7 +250,7 @@ $ npm view @deepseek-ai/dsh-experimental-agent-team-profile version
 0.1.5-alpha.2
 ```
 
-So every install command in this plugin carries `@0.2.2-rc.1`: the persona prefix, the `/lead-mode` output, the startup warn, and SKILL.md. `test/preset.test.mjs` and `test/smoke.test.mjs` both assert that string, so a future edit cannot quietly drop back to the bare name.
+So every install command in this plugin's own text carries `@0.2.2-rc.1`, the current `dshTarget`: the persona prefix, the `/lead-mode` output, the startup warn, and SKILL.md. `test/preset.test.mjs` and `test/smoke.test.mjs` both assert that string, so a future edit cannot quietly drop back to the bare name.
 
 `next` now points at `0.2.2-rc.1`, the build this plugin pins; `alpha` (`0.2.2-alpha.3`) is an earlier preview of the same line.
 
@@ -229,7 +269,7 @@ The three classic subagent rows (`tool-subagent-control`, `tool-subagent`, `tool
 
 `apply()` in `@deepseek-ai/dsh-experimental-tool-agent-team` listens on the global `agent/created` event and installs Team tools on every agent. It is a host-plane plugin; putting it in a preset would leak it into every session.
 
-So this plugin stays at: preset, two skills, reminder. Whether the Team runtime is on is decided by the user through the official profile package.
+So this plugin stays at: preset, two skills, reminder. Whether the Team runtime is on is decided by the user: through the official profile package on an older host, through the session switch on a newer one.
 
 ## Layout
 

@@ -1,4 +1,6 @@
 node_modules/
+# 本包零 dependencies，lock 只是本机 pnpm 跑脚本时顺手生成的，不进仓库
+pnpm-lock.yaml
 *.tgz
 .DS_Store
 npm-debug.log*

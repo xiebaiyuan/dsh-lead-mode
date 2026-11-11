@@ -150,6 +150,8 @@ session_event_search({
 })
 ```
 
+成员 id 老一代由 `list_agents` 直接给出。新一代的 `list_agents` 只给名字和路径、不给 session id，拿不到 id 就跳过这一层，照实写「未验证」。
+
 两条限制：
 
 - 跨 cwd 读不到。成员会话的工作目录必须和 Lead 相同，否则这条查不到东西。
@@ -186,10 +188,10 @@ session_event_search({
 | 事实 | 后果 |
 |---|---|
 | `team_task_update` 的 `complete` 不能带结果载荷 | 任务板不是结果记录本，结论只能写进汇总 |
-| `wait_agent` 只返回 `{timedOut, noProgress}` | 它不带任何内容，别指望从返回值里拿到成员说了什么 |
+| `wait_agent` 只返回 `{timedOut}`（老一代还多一个 `noProgress`） | 它不带任何内容，别指望从返回值里拿到成员说了什么 |
 | 宿主没有报告类工具 | 汇总只能自己组织，没有现成模板命令可调 |
 | 压缩事件（`compaction/start` 等）都是 log-only | 检索必须显式带 `surfaces: ['log-only']`，否则查不到 |
-| 成员名额 `maxMembers` 由 profile 层设为 8 | 名字永不释放，创建失败也占名额 |
+| 成员名额 `maxMembers` 只有老一代可读（新一代拒绝这个配置键） | 老一代名字永不释放，创建失败也占名额；新一代读不到上限，别写一个假数字 |
 
 ## 写作口径
 

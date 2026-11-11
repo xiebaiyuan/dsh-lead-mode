@@ -1,25 +1,44 @@
 ---
 name: lead-mode
-description: Lead 工作法。当你要拆活、派活给 teammate、用共享任务板协作，或验收多路并行产出时用。
+description: Lead 工作法，兼容两代 Agent Teams 定义。当你要拆活、派活给 teammate、用共享任务板协作，或验收多路并行产出时用。
 ---
 
 # Lead 工作法
 
 你是 Lead。你拆活、派活、验收。动手的活尽量派出去，别自己一个人干完。
 
-## 开工先确认能不能派活
+宿主里同时存在两代 Agent Teams 定义，工具名不一样，工作法主体一样。先判代际，再读对应那几节。
 
-检查本会话有没有这些工具：`spawn_teammate`、`send_message`、`list_agents`、`wait_agent`、`team_task_create`、`team_task_update`。
+## 开工先确认能不能派活：按工具清单判代际
 
-没有就停下。只做一件事：让用户去开 dsh 官方 Agent Teams，命令是
+不靠版本号字符串判断，靠本会话的工具清单判断：
+
+| 判据 | 属于 | 建成员 | 发消息 / 打断 | 往下读 |
+|---|---|---|---|---|
+| 有 `spawn_teammate` | 老一代（已发布宿主 0.2.2-rc.1 这一线） | `spawn_teammate` | `send_message({ target })` / `interrupt_agent({ target })` | 「老一代」各节 |
+| 没有 `spawn_teammate`，但有 `subagent` 和 `team_task_*` | 新一代 | `subagent`，继承历史用 `subagent_fork` | `send_message({ agent })` / `interrupt_agent({ agent })` | 「新一代」那一节 |
+| `team_task_*` 一个都没有 | Team 没开 | — | — | 「没开 Team 怎么办」 |
+
+判完代际再动手：老一代按原文执行，语义一字不改；新一代按「新一代」那一节。
+
+不要自己硬干，也不要假装能派活。
+
+## 没开 Team 怎么办
+
+没有 `team_task_*` 就停下，别自己把活干完，也别说自己能派活。顺序不能反：先看会话开关，再谈装包。
+
+1. 先让用户打开会话开关。位置在**模型与推理等级菜单**里的**「使用智能体团队」**。新一代宿主的 Team 插件随 base 与 web 组合下发，打开这个开关就有工具，不需要装任何包。
+2. 只有确认是老一代宿主（≤ `0.2.2-rc.1`，那个菜单里没有这个开关）才是缺 profile 包，这时才给装包命令：
 
 ```
 dsh plugin --profile <你的 profile 名> add @deepseek-ai/dsh-experimental-agent-team-profile@0.2.2-rc.1
 ```
 
-不带版本号会装到 0.1.5-alpha.2，和 0.2.2 宿主对不上。版本号要跟 `dsh --version` 的输出一致。
+不带版本号会装到 0.1.5-alpha.2，和 0.2.2 宿主对不上。版本号要跟 `dsh --version` 的输出一致。装完重启 dsh。
 
-不要自己硬干，也不要假装能派活。
+新版宿主上**不要**让人装这个包。它已进 `RETIRED_BUNDLES`，app-boot 启动时会把它从 profile 里删掉。装了白装，还会让人以为开关是坏的。
+
+不确定是哪一代时，先问一句「模型与推理等级菜单里有没有『使用智能体团队』这个开关」，别直接甩装包命令。用户跑 `/lead-mode` 命令也能看到当前这一支的判定结果。
 
 ## 开工前对齐三件事
 
@@ -35,6 +54,8 @@ dsh plugin --profile <你的 profile 名> add @deepseek-ai/dsh-experimental-agen
 
 teammate 干完你**会被唤醒**，不用自己盯着。
 
+下面这张表是老一代的事件语义：
+
 | 事件 | 唤醒空闲的你吗 | 带回什么 |
 |---|---|---|
 | teammate 一轮干完、没有新消息 | 会 | 它收尾那条消息 |
@@ -43,7 +64,12 @@ teammate 干完你**会被唤醒**，不用自己盯着。
 
 所以默认这么做：**派完活就结束回合。** 把「派了谁、等什么」写清楚，然后收工。用户立刻看到进展，你不空转。teammate 收工时你被唤醒，接着干。
 
-`wait_agent` 只在「本回合内就必须拿到结果才能继续」时用一次。它的好处是 task 变更也能唤醒它。默认等 30 秒，上限 1 小时。
+`wait_agent` 只在「本回合内就必须拿到结果才能继续」时用一次。老一代的好处是 task 变更也能唤醒它。默认等 30 秒，上限 1 小时。
+
+新一代的差别只有两条，其余照旧：
+
+- `wait_agent` 等的是**你自己收件箱**的下一条输入，只回 `{ timedOut }`。`timedOut: false` 表示已有新输入待处理；`timedOut: true` 就是等到超时。**没有 `noProgress` 这种返回。**
+- task 变更不结束 `wait_agent`、不往收件箱塞消息、也不启动空闲成员。要成员处理任务，必须 `send_message` 叫它。
 
 禁止这两件事：
 
@@ -52,9 +78,11 @@ teammate 干完你**会被唤醒**，不用自己盯着。
 
 `list_agents` 只用来回答「谁在跑、谁卡住了」，不用来等。
 
-`wait_agent` 返回 `noProgress` 不是错误，是告诉你没人在跑，该换手段。
+老一代还有一条：`wait_agent` 返回 `noProgress` 不是错误，是告诉你没人在跑，该换手段。新一代没有这个返回，别去找它。
 
-## 派活的四个参数
+## 老一代：派活的四个参数
+
+判据：本会话有 `spawn_teammate`。没有的话看后面「新一代：teammate 走 subagent」那一节。
 
 `spawn_teammate` 只有 `name`、`description`、`prompt`、`context` 四个参数。
 
@@ -109,6 +137,10 @@ teammate 收工时，它**最后那条消息**会随通知回到你手上，格�
 
 ## 上下文变长怎么办：压缩、复用、交接、换人
 
+这一节的工具细节按老一代写（`list_agents` 给成员 id、`spawn_teammate` 建人、`interrupt_agent({ target })`）。
+
+新一代的对应关系只有三处：建人换 `subagent`（`subagent_fork` 继承你已完成回合），`interrupt_agent` 的参数名换成 `agent`，`list_agents` 只给名字和路径、不给 session id。所以「怎么检测」那一步拿不到 id 就跳过，照实写「未验证」，别硬编一个 id。
+
 ### 为什么会丢
 
 宿主对每个 agent 都自动压缩会话。压力到阈值就触发，会话 id 不变，早期节点被一条摘要替换。这就是**上下文降级**：细节只剩摘要，不再完整可见。
@@ -136,7 +168,7 @@ teammate 收工时，它**最后那条消息**会随通知回到你手上，格�
 1. 继续跑：命中 0–1 次、活快收尾，交给自动压缩兜住。
 2. 重发窄单：用 `send_message` 给同一个成员一张更窄的单，只做剩下的部分。成员常驻，别急着换人。
 3. 写交接文档：要求它先补完工作日志，再写 handoff，然后 `interrupt_agent`。
-4. 换新成员：`spawn_teammate`，`context` 用 `fresh`。原因写死：`fork` 拷的是你 Lead 自己的历史，不是上一个成员的历史，所以拿不到前任的细节。
+4. 换新成员（老一代，新一代换成 `subagent`）：`spawn_teammate`，`context` 用 `fresh`。原因写死：`fork` 拷的是你 Lead 自己的历史，不是上一个成员的历史，所以拿不到前任的细节。
 
 ### 工作日志与交接文档放哪
 
@@ -162,7 +194,7 @@ teammate 收工时，它**最后那条消息**会随通知回到你手上，格�
 
 ### 换人操作清单
 
-- 先查名额：`/lead-mode` 报 `maxMembers`。换一次吃一个名额，创建失败的也占位，名字永不复用。
+- 先查名额：`/lead-mode` 报 `maxMembers`。换一次吃一个名额，创建失败的也占位，名字永不复用。新一代读不到上限，这条跳过。
 - 旧 task 你先 `team_task_update` 执行 `release`，续作成员再 `claim`。revision 会变。
 - 续作成员名字加 `-r2` 后缀，与被接手的成员并存，不要复用旧名字。
 - `interrupt_agent` 不清空它排队的消息，打断前确认工作日志已写完。
@@ -193,7 +225,16 @@ task 描述就是完整规格。规格写细一点，teammate 少问一轮。
 
 task 是给人看的账本，不是唤醒通道。别指望「它把 task 标 complete 了我就知道了」。
 
-## teammate 用什么模型
+新一代的差别只有 owner 这一块：
+
+- 任务视图里的判据字段是 `ownerId`，老一代是 `ownerName`。
+- owner 填成员名即可，也接受 Session id。
+- 根 agent（`lead`）能把任务改派给自己或任何可续聊的后代；其他成员只能自己 claim 就绪的任务。
+- 就绪状态不会启动 owner，任务变更也不唤醒任何人。要成员处理任务，必须 `send_message` 叫它。
+
+## 老一代：teammate 用什么模型
+
+判据：本会话有 `spawn_teammate`。新一代的规则在下一节。
 
 **不能单独指定。** `spawn_teammate` 没有 model 或 provider 参数。
 
@@ -206,7 +247,72 @@ teammate 继承你（Lead）在 spawn 那一刻的 provider 和 model。想换�
 
 经典 `subagent` 支持 `provider`、`model`、`reasoning_effort`、`agent_preset` 四个参数（本插件预设已开 `modelSelection` 与 `modelDiscovery`）。
 
-代价说清楚：经典 `subagent` 是一次性子代理，没有共享任务板，没有持久身份。要用团队就得接受统一模型。
+代价说清楚：经典 `subagent` 是一次性子代理，没有共享任务板，没有持久身份。要用团队就得接受统一模型。这段代价只对老一代成立：新一代的 teammate 本身就是 `subagent`，也能按成员挑模型，见下一节。
+
+## 新一代：teammate 走 subagent
+
+判据：本会话没有 `spawn_teammate`，但有 `subagent` 和 `team_task_*`。下面按工具的真实签名写，别按老一代的习惯推。
+
+### 建成员
+
+`subagent({ name, description, prompt })` 就是老一代的 `spawn_teammate`：teammate 和子代理是同一个东西，不需要再找 team 专用工具。调用立刻返回子代理的名字，不等它干活。
+
+| 参数 | 要点 |
+|---|---|
+| `description` | 必填。三到五个词的职责，显示用 |
+| `prompt` | 必填。全部指令，写法照「prompt 怎么写」那一节 |
+| `name` | 可选。小写字母、数字、连字符，字母开头，最长 32 个字符。同一棵树内唯一，`lead` 留给根不能用。省略时按 `agent-1`、`agent-2` 顺序自动命名 |
+| `cwd` | 可选。子代理的初始工作目录，省略就继承你的 |
+| `provider` / `model` / `reasoning_effort` | 可选。按成员挑模型，规则见下面「成员模型」 |
+| `agent_preset` | 可选。只在宿主开放预设选择时才出现这个参数，本插件预设没开 |
+
+新成员默认看不到你的历史，这点和老一代的 `fresh` 一样。要它继承**你已完成回合**的上下文，用 `subagent_fork`（参数同上，本插件预设里它没有模型参数）。
+
+命名规则和老一代不同：新一代没有「名字永久占用」，只是同一棵树内唯一。取名前照样先 `list_agents` 看一眼。
+
+### 发消息、续聊、打断
+
+- `send_message({ agent, message })`。`agent` 填 `list_agents` 给出的名字或路径，返回 `{ messageId }`。`inactive` 的成员收到消息会起一轮。
+- `interrupt_agent({ agent })`。返回 `{ accepted }`，只是受理，不等它真停。它自己起的子代理会继续跑。
+- 参数名是 `agent`，不是老一代的 `target`。
+
+### 等活
+
+新一代的 `wait_agent` 是普通 subagent 控制工具，不是 team 作用域：
+
+- 等的是**你自己收件箱**的下一条输入：成员消息、完成通知、用户插话。
+- 只返回 `{ timedOut }`。`timedOut: false` 表示已有新输入待处理；`timedOut: true` 是等满了没人找你。
+- **没有 `noProgress`。** 别照老一代的写法去判它。
+- `timeout_ms` 取值 10000 到 3600000，默认 30000。
+
+结论不变：派完活就结束回合等通知，不套循环。
+
+### 任务板
+
+`team_task_list` / `get` / `create` / `update` 四个名字两代一样，claim 与 owner 的差别见前面「共享任务流程」末尾那几条。
+
+### 成员模型
+
+可以按成员挑：`subagent` 传 `provider`、`model`、`reasoning_effort`。`provider` 与 `model` 要成对给；`reasoning_effort` 要在两者都给了的前提下用。不传就跟随默认，回落到兼容的父值。
+
+所以老一代那句「teammate 不能单独指定模型，只能整队换」只对老一代成立。
+
+### 名册
+
+`list_agents({})` 返回整棵树，从根开始，含你自己这一行。行是 `{ name, status, description? }`。
+
+- 后代名字是从根算起的路径，比如 `reviewer/checker`；根固定叫 `lead`。
+- 可以直接给树里任何其他成员发消息。
+- 状态多了三种：`corrupt`、`unsupported`、`unavailable`，说的是这一行自己的后代读不出来，这一行本身仍是能发消息的成员。
+- `inactive` 仍然不代表活干完、也不代表失败。
+
+### 完成通知
+
+成员的完成通知会自动送到你手上，带着它的最终答复，「Its closing message:」这个格式仍然适用。收工前刚给你发过 `send_message` 的，通知里省掉收尾正文。
+
+### 成员上限
+
+新一代读不到上限：`maxMembers` 这个配置键已被拒绝。别在报告里写一个假数字。
 
 ## 状态怎么看
 
@@ -217,9 +323,11 @@ teammate 继承你（Lead）在 spawn 那一刻的 provider 和 model。想换�
 | `provisioning` | 正在创建 |
 | `failed` | 创建失败 |
 
+这张表是老一代的取值。新一代没有 `provisioning` 与 `failed`，多了 `corrupt`、`unsupported`、`unavailable` 三种，含义见「新一代」那节的「名册」。
+
 `inactive` 有两种情况：teammate 已经收工（你收到过它的通知），或者它被存档了、等你再给它发消息才醒来。
 
-只有 Lead 能创建和打断 teammate（`interrupt_agent`）。打断不清空它排队的消息。
+老一代只有 Lead 能创建和打断 teammate（`interrupt_agent`），打断不清空它排队的消息。新一代不限于根：成员也能建自己的子代理，`interrupt_agent` 可以由任何祖先发给它下面直接或更深的那个后代。
 
 ### 想看全局，用 dsh-context 的编队页
 

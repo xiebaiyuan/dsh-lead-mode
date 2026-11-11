@@ -3,6 +3,10 @@
 // 这些断言守的是「提醒用户开官方 Team 模式」的通道 B：用户敲 /lead-mode
 // 能看见当前依赖状态和带版本号的安装命令；启动时缺 Team 运行商会 warn。
 //
+// 两代 Team 运行时在同一个服务名下：服务上有 `spawnTeammate` 是老一代
+// （≤ 0.2.2-rc.1，要装 profile 包），没有是新一代（teammate 走 subagent，
+// 会话级开关在模型与推理等级菜单）。报告与 warn 都按代际分支断言。
+//
 // 全部用假 ctx，不启动宿主，不碰 ~/.dsh/profiles。
 //
 // 假 ctx 必须照抄 cordis 的两条语义，否则测的是假东西：
@@ -507,13 +511,14 @@ test('skills 服务晚到后 skill 仍会注册', async () => {
   )
 })
 
-test('/lead-mode 依赖齐全时返回 success', async () => {
+test('/lead-mode 老一代依赖齐全时返回 success，并报出 maxMembers', async () => {
   const plugin = await loadPlugin()
   const { ctx, registered } = makeCtx({
     services: {
       skills: {},
       commands: {},
-      agentTeams: { config: { maxMembers: 8 } },
+      // 老一代：服务上带 spawnTeammate，config.maxMembers 是真实上限
+      agentTeams: { spawnTeammate: () => {}, config: { maxMembers: 8 } },
       agentPresets: { list: async () => [{ id: 'lead-mode' }] },
     },
   })
@@ -525,6 +530,114 @@ test('/lead-mode 依赖齐全时返回 success', async () => {
   assert.ok(result.text.includes('Team 运行时'), '文本要报告 Team 运行时状态')
   assert.ok(result.text.includes('已注册'), '文本要报告预设已注册')
   assert.ok(result.text.includes('maxMembers 8'), '有 maxMembers 时要报出来')
+  assert.ok(!result.text.includes('新一代'), '老一代不该被报成新一代')
+})
+
+test('/lead-mode 新一代依赖齐全时返回 success，不报 maxMembers、不给装包命令', async () => {
+  const plugin = await loadPlugin()
+  const { ctx, registered, warnings } = makeCtx({
+    services: {
+      skills: {},
+      commands: {},
+      // 新一代：服务在，但没有 spawnTeammate（teammate 换成 subagent）
+      agentTeams: { config: { maxMembers: 8 } },
+      agentPresets: { list: async () => [{ id: 'lead-mode' }] },
+    },
+  })
+
+  plugin.apply(ctx)
+  const result = await registered.commands[0].handler(ctx)
+
+  assert.equal(result.kind, 'success')
+  assert.ok(result.text.includes('新一代'), '文本要报告这是新一代运行时')
+  assert.ok(result.text.includes('subagent'), '新一代要说明 teammate 走 subagent')
+  assert.ok(
+    !result.text.includes('maxMembers'),
+    '新一代拒绝 maxMembers 键，读不到上限就不该报',
+  )
+  assert.ok(
+    !result.text.includes('dsh plugin'),
+    '新一代不该再让人装 profile 包（它已进 RETIRED_BUNDLES）',
+  )
+  assert.ok(
+    result.text.includes('使用智能体团队'),
+    '新一代要给会话级开关的位置：模型与推理等级菜单里的「使用智能体团队」',
+  )
+  assert.equal(
+    warnings.filter((message) => message.includes('Team 运行时') || message.includes('agentTeams')).length,
+    0,
+    '新一代服务在时不该 warn Team 运行时',
+  )
+})
+
+test('老一代的判据是 typeof spawnTeammate === "function"，同名非函数算新一代', async () => {
+  const plugin = await loadPlugin()
+  const { ctx, registered } = makeCtx({
+    services: {
+      skills: {},
+      commands: {},
+      // 服务上有这个键但不是函数：不算老一代，否则会在调用时炸
+      agentTeams: { spawnTeammate: null, config: { maxMembers: 8 } },
+      agentPresets: { list: async () => [{ id: 'lead-mode' }] },
+    },
+  })
+
+  plugin.apply(ctx)
+  const result = await registered.commands[0].handler(ctx)
+
+  assert.ok(result.text.includes('新一代'), '非函数的 spawnTeammate 必须判成新一代')
+  assert.ok(!result.text.includes('maxMembers'), '新一代不报 maxMembers')
+})
+
+test('/lead-mode 新一代预设未注册时返回 error，仍不给装包命令', async () => {
+  const plugin = await loadPlugin()
+  const { ctx, registered } = makeCtx({
+    services: {
+      skills: {},
+      commands: {},
+      agentTeams: {},
+      agentPresets: { list: async () => [] },
+    },
+  })
+
+  plugin.apply(ctx)
+  const result = await registered.commands[0].handler(ctx)
+
+  assert.equal(result.kind, 'error')
+  assert.ok(result.text.includes('未注册'), '文本要说明预设未注册')
+  assert.ok(result.text.includes('使用智能体团队'), '新一代的下一步是会话开关')
+  assert.ok(!result.text.includes('dsh plugin'), '新一代不该出现 profile 包安装命令')
+})
+
+test('/lead-mode 未挂载时先给会话开关、后给老宿主的装包命令', async () => {
+  const plugin = await loadPlugin()
+  const { ctx, registered } = makeCtx({
+    services: {
+      skills: {},
+      commands: {},
+      agentPresets: { list: async () => [{ id: 'lead-mode' }] },
+    },
+  })
+
+  plugin.apply(ctx)
+  const result = await registered.commands[0].handler(ctx)
+
+  assert.equal(result.kind, 'error')
+  assert.ok(result.text.includes('未挂载'), '文本要说明 Team 运行时未挂载')
+
+  const switchAt = result.text.indexOf('使用智能体团队')
+  const commandAt = result.text.indexOf('dsh plugin')
+  assert.ok(switchAt >= 0, '未挂载也要提示会话开关')
+  assert.ok(commandAt >= 0, '老宿主仍要拿到装包命令')
+  assert.ok(
+    switchAt < commandAt,
+    '顺序不能反：先给新宿主的会话开关，再给只适用老宿主的装包命令',
+  )
+  assert.ok(result.text.includes(TEAM_VERSION), `装包命令必须带版本号 ${TEAM_VERSION}`)
+  assert.ok(
+    result.text.includes('老宿主'),
+    '装包命令要标明只适用老宿主，避免新宿主照抄',
+  )
 })
 
 test('/lead-mode 缺 Team 运行时返回 error，文本含 agentTeams 与 dsh plugin 与版本号', async () => {
