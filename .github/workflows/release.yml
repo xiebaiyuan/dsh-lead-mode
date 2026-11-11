@@ -21,9 +21,18 @@ name: release
 on:
   push:
     tags: ['v*']
+  # 补建或重建某一个已有 tag 的 GitHub Release。发布本身不会重复跑：
+  # publish 只在 tag push 时执行，这里手动触发只走 github-release 那个 job。
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '已有 tag（例如 v0.2.4）'
+        required: true
+        type: string
 
 jobs:
   publish:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -83,3 +92,46 @@ jobs:
 
       - name: 发布
         run: npm publish --access public
+
+  # tag push 时在 npm 发布之后建 GitHub Release；也可以手动触发，给已有 tag 补建。
+  # 说明取自 CHANGELOG.md 的对应小节，不用 --generate-notes：本仓库直接往 main
+  # 提交，没有 PR 关联，自动生成的 notes 只有一串 commit 标题。
+  github-release:
+    needs: publish
+    # publish 在手动触发时是 skipped，这时照样要建 release。
+    if: always() && (needs.publish.result == 'success' || needs.publish.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # gh release create / edit 需要
+    env:
+      TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: 从 CHANGELOG 取这一版的说明
+        run: |
+          version="${TAG#v}"
+          node scripts/changelog-section.mjs "$version" notes.md
+          {
+            echo
+            echo "npm: [\`dsh-lead-mode@${version}\`](https://www.npmjs.com/package/dsh-lead-mode/v/${version})"
+          } >> notes.md
+          echo "----- release notes -----"
+          cat notes.md
+
+      - name: 创建或更新 GitHub Release（标记 Latest）
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "已存在 $TAG 的 release，改成更新说明"
+            gh release edit "$TAG" --notes-file notes.md --latest
+          else
+            gh release create "$TAG" --title "$TAG" --notes-file notes.md --latest --verify-tag
+          fi
