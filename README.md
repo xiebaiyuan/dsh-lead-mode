@@ -92,7 +92,7 @@ Two channels:
 | First persona section | The model | As soon as you switch to Lead mode. It is section 0 of the system prompt |
 | Startup warn and `/lead-mode` | You | When the Team runtime is detected missing |
 
-Both say the same thing: when the Team tools are missing, stop and tell the user how to turn them on — the session switch on a newer host, the profile package on an older one.
+Both tell you to stop when the Team tools are missing. The persona only carries the check and the stop rule; the next step (the session switch on a newer host, the profile package on an older one) lives in `/lead-mode` output and the skill, so the per-turn context stays short.
 
 On an older host the model will not pretend it can delegate, and it will not pass `subagent` off as a teammate. On a newer host `subagent` is how a teammate is built, so that caution does not apply.
 
@@ -168,7 +168,7 @@ Restart dsh afterwards, then pick "Lead 模式" in the preset list.
 
 Three steps.
 
-**1. Switch to Lead mode.** Pick "Lead 模式" in a new session's preset list. The first system-prompt section becomes the Lead persona, and the reminder at its top goes in with it.
+**1. Switch to Lead mode.** Pick "Lead 模式" in a new session's preset list. The first system-prompt section becomes the Lead persona, and its short pointer to the `lead-mode` skill goes in with it.
 
 **2. Run `/lead-mode` to check dependencies.** This command delegates nothing; it only reports state. When something is missing it gives the next step by generation: the session switch on a newer host, the version-pinned install command on an older one.
 
@@ -178,7 +178,7 @@ Three steps.
 
 You do not have to touch your preset. Install the plugin, keep `standard` or whatever you already use, and run `/skill lead-mode` in any session to load the method; the model also loads it when it judges the task needs it.
 
-One thing is missing: the upfront reminder lives in the persona, so it appears only under the `lead-mode` preset. Run `/lead-mode` once before you start to check the dependencies; when the Team runtime is absent it gives the next step — the session switch on a newer host, the version-pinned install command on an older one.
+One thing is missing: the persona pointer only appears under the `lead-mode` preset. Run `/lead-mode` once before you start to check the dependencies; when the Team runtime is absent it gives the next step — the session switch on a newer host, the version-pinned install command on an older one.
 
 `team-digest` works the same way. It is not tied to a preset, any session can use it, and the model decides at wrap-up whether a digest is worth writing.
 
@@ -250,7 +250,7 @@ $ npm view @deepseek-ai/dsh-experimental-agent-team-profile version
 0.1.5-alpha.2
 ```
 
-So every install command in this plugin's own text carries `@0.2.2-rc.1`, the current `dshTarget`: the persona prefix, the `/lead-mode` output, the startup warn, and SKILL.md. `test/preset.test.mjs` and `test/smoke.test.mjs` both assert that string, so a future edit cannot quietly drop back to the bare name.
+So every install command in this plugin's own text carries `@0.2.2-rc.1`, the current `dshTarget`: the `/lead-mode` output, the startup warn, and SKILL.md. The persona prefix deliberately carries no command, and `test/preset.test.mjs` asserts that, so the per-turn context stays small.
 
 `next` now points at `0.2.2-rc.1`, the build this plugin pins; `alpha` (`0.2.2-alpha.3`) is an earlier preview of the same line.
 
@@ -260,7 +260,7 @@ One place only: the persona. The other 21 rows are copied field for field from `
 
 | Item | standard | lead-mode |
 |---|---|---|
-| persona prefix | `You are a coding agent powered by the {{model}} model.` | Chinese Lead persona plus an Agent Teams precondition check |
+| persona prefix | `You are a coding agent powered by the {{model}} model.` | Short Chinese Lead persona: the tool check, the stop rule, and a pointer to the `lead-mode` skill |
 | other 21 rows | — | identical to standard, field for field |
 
 The three classic subagent rows (`tool-subagent-control`, `tool-subagent`, `tool-subagent-fork`) stay enabled. `list_agents` now comes from `tool-subagent-control` itself, so there is no separate row for it. Nothing is disabled. The Team tools are a host decision, not a preset decision.

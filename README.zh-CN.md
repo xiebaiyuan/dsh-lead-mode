@@ -92,7 +92,7 @@
 | persona 第一段 | 模型 | 一切到 Lead 模式就在。system prompt 的第 0 段 |
 | 启动 warn 与 `/lead-mode` | 用户 | 检测到 Team 运行时缺失时 |
 
-两条讲同一件事：Team 工具不齐就先停下来，告诉你下一步怎么开。新宿主去打开会话开关，老宿主去装 profile 包。
+两条都让你在 Team 工具不齐时先停下。persona 只带判据和停手规则；下一步怎么做（新宿主开会话开关、老宿主装 profile 包）在 `/lead-mode` 输出和 skill 里，好让每轮上下文保持短。
 
 老一代宿主上，模型不会假装能派活，也不会拿 `subagent` 顶替 teammate；新一代的 teammate 本来就是 `subagent` 建的，这条不适用。
 
@@ -168,7 +168,7 @@ dsh plugin --profile <你的 profile 名> add https://github.com/xiebaiyuan/dsh-
 
 三步。
 
-**1. 切到 Lead 模式。** 新会话的预设列表里选「Lead 模式」。切过去之后，模型 system prompt 的第一段就换成 Lead 人设，开头那段提醒跟着进去。
+**1. 切到 Lead 模式。** 新会话的预设列表里选「Lead 模式」。切过去之后，模型 system prompt 的第一段就换成 Lead 人设，里面那句指向 `lead-mode` skill 的短指针跟着进去。
 
 **2. 敲 `/lead-mode` 查依赖。** 这条命令不派活，只报状态。缺东西时它按代际给下一步：新一代提示会话开关，老一代给出带版本号的安装命令。
 
@@ -178,7 +178,7 @@ dsh plugin --profile <你的 profile 名> add https://github.com/xiebaiyuan/dsh-
 
 预设不动也能用。插件装好，预设保持 `standard` 或你自己的，任何会话敲 `/skill lead-mode` 就加载那套方法；模型判断任务需要时也会自己加载。
 
-少了一样东西：persona 里那段前置提醒只在 `lead-mode` 预设里，不切过去就看不到。所以第一次先敲 `/lead-mode` 看依赖：缺 Team 运行时它会给下一步，新一代是会话开关，老一代才是带版本号的安装命令。
+少了一样东西：persona 里那句短指针只在 `lead-mode` 预设里，不切过去就看不到。所以第一次先敲 `/lead-mode` 看依赖：缺 Team 运行时它会给下一步，新一代是会话开关，老一代才是带版本号的安装命令。
 
 `team-digest` 同理。它不绑预设，任何会话可用，收尾时模型自己判断要不要写汇总。
 
@@ -250,7 +250,7 @@ $ npm view @deepseek-ai/dsh-experimental-agent-team-profile version
 0.1.5-alpha.2
 ```
 
-所以本插件文案里所有出现安装命令的地方都带 `@0.2.2-rc.1`：persona prefix、`/lead-mode` 输出、启动 warn、SKILL.md，也就是当前的 `dshTarget`。`test/preset.test.mjs` 与 `test/smoke.test.mjs` 都断言这个字符串在，防止以后被改回裸包名。
+所以本插件文案里所有出现安装命令的地方都带 `@0.2.2-rc.1`：`/lead-mode` 输出、启动 warn、SKILL.md，也就是当前的 `dshTarget`。persona prefix 故意不带命令，`test/preset.test.mjs` 反过来断言它不该出现，好让每轮上下文保持短。
 
 `next` 现在指向 `0.2.2-rc.1`，就是本插件钉的版本；`alpha`（`0.2.2-alpha.3`）是同一条线的早期预览。
 
@@ -260,7 +260,7 @@ $ npm view @deepseek-ai/dsh-experimental-agent-team-profile version
 
 | 项 | standard | lead-mode |
 |---|---|---|
-| persona prefix | `You are a coding agent powered by the {{model}} model.` | 中文 Lead 人设 + Agent Teams 前置检查 |
+| persona prefix | `You are a coding agent powered by the {{model}} model.` | 短中文 Lead 人设：查工具、停手规则、指向 `lead-mode` skill |
 | 其余 21 行 | — | 与 standard 逐字段相同 |
 
 classic subagent 三行（`tool-subagent-control`、`tool-subagent`、`tool-subagent-fork`）保持启用，没有禁用。`list_agents` 现在由 `tool-subagent-control` 自己注册，不再单列一行。Team 工具由 host 决定，不由预设决定。

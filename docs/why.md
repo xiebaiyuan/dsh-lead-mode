@@ -42,7 +42,7 @@ dsh plugin --profile <你的 profile 名> add @deepseek-ai/dsh-experimental-agen
 
 `cordis.patch.yml` 里插一行 `@deepseek-ai/dsh-agent-preset`。它的 `config.plugins` 逐行照抄官方 `standard` 预设的 22 个插件行，只改一处：persona 的 prefix 换成 Lead 人设。
 
-prefix 开头就是那段提醒：开工先查工具清单。有 `spawn_teammate` 是老一代；没有它、但有 `subagent` 和 `team_task_*` 是新一代；`team_task_*` 一个都没有就是 Team 没开。没开时停下，让用户去开官方 Team 模式：新宿主先开会话开关，确认是老一代宿主才给带版本号的安装命令。
+prefix 只留三句：查 `team_task_*`、缺了就停手、让用户敲 `/lead-mode` 看下一步。两代工具的逐个参数、装包命令、工作法全在 `lead-mode` skill 与命令输出里，prefix 每轮都进上下文，不带细节。
 
 这段 prefix 进 system prompt 的 `DEPLOYMENT_PERSONA_PREFIX` 段，模型一定看得见。
 

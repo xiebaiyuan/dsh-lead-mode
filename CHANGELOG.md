@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.5
+
+persona prefix 从 2002 字压到 314 字（issue #1）。两代工具的逐个参数、装包命令、等通知与验收细则本来就在 `lead-mode` skill 里，prefix 只留判据、停手规则和一句指路。另把 GitHub Release 接进发布流水线。
+
+- **prefix 瘦身**。原前缀每轮都进 system prompt，约占 300 汉字以上，还要模型每轮做一次工具自检。现在只留三句：查 `team_task_*`、缺了就停手、让用户敲 `/lead-mode`。「派活要求成员先建工作日志」这条硬要求保留在 prefix 里，因为它是派单时的即时约束。
+- **完整命令下放**。装包命令、版本号说明、两代工具逐个参数、「没开 Team 怎么办」的顺序，全部只出现在 `/lead-mode` 输出与 `lead-mode` skill 正文，按需加载。
+- **测试转向**。`test/preset.test.mjs` 从「prefix 必须带版本号」改成「prefix 不该带完整命令、不该带 `spawn_teammate` 参数、总长 < 400 字」，并新增一条断言 skill 里仍然保有可粘贴的安装命令与 `RETIRED_BUNDLES` 说明。
+- **GitHub Release 自动化**。`v*` tag 触发：npm 发布成功后在 Actions 里用 `CHANGELOG` 对应小节建 Release 并标记 Latest；新增 `scripts/changelog-section.mjs`（缺版本就非零退出）；支持手动触发 `<tag>` 给已有 tag 补建，已存在则只更新说明。`--generate-notes` 不用，本仓库直接推 main，自动 notes 只有 commit 标题。
+- **版本**。`package.json` 到 `0.2.5`；`engines.dsh` 与 `dshTarget` 不动。
+
 ## 0.2.4
 
 兼容新一代 Agent Teams 定义（尚未发版的 subagent 式 teammate）：teammate 从 `spawn_teammate` 换成 `subagent`。老一代宿主（≤ 0.2.2-rc.1，工具里还有 `spawn_teammate`）的行为不变：装包命令、`/lead-mode` 老分支输出、skill 老分支步骤语义都不动，只修了一处版本说明的笔误。

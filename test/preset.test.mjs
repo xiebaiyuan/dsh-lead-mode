@@ -83,20 +83,35 @@ test('persona 只出现一次，不被 shadow', async () => {
   )
 })
 
-test('persona prefix 含提醒关键词与带版本号的安装命令', async () => {
+test('persona prefix 只留短指针：判定 + 停手 + 指路，不带完整安装命令', async () => {
   const { preset } = findLeadPreset(await loadPatch())
   const persona = preset.config.plugins.find((row) => row.name === '@deepseek-ai/dsh-persona')
   const prefix = persona.config?.prefix
   assert.equal(typeof prefix, 'string', 'persona.config.prefix 必须是字符串')
   assert.ok(prefix.trim().length > 0, 'prefix 不能为空')
 
-  // 通道 A 的两个核心词：模型得知道缺什么工具、该让用户开什么
-  assert.ok(prefix.includes('spawn_teammate'), 'prefix 必须提到 spawn_teammate')
+  // 模型得知道三件事：先加载 skill、缺工具时停下、让用户敲 /lead-mode。
+  assert.ok(prefix.includes('lead-mode'), 'prefix 要指向 lead-mode skill 或命令')
+  assert.ok(prefix.includes('team_task_'), 'prefix 要给出缺工具的判据')
   assert.ok(prefix.includes('Agent Teams'), 'prefix 必须提到 Agent Teams')
+  assert.ok(prefix.includes('/lead-mode'), 'prefix 要让用户去敲 /lead-mode')
 
-  // 第三个词防止安装命令被改成裸包名：npm 上 latest 是 0.1.5-alpha.2，
-  // 裸装会挂到和 0.2.2 宿主对不上的版本。
-  assert.ok(prefix.includes(TEAM_VERSION), `prefix 必须带版本号 ${TEAM_VERSION}`)
+  // 反向断言：完整命令与版本说明不进每轮上下文（issue #1）。
+  // 它们由 /lead-mode 输出与 lead-mode skill 承担。
+  assert.ok(!prefix.includes('dsh plugin'), 'prefix 不该再带完整安装命令')
+  assert.ok(!prefix.includes('0.1.5-alpha.2'), 'prefix 不该再带 dist-tag 说明')
+  assert.ok(!prefix.includes('spawn_teammate'), 'prefix 不该再写两代工具的逐个参数')
+  assert.ok(
+    prefix.trim().length < 400,
+    `prefix 是每轮都进上下文的常驻文本，必须短；现在 ${prefix.trim().length} 字`,
+  )
+})
+
+test('完整安装命令与版本号在 skill 里，没丢', async () => {
+  const skill = await readFile(resolve(repoRoot, 'skills/lead-mode/SKILL.md'), 'utf8')
+  assert.ok(skill.includes('dsh plugin --profile'), 'skill 要保留可粘贴的安装命令')
+  assert.ok(skill.includes(TEAM_VERSION), `skill 的装包命令要带版本号 ${TEAM_VERSION}`)
+  assert.ok(skill.includes('RETIRED_BUNDLES'), 'skill 要写明新宿主不要装这个包')
 })
 
 test('preset 行 id 集合与官方 standard 完全相同', async () => {
