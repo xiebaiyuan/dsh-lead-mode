@@ -106,9 +106,18 @@ jobs:
     env:
       TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
     steps:
-      - uses: actions/checkout@v4
+      # tag push：检出这个 tag，脚本与 CHANGELOG 都取自发布当时的那份树。
+      - name: 检出这个 tag
+        if: github.event_name == 'push'
+        uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+          ref: ${{ github.ref_name }}
+
+      # 手动补建：检出默认分支。老 tag 里可能还没有本脚本（v0.2.4 就是），
+      # 而 CHANGELOG 各版小节在分支上一直保留，所以说明照样取得对。
+      - name: 检出默认分支
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
