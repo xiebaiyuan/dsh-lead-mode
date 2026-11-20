@@ -834,15 +834,15 @@ test('skill 正文给出检测成员会话被压缩的三步配方', async () =>
   )
 })
 
-test('skill 正文的交接阶梯是四级有序表，覆盖三个处置工具', async () => {
+test('skill 正文的交接四步是四级有序表，覆盖三个处置工具', async () => {
   const { body } = await readSkillBody()
-  const section = sliceHeading(body, '### 交接阶梯')
+  const section = sliceHeading(body, '### 交接四步')
 
   const levels = [...section.matchAll(/^\d+\. /gm)].length
-  assert.ok(levels >= 4, `交接阶梯按代价排四级，实测 ${levels} 条`)
+  assert.ok(levels >= 4, `交接四步按代价排四级，实测 ${levels} 条`)
 
   for (const tool of ['send_message', 'interrupt_agent', 'spawn_teammate']) {
-    assert.ok(section.includes(tool), `四级阶梯里必须出现 ${tool}`)
+    assert.ok(section.includes(tool), `四级处置里必须出现 ${tool}`)
   }
   assert.ok(section.includes('继续跑'), '第 1 级该是继续跑，交给自动压缩兜住')
   assert.ok(section.includes('重发窄单'), '第 2 级该是给同一成员重发窄单')
@@ -864,11 +864,11 @@ test('skill 正文写明 worklog 与 handoff 的位置与文件名约定', async
 
 test('skill 正文要求换人用 fresh，并写明 fork 拿不到前任历史', async () => {
   const { body } = await readSkillBody()
-  const section = sliceHeading(body, '### 交接阶梯')
+  const section = sliceHeading(body, '### 交接四步')
 
   const lines = section.split('\n')
   const start = lines.findIndex((line) => /^4\. /.test(line))
-  assert.notEqual(start, -1, '交接阶梯第 4 级必须是换新成员')
+  assert.notEqual(start, -1, '交接四步第 4 级必须是换新成员')
 
   // 一条列表项可能续行，续到空行或下一个编号为止。
   let item = lines[start]

@@ -21,7 +21,7 @@ A Lead mode for DSH: the model decides, splits work, delegates, and reviews. Mem
 
 ## What this is
 
-A Lead mode plugin for DSH (DeepSeek Harness). Version 0.2.7, requires host (the program running dsh) >= 0.2.2-rc.3, MIT licensed.
+A Lead mode plugin for DSH (DeepSeek Harness). Version 0.2.8, requires host (the program running dsh) >= 0.2.2-rc.3, MIT licensed.
 
 It covers the method layer. The official Agent Teams runtime hands you tools: the older generation has `spawn_teammate`, `send_message`, `team_task_*`; the newer one builds members with `subagent`, keeps `send_message` and `team_task_*`, and gets completion notices from the runtime instead of `wait_agent` polling. When to delegate, to whom, how to wait, how to review, how to merge several streams — none of that comes with the runtime.
 
