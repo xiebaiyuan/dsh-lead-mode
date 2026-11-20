@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="460" viewBox="0 0 1280 460" role="img" aria-label="How Lead mode delegates: request → Lead splits and assigns → shared task board and worklog → members work and report → Lead accepts, then back to Lead for the next round">
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="460" viewBox="0 0 1280 460" role="img" aria-label="How Lead mode delegates: request → Lead splits and assigns → shared task board and worklog → members work and report → an independent member accepts, then back to Lead for the next round">
   <title>How Lead mode delegates</title>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto">
@@ -34,7 +34,7 @@
     </g>
     <g>
       <rect x="1040" y="118" width="180" height="112" rx="16" fill="#121C33" stroke="#2B3A5C" stroke-width="1.5"/>
-      <text x="1130" y="178" font-size="26" font-weight="600" text-anchor="middle" fill="#E6EDF3">Lead accepts</text>
+      <text x="1130" y="162" font-size="20" font-weight="600" text-anchor="middle" fill="#E6EDF3"><tspan x="1130">Independent</tspan><tspan x="1130" dy="22">member accepts</tspan></text>
       <text x="1130" y="208" font-size="20" text-anchor="middle" fill="#8FA3C4">checks evidence</text>
     </g>
 
@@ -50,6 +50,6 @@
     <path d="M1130 230 V330 H342.5 V246" fill="none" stroke="#4D6BFE" stroke-width="2.5" stroke-dasharray="10 8" opacity="0.75" marker-end="url(#arrow)"/>
     <text x="700" y="316" font-size="20" text-anchor="middle" fill="#7E93B8">completion notice → next round</text>
 
-    <text x="60" y="408" font-size="21" fill="#8FA3C4">Lead decides, splits, accepts. Members work in their own contexts.</text>
+    <text x="60" y="408" font-size="21" fill="#8FA3C4">Lead decides, delegates, and reports; members do the work, an independent member accepts.</text>
   </g>
 </svg>

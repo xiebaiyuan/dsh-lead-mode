@@ -4,7 +4,7 @@
 
 # dsh-lead-mode
 
-A Lead mode for DSH: the model decides, splits work, delegates, and reviews. Members do the hands-on work. The runtime ships the tools; this plugin ships the method.
+A Lead mode for DSH: the model judges, delegates, and reports the conclusion; members do the hands-on work, the checking, and the acceptance runs. The runtime ships the tools; this plugin ships the method.
 
 [![npm version](https://img.shields.io/npm/v/dsh-lead-mode?color=4D6BFE)](https://www.npmjs.com/package/dsh-lead-mode)
 [![dsh version](https://img.shields.io/badge/dsh-%3E%3D0.2.2--rc.3-4D6BFE)](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/package.json)
@@ -21,7 +21,7 @@ A Lead mode for DSH: the model decides, splits work, delegates, and reviews. Mem
 
 ## What this is
 
-A Lead mode plugin for DSH (DeepSeek Harness). Version 0.2.8, requires host (the program running dsh) >= 0.2.2-rc.3, MIT licensed.
+A Lead mode plugin for DSH (DeepSeek Harness). Version 0.2.9, requires host (the program running dsh) >= 0.2.2-rc.3, MIT licensed.
 
 It covers the method layer. The official Agent Teams runtime hands you tools: the older generation has `spawn_teammate`, `send_message`, `team_task_*`; the newer one builds members with `subagent`, keeps `send_message` and `team_task_*`, and gets completion notices from the runtime instead of `wait_agent` polling. When to delegate, to whom, how to wait, how to review, how to merge several streams — none of that comes with the runtime.
 
@@ -92,15 +92,15 @@ Both presets are copied from the web-app presets, so they only fit desktop and W
 
 ## How it delegates
 
-![Mechanism: a request reaches the Lead, the Lead splits and delegates, members work and report on a shared task board, the Lead reviews](https://raw.githubusercontent.com/xiebaiyuan/dsh-lead-mode/main/assets/diagram-en.svg)
+![Mechanism: a request reaches the Lead, the Lead splits and delegates, members work and report on a shared task board, an independent member runs acceptance](https://raw.githubusercontent.com/xiebaiyuan/dsh-lead-mode/main/assets/diagram-en.svg)
 
-Four beats: a request arrives, the Lead splits and delegates, members work and report on a shared task board, the Lead reviews. The dashed line is the loop back when review fails.
+Four beats: a request arrives, the Lead splits and delegates, members work and report on a shared task board, and the fourth beat is acceptance. A member who did none of the work runs the checks, and the Lead decides from its evidence. The dashed line is the loop back when acceptance fails.
 
-**Split.** The Lead does four things only: decide, split, delegate, review. It does not write code or edit files; verifying, running acceptance checks, and answering stay with the Lead. If it cannot delegate, it stops and asks you to turn Team on — it does not finish the job alone and does not put `subagent` in a member's seat. Before delegating it calls `list_subagent_models` and picks provider/model pairs from what comes back, reasoning effort included. No invented ids. A single-entry list means the host authorized nothing else, so members inherit the Lead's route.
+**Split.** The Lead does three things only: judge, delegate, and report the conclusion. What it touches is the control plane — `list_subagent_models` to pick models, `list_agents` for the roster, `team_task_*` for the board, `send_message` to nudge — and calling those is itself the delegating. It stays out of the working plane: code, files, logs, CI, packages all go to members, investigation and acceptance alike, and acceptance goes to a member who did none of the work. When this round has only the implementer, it spawns a separate read-only member to re-run, rather than doing it itself. If it cannot delegate, it stops and asks you to turn Team on — it does not finish the job alone and does not put `subagent` in a member's seat. Before delegating it picks provider/model pairs from what `list_subagent_models` returns, reasoning effort included. No invented ids. A single-entry list means the host authorized nothing else, so members inherit the Lead's route.
 
-**Shared task board and progress logs.** Each member gets its own context. The Lead creates tasks on `team_task_*` with goal and acceptance criteria spelled out; members claim them and work. Every member's first step is `.scratch/<effort>/worklog-<mate>.md` (`<effort>` names this round of work; `worklog-*.md` is the progress log), append-only, with the final round written before wrapping up. Write scopes (each member only touches its own files) are split by file or directory; when they overlap, task dependencies set the order. Who owns what, and who is stuck, is on the board — not in the chat log.
+**Shared task board and progress logs.** Each member gets its own context. Whether to use a board is the Lead's call: build one when there are several members and they have to wait on each other or message each other; a job one member finishes in one round is delegated directly. With a board, the Lead creates tasks on `team_task_*` with goal and acceptance criteria spelled out; members claim them and work. Every member's first step is `.scratch/<effort>/worklog-<mate>.md` (`<effort>` names this round of work; `worklog-*.md` is the progress log), append-only, with the final round written before wrapping up. Write scopes (each member only touches its own files) are split by file or directory; when they overlap, task dependencies set the order. Who owns what, and who is stuck, is on the board — not in the chat log.
 
-**Review.** The Lead does not wait. It ends its turn after delegating; a member's completion notice starts the next round. Nudging goes through `send_message`, never `wait_agent` polling. This holds across both generations: older `send_message` takes `target`, newer takes `agent`. Reports must carry evidence: `path:line`, a command that can be pasted, a progress log section name, or `session-<id>#seq`. The Lead re-checks the load-bearing conclusions itself before the final answer.
+**Acceptance.** The Lead does not wait. It ends its turn after delegating; a member's completion notice starts the next round. Nudging goes through `send_message`, never `wait_agent` polling. This holds across both generations: older `send_message` takes `target`, newer takes `agent`. Reports must carry evidence: `path:line`, a command that can be pasted, a progress log section name, or `session-<id>#seq`. A finding only counts once an independent member has re-run it; the Lead reads that evidence before the final answer.
 
 ## What it looks like
 
@@ -137,13 +137,13 @@ Team 开关是会话级的：模型与推理等级菜单里打开「开启智能
 | Dependency self-check | `/lead-mode` | Run it when dependencies look off |
 | Two opening reminders | automatic | Nothing |
 
-`lead-mode` covers: agreeing on the goal before starting; reading the tool list to tell which generation you are on; delegating with self-contained prompts; keeping write scopes disjoint (each member only touches its own files); the list/get/claim/complete flow on shared tasks; why not to wait on a member; where member models come from; the four-step handoff as context grows; and doing the final verification yourself.
+`lead-mode` covers: agreeing on the goal before starting; reading the tool list to tell which generation you are on; delegating with self-contained prompts; keeping write scopes disjoint (each member only touches its own files); the list/get/claim/complete flow on shared tasks; why not to wait on a member; where member models come from; the four-step handoff as context grows; and handing the final verification to an independent member.
 
 `team-digest` merges the whole team's wrap-up into `reports/<YYYY-MM-DD>-<effort>.md` with six blocks: conclusion / who did what / acceptance evidence / deviations and unverified claims / what did not work and the decisions / open items and next steps. It is written only when this round of work had two or more members, or spanned two or more rounds.
 
 Delegation uses three groups of tools: `subagent` / `subagent_fork` to create members, `send_message` to continue and nudge, and `team_task_create` / `team_task_get` / `team_task_list` / `team_task_update` for shared tasks. The older generation maps to `spawn_teammate` and `send_message({ target })` — same rules, different parameter names.
 
-Both presets share one persona, 398 characters, injected into the system prompt every turn; details load from the skills on demand and cost no standing context.
+Both presets share one persona, 408 characters, injected into the system prompt every turn; details load from the skills on demand and cost no standing context.
 
 Additive only, nothing modified. If a same-named skill or command already exists, the host takes first-come and this plugin steps aside.
 

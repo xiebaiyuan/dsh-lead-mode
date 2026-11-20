@@ -146,8 +146,9 @@ test('persona prefix 只留短指针：判定 + 停手 + 派活规矩，不带�
     assert.ok(prefix.trim().length > 0, `${expected.id} 的 prefix 不能为空`)
     prefixes.set(expected.id, prefix)
 
-    // 模型得知道四件事：先加载 skill、缺工具时停下、让用户敲 /lead-mode、
-    // 派活从可选清单挑模型。
+    // 模型得知道六件事：先加载 lead-mode skill、缺工具时按 team_task_ 判断并停下、
+    // 认得出 Agent Teams、让用户敲 /lead-mode、派活先 list_subagent_models 挑
+    // provider/model，以及挑的正是这一对。
     assert.ok(prefix.includes('lead-mode'), 'prefix 要指向 lead-mode skill 或命令')
     assert.ok(prefix.includes('team_task_'), 'prefix 要给出缺工具的判据')
     assert.ok(prefix.includes('Agent Teams'), 'prefix 必须提到 Agent Teams')
@@ -173,7 +174,7 @@ test('persona prefix 只留短指针：判定 + 停手 + 派活规矩，不带�
     assert.ok(!prefix.includes('0.1.5-alpha.2'), 'prefix 不该再带 dist-tag 说明')
     assert.ok(!prefix.includes('spawn_teammate'), 'prefix 不该再写两代工具的逐个参数')
     assert.ok(
-      prefix.trim().length < 400,
+      prefix.trim().length < 480,
       `prefix 是每轮都进上下文的常驻文本，必须短；${expected.id} 现在 ${prefix.trim().length} 字`,
     )
   }

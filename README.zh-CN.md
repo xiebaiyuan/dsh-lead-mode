@@ -4,7 +4,7 @@
 
 # dsh-lead-mode
 
-给 DSH 加 Lead 模式：模型只做决策、拆活、派活、验收，动手的活交给成员。工具官方给，方法这里补。
+给 DSH 加 Lead 模式：模型只做判断、派活、讲结论，写代码、查证、验收都交给成员。工具官方给，方法这里补。
 
 [![npm 版本](https://img.shields.io/npm/v/dsh-lead-mode?color=4D6BFE)](https://www.npmjs.com/package/dsh-lead-mode)
 [![dsh 版本](https://img.shields.io/badge/dsh-%3E%3D0.2.2--rc.3-4D6BFE)](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/package.json)
@@ -21,7 +21,7 @@
 
 ## 这是什么
 
-DSH（DeepSeek Harness）的 Lead 模式插件。当前版本 0.2.8，对宿主（跑 dsh 的那个程序）的要求是 >= 0.2.2-rc.3，MIT 许可。
+DSH（DeepSeek Harness）的 Lead 模式插件。当前版本 0.2.9，对宿主（跑 dsh 的那个程序）的要求是 >= 0.2.2-rc.3，MIT 许可。
 
 它补的是方法层。官方的 Agent Teams 运行时给工具：老一代是 `spawn_teammate`、`send_message`、`team_task_*`；新一代用 `subagent` 建成员，`send_message` 与 `team_task_*` 还在；成员收工由运行时通知，不需要 `wait_agent` 轮询。什么时候派活、派给谁、怎么等结果、怎么验收、多路产出怎么合并，运行时不管。
 
@@ -92,15 +92,15 @@ Lead 只换方法、不换能力，所以两个预置各镜像一个官方预置
 
 ## 它怎么派活
 
-![机制图：需求进入 Lead，Lead 拆活派活，成员在共享任务板上动手并回报，Lead 验收](https://raw.githubusercontent.com/xiebaiyuan/dsh-lead-mode/main/assets/diagram-zh.svg)
+![机制图：需求进入 Lead，Lead 拆活派活，成员在共享任务板上动手并回报，独立成员验收](https://raw.githubusercontent.com/xiebaiyuan/dsh-lead-mode/main/assets/diagram-zh.svg)
 
-四拍：需求进来，Lead 拆活派活，成员在共享任务板上动手并回报，Lead 验收。虚线是验收不通过时的回路。
+四拍：需求进来，Lead 拆活派活，成员在共享任务板上动手并回报，第四拍是验收：派没参与实现的成员跑，Lead 拿回证据判断能不能收尾。虚线是验收不通过时的回路。
 
-**拆活。** Lead 只做四件事：决策、拆活、派活、验收。它不写代码、不改文件；查证、跑验收、回话仍归 Lead。派不下去就停手，让你去开 Team，不自己干完，也不拿 `subagent` 顶替成员。派活前先调 `list_subagent_models`，从返回的清单里成对挑 provider/model，可以带推理档，不许编造 id。清单只有一条，说明宿主没授权别的模型，成员一律继承 Lead 的路由。
+**拆活。** Lead 只做三件事：判断、派活、把结论讲给用户。它碰的是控制面：`list_subagent_models` 挑模型、`list_agents` 看名册、`team_task_*` 管任务板、`send_message` 催人，这些自己调，那本身就是派活。业务面不碰：代码、文件、日志、CI、包都交给成员，调查与验收都派，验收要派没参与实现的那位；本轮只有实现者本人时，另派一个只读成员复跑，不退回自己跑。派不下去就停手，让你去开 Team，不自己干完，也不拿 `subagent` 顶替成员。派活前先调 `list_subagent_models`，从返回的清单里成对挑 provider/model，可以带推理档，不许编造 id。清单只有一条，说明宿主没授权别的模型，成员一律继承 Lead 的路由。
 
-**共享任务板与工作日志。** 成员各有自己的上下文。Lead 在任务板 `team_task_*` 上建单、写清目标与验收标准，成员领单后动手；每个成员第一步建 `.scratch/<effort>/worklog-<mate>.md`（`<effort>` 是这轮活的名字，`worklog-*.md` 是工作日志），只追加轮次记录，收尾前补完最后一轮。写作用域（各成员只改自己那摊文件）按文件或目录分开，重叠时用任务依赖排顺序。谁领了哪张单、卡在谁身上，看板子，不看聊天记录。
+**共享任务板与工作日志。** 成员各有自己的上下文。建不建任务板由 Lead 判：多成员、要交叉等待或互相发消息才建，一个人一轮能干完的直接派。建了板，Lead 在 `team_task_*` 上建单、写清目标与验收标准，成员领单后动手；每个成员第一步建 `.scratch/<effort>/worklog-<mate>.md`（`<effort>` 是这轮活的名字，`worklog-*.md` 是工作日志），只追加轮次记录，收尾前补完最后一轮。写作用域（各成员只改自己那摊文件）按文件或目录分开，重叠时用任务依赖排顺序。谁领了哪张单、卡在谁身上，看板子，不看聊天记录。
 
-**验收。** Lead 不等。派完活结束回合，成员收工的通知会起下一轮；催人用 `send_message`，不调 `wait_agent` 轮询。两代 Agent Teams 都按这个规矩：老一代 `send_message` 的参数叫 `target`，新一代叫 `agent`。成员回报要带来源标记：`路径:行号`、能粘贴的命令、工作日志段名，或 `session-<id>#seq`。Lead 自己复查关键结论，再给最终答复。
+**验收。** Lead 不等。派完活结束回合，成员收工的通知会起下一轮；催人用 `send_message`，不调 `wait_agent` 轮询。两代 Agent Teams 都按这个规矩：老一代 `send_message` 的参数叫 `target`，新一代叫 `agent`。成员回报要带来源标记：`路径:行号`、能粘贴的命令、工作日志段名，或 `session-<id>#seq`。关键结论要让独立成员跑过才算数，Lead 看完证据再给最终答复。
 
 ## 看到的样子
 
@@ -137,13 +137,13 @@ Team 开关是会话级的：模型与推理等级菜单里打开「开启智能
 | 依赖自检 | `/lead-mode` | 依赖不对时敲一下 |
 | 两层开场提示 | 自动 | 不用管 |
 
-`lead-mode` skill 覆盖这些：开工前对齐目标；按工具清单判代际；派活自包含；写作用域不重叠；共享任务的 list/get/claim/complete 流程；为什么不等成员；成员模型从哪来；上下文变长后的交接四步；最终验证自己做。
+`lead-mode` skill 覆盖这些：开工前对齐目标；按工具清单判代际；派活自包含；写作用域不重叠；共享任务的 list/get/claim/complete 流程；为什么不等成员；成员模型从哪来；上下文变长后的交接四步；最终验证派独立成员做。
 
 `team-digest` 把全队收尾合成一份 `reports/<YYYY-MM-DD>-<effort>.md`，六块骨架：结论 / 谁干了什么 / 验收证据 / 偏离与未验证 / 死路与决策 / 未决与下一步。这轮活有 2 个以上成员，或跨 2 轮以上，才写。
 
 派活用到三组工具：`subagent` / `subagent_fork` 建成员，`send_message` 续聊与催办，`team_task_create` / `team_task_get` / `team_task_list` / `team_task_update` 管共享任务。老一代对应 `spawn_teammate` 与 `send_message({ target })`，规矩一样，参数名不同。
 
-两个预置的 persona 逐字相同，398 字，每轮都进 system prompt；细节按需从 skill 加载，不占常驻上下文。
+两个预置的 persona 逐字相同，408 字，每轮都进 system prompt；细节按需从 skill 加载，不占常驻上下文。
 
 只新增，不修改。同名 skill 或命令撞了，宿主先到先得，本插件让位。
 

@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="460" viewBox="0 0 1280 460" role="img" aria-label="Lead 模式怎么派活：需求 → Lead 拆活派活 → 共享任务板与工作日志 → 成员动手回报 → Lead 验收，再回到 Lead 起下一轮">
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="460" viewBox="0 0 1280 460" role="img" aria-label="Lead 模式怎么派活：需求 → Lead 拆活派活 → 共享任务板与工作日志 → 成员动手回报 → 独立成员验收，再回到 Lead 起下一轮">
   <title>Lead 模式怎么派活</title>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto">
@@ -34,7 +34,7 @@
     </g>
     <g>
       <rect x="1040" y="118" width="180" height="112" rx="16" fill="#121C33" stroke="#2B3A5C" stroke-width="1.5"/>
-      <text x="1130" y="178" font-size="26" font-weight="600" text-anchor="middle" fill="#E6EDF3">Lead 验收</text>
+      <text x="1130" y="178" font-size="24" font-weight="600" text-anchor="middle" fill="#E6EDF3">独立成员验收</text>
       <text x="1130" y="208" font-size="20" text-anchor="middle" fill="#8FA3C4">看证据</text>
     </g>
 
@@ -50,6 +50,6 @@
     <path d="M1130 230 V330 H342.5 V246" fill="none" stroke="#4D6BFE" stroke-width="2.5" stroke-dasharray="10 8" opacity="0.75" marker-end="url(#arrow)"/>
     <text x="700" y="316" font-size="20" text-anchor="middle" fill="#7E93B8">收工通知 → 起下一轮</text>
 
-    <text x="60" y="408" font-size="21" fill="#8FA3C4">Lead 只做决策、拆活、验收；成员在各自独立上下文里动手。</text>
+    <text x="60" y="408" font-size="21" fill="#8FA3C4">Lead 判断、派活、讲结论；成员动手，独立成员验收。</text>
   </g>
 </svg>

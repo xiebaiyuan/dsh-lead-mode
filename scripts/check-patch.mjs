@@ -65,8 +65,8 @@ for (const preset of presets) {
   if (typeof prefix !== 'string' || prefix.trim().length === 0) {
     throw new Error(`${id} 的 persona.config.prefix 缺失或为空`)
   }
-  if (prefix.trim().length >= 400) {
-    throw new Error(`${id} 的 persona prefix 有 ${prefix.trim().length} 字，超过 400 上限`)
+  if (prefix.trim().length >= 480) {
+    throw new Error(`${id} 的 persona prefix 有 ${prefix.trim().length} 字；上限 479 字，到 480 就报错`)
   }
 
   const order = preset.config?.order

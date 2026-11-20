@@ -44,7 +44,7 @@ dsh plugin --profile <你的 profile 名> add @deepseek-ai/dsh-experimental-agen
 
 为什么要两个：Lead 只换方法、不换能力。PTC 会话与创造会话的工具集本来就不一样，合成一个预置等于替用户做能力取舍。
 
-prefix 398 字，六段：只决策/派活/验收、不自己写代码；加载 `lead-mode` skill；派活先 `list_subagent_models` 从可选清单挑 provider/model；先判 Team 开没开、没开就停手让用户敲 `/lead-mode`；派完活结束回合、不调 `wait_agent`；要求成员第一步建工作日志。两代工具的参数、装包命令、工作法细节，全在 `lead-mode` skill 与命令输出里。prefix 每轮都进上下文，所以不带细节。
+prefix 408 字，六段：判断、派活、把结论讲给用户，查证与验收都派成员做、回话自己做；加载 `lead-mode` skill，控制面工具自己调、业务面调查都派成员，两代差异、从零还是继承、挑模型、任务板、写作用域、验收都在里面；派活先 `list_subagent_models` 从可选清单挑 provider/model；先判 Team 开没开、没开就停手让用户敲 `/lead-mode`；派完活结束回合、不调 `wait_agent`；要求成员第一步建工作日志。字数那条线从 400 提到 480（写满 479 通过，到 480 报错），给后面加规则留余量。两代工具的参数、装包命令、工作法细节，全在 `lead-mode` skill 与命令输出里。prefix 每轮都进上下文，所以不带细节。
 
 这段 prefix 进 system prompt 的 `DEPLOYMENT_PERSONA_PREFIX` 段，模型一定看得见。
 
@@ -52,7 +52,7 @@ prefix 398 字，六段：只决策/派活/验收、不自己写代码；加载 
 
 ### 2. 两个 skill：`lead-mode` 与 `team-digest`
 
-随包分发的 `skills/lead-mode/SKILL.md`，运行时注册进 skill 列表。内容是 Lead 工作法：派活自包含、写作用域不重叠（各成员只改自己那摊文件）、共享任务 list/get/claim/complete、等齐成员再收尾、最终验证自己做。
+随包分发的 `skills/lead-mode/SKILL.md`，运行时注册进 skill 列表。内容是 Lead 工作法：派活自包含、写作用域不重叠（各成员只改自己那摊文件）、共享任务 list/get/claim/complete、等齐成员再收尾、最终验证派独立成员做。
 
 模型调到它就能拿到这些规则，不用用户每次复述。
 
