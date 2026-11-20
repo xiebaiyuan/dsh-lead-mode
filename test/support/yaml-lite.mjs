@@ -10,6 +10,8 @@
 //   - `key: value` 标量（单引号 / 双引号 / 裸值）
 //   - `key: |` 字面块（preset 里 plan-mode 的 section 用到）
 //   - `!!js <expr>` → { __jsExpr: '<expr>' }，与宿主一致
+//   - 行内标量序列项（`- !!js <expr>`、`- 'a'`），官方 cordis 预置的
+//     skill-filesystem.customSkillDirs 就是这种写法
 //   - 布尔 true/false、null、整数
 //   - 注释与空行
 //
@@ -149,6 +151,17 @@ function preprocess(text) {
   return { logical, blocks };
 }
 
+/** 这一行是 `key: value` 还是标量。标量序列项（`- !!js ...`）走这条判断。 */
+function isMappingHead(text) {
+  try {
+    splitKeyValue(text);
+    return true;
+  } catch (error) {
+    if (error instanceof YamlLiteError) return false;
+    throw error;
+  }
+}
+
 function parseSeq(logical, pos, indent, blocks) {
   const items = [];
   while (pos < logical.length) {
@@ -156,7 +169,15 @@ function parseSeq(logical, pos, indent, blocks) {
     if (line.indent !== indent || !line.seq) break;
     pos++;
     if (pos < logical.length && logical[pos].indent > indent) {
-      const [value, next] = parseNode(logical, pos, logical[pos].indent, blocks);
+      const child = logical[pos];
+      // preprocess 把 `- value` 的值拆成缩进 +2 的一行；只有它长得像
+      // mapping 头时才继续往下解析，否则它本身就是这个序列项的值。
+      if (!child.seq && !isMappingHead(child.text)) {
+        items.push(parseScalar(child.text, blocks));
+        pos++;
+        continue;
+      }
+      const [value, next] = parseNode(logical, pos, child.indent, blocks);
       items.push(value);
       pos = next;
     } else {

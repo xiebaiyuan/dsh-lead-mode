@@ -1,12 +1,24 @@
 # dsh-lead-mode
 
-给 DeepSeek Harness 装 Lead 工作法的插件：一个 agent 预设、一个运行时 skill、一个依赖自检命令。它管的是「一个人怎么带队干活」，不是「代码怎么写」。
+给 DeepSeek Harness 装 Lead 工作法的插件：两个 agent 预置（PTC 与创造）、两个运行时 skill、一个依赖自检命令。它管的是「一个人怎么带队干活」，不是「代码怎么写」。
 
 ## Language
 
 **Lead**:
 一场会话里拆活、派活、验收的角色，动手的活派给成员。
 _Avoid_: 主 agent、父 agent、协调者
+
+**PTC（programmatic tool calling）**:
+模型写一段 TypeScript 程序调工具，程序在沙箱进程里跑。只有 `run_code` 能直调，其余工具在程序里用 `tools.xxx()` 调。
+_Avoid_: 代码模式、Code Mode、程序化调用
+
+**预置（preset）**:
+会话启动时选定的那一套工具面加 persona，就是预置下拉里的一项。本插件给两个：`lead-ptc`、`lead-cordis`。宿主另有官方 `standard`、`ptc`、`cordis` 三个。
+_Avoid_: 预设、模式、profile（那是另一回事）
+
+**lead-ptc / lead-cordis**:
+本插件的两个 agent 预置。`lead-ptc` 照抄官方 `ptc`，只有 `run_code` 能直调；`lead-cordis` 照抄官方 `cordis`（创造模式），工具能直调。两者只换 persona，能力面跟各自官方预置一致。
+_Avoid_: Lead 模式（单数）、默认预置
 
 **成员（mate）**:
 被 Lead 创建、有永久名字和独立会话的执行者。

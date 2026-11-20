@@ -2,189 +2,87 @@
 
 中文 | [English](README.md)
 
-给 DSH 加一个 Lead 模式。一个预设、两个 skill、一个自检命令、两条前置提醒。
+版本 0.2.7 · 宿主 >= 0.2.2-rc.3 · MIT
 
-官方 Team 运行时只给工具。老一代是 `spawn_teammate`、`send_message`、`team_task_*`；新一代改成用 `subagent` 建成员，`send_message`、`team_task_*`、`wait_agent` 从 subagent 体系下发。什么时候派活、派给谁、怎么等结果、收尾怎么写、多成员的产出怎么合并，这些方法它不管。本插件补的就是这一层。它不替代官方 Team 模式，是配套。
+给 DSH（DeepSeek Harness）加 Lead 模式：模型当 Lead，拆活、派活、验收，动手的活交给成员。工具官方给，方法这里补。
 
-装好后模型能按 Lead 的方式干活：拆活、派活、验收。动手的活尽量派出去。
+## 为什么需要它
 
-## 提供的能力
+官方的 Agent Teams 运行时只给工具：老一代是 `spawn_teammate`、`send_message`、`team_task_*`；新一代用 `subagent` 建成员，`send_message` 与 `team_task_*` 还在，`wait_agent` 搬进了 subagent 控制工具。什么时候派活、派给谁、怎么等结果、怎么验收、多成员的产出怎么合并，它不管。
 
-五样东西，都不碰 dsh 本体。
+官方预置默认不带 Team 工具，它由会话开关单独控制。模型手里没有，它就会自己硬干，或者拿 `subagent` 顶替 teammate。用户与模型都不知道缺了这一步。
+
+本插件补这一层方法，不替代官方 Team 模式。问题拆解与证据见 [docs/why.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/why.md)。
+
+## 愿景
+
+> 让你的 AI 团队明确你的需求，Lead 监督完整的拆解与执行过程，把模型的能力发挥到 200%。
+
+200% 是目标，不是实测数字。
+
+三条不变量：
+
+1. 方法比工具活得久。工具换名、宿主换代，工作法不变。两代 Agent Teams 兼容是这条的第一次压力测试。
+2. 交付物落在文件里。收尾消息、工作日志、团队汇总都在磁盘上，过一周还能回看。
+3. 缺东西就告诉你怎么补。不沉默、不硬撑，下一步一定是一条可粘贴的命令或一个具体的开关。
+
+## 特点
+
+| 特点 | 证据 |
+|---|---|
+| 只加一层方法，不动宿主 | `cordis.patch.yml` 全文三行 `insert`（本插件 + 两个预置）；官方预置一个字没改；不注册工具、不监听 agent 生命周期、不拦截请求；卸载即回收 |
+| 缺 Team 就停手，不硬凑 | 预置里的人设每轮查一次工具清单；启动时打一条 `warn`；`/lead-mode` 报状态。老一代不假装能派活，也不拿 `subagent` 顶替 teammate |
+| Lead 只决策和派活 | persona 里写死：拆活、派活、验收，不自己写代码、不改文件；查证、跑验收、回话仍归 Lead |
+| 派谁的模型从清单里挑 | persona 要求先调 `list_subagent_models`，从返回的清单里挑 provider/model 成对给出（可带推理档），不许编造 id |
+| 两代 Agent Teams 都认 | 按工具清单判代际，不按版本号；老一代按原文，新一代按新语义：`send_message` 用 `agent`、task 变更不唤醒。Lead 不等：派完就结束回合，收工通知会起下一轮 |
+| 方法落成文件，不落成口号 | 一人一份工作日志（状态摘要 + 只追加的轮次记录）；上下文降级有四级交接阶梯；收尾有六块骨架的团队汇总落到 `reports/`；结论挂证据指针（`路径:行号`、可粘贴命令、worklog 段名或 `session-<id>#seq`） |
+| 上下文预算算过账 | persona prefix 398 字（0.2.6 是 314 字，0.2.5 从 2002 字压下来），两个预置逐字相同，每轮都进 system prompt；细节按需加载 |
+| 看得见的交给 dsh-context | 不重复造页面，只指向它的编队页（见下方友链） |
+
+这些证据都在仓库里，可以自己核对：`cordis.patch.yml`、`lib/index.js`、`skills/`、`CHANGELOG.md`。
+
+## 30 秒上手
+
+1. 装：`dsh plugin --profile <你的 profile 名> add dsh-lead-mode`
+2. 开 Team：模型与推理等级菜单里有「开启智能体团队协作」就打开，旧宿主这个开关叫「使用智能体团队」。老一代宿主没有这个开关，装官方 profile 包，版本号按 `dsh --version` 的输出换：
+
+   ```bash
+   dsh plugin --profile <你的 profile 名> add @deepseek-ai/dsh-experimental-agent-team-profile@0.2.2-rc.1
+   ```
+
+3. 重启 dsh，新建会话的预置列表里挑一个：「Lead · PTC」给写程序调工具的会话，「Lead · 创造」给能直调工具、要改 DSH 自己的会话。然后敲 `/lead-mode` 看依赖状态。
+4. 干活：模型自己拆活、派活、验收。
+
+不换预置也能用：任何会话敲 `/skill lead-mode` 或 `/skill team-digest`。细节见 [docs/usage.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/usage.md)。
+
+## 它给你什么
 
 | 能力 | 入口 | 你要做什么 |
 |---|---|---|
-| Lead 模式预设 | 预设下拉里的「Lead 模式」 | 切过去 |
+| Lead 预置 | 预置下拉里的「Lead · PTC」或「Lead · 创造」 | 挑一个切过去 |
 | Lead 工作法 skill | `/skill lead-mode`，模型也会自己加载 | 不用管 |
 | 团队汇总 skill | `/skill team-digest`，模型收尾前自己判断写不写 | 不用管 |
 | 依赖自检 | `/lead-mode` | 依赖不对时敲一下 |
 | 两层前置提醒 | 自动 | 不用管 |
 
-只新增，不修改。`cordis.patch.yml` 全文只有两行 `insert`：一行本插件，一行新建的 `lead-mode` 预设。官方 `standard` 预设一个字没动，新预设的 21 行逐字段照抄它，只换 persona。
+只新增，不修改。撞名时宿主先到先得，本插件让位。
 
-不注册任何工具，不监听 agent 生命周期，不拦截任何请求。`lib/index.js` 只往两个注册表写：`skills`（两个 skill）与 `commands`（一个命令）；启动时另打一条 warn。卸载后这些条目全部消失，官方行为回到原样。
+两个预置，因为 Lead 只换方法、不换能力：
 
-唯一可能撞的地方是同名 skill 或命令。你已经装了 `lead-mode` 或 `team-digest` 时，宿主按先到先得处理，打一条 warn，忽略本插件那条；撞了也只是我们让位。
+| 预置 | 行数 | 基线 | 差异 |
+|---|---|---|---|
+| `lead-ptc` | 24 | 官方 `ptc` 逐字段 | 只换 persona |
+| `lead-cordis` | 23 | 官方 `cordis`（创造）逐字段 | persona，外加 `skill-filesystem` 不带 `customSkillDirs` |
 
-### 一、Lead 模式预设
+`customSkillDirs` 是故意不带的：官方那条表达式按 patch 文件自己的位置解析 `@deepseek-ai/dsh-agent-preset`，本包从那里解析不到宿主包，照抄会在加载时抛错。代价是 `dsh-doc` skill 不在 `lead-cordis` 的文件系统 skill 目录里。五样能力的细说在 [docs/usage.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/usage.md)。
 
-切过去，这个会话的模型就换成 Lead 人设。
+两个预置都按 web-app 的预置抄，只适合桌面端或 Web profile。headless profile 没有这些工具行，别在那边切 Lead 预置。
 
-预设内容等于官方 `standard` 预设的全部 22 行，只把 persona 换掉。工具一个不少：bash、文件读写、搜索、web、todo、skill、goal、plan、compaction、subagent、workflow 全在。
-
-也就是说，切到 Lead 模式不会让你少任何能力，只是换了工作方式。
-
-### 二、Lead 工作法 skill
-
-一套拆活、派活、验收的方法，随包分发。
-
-它不绑预设。任何会话都能加载，两条路：
-
-- 模型判断需要时自己加载（skill 标记为模型可调用）
-- 你直接敲 `/skill lead-mode`
-
-覆盖这些内容：开工前对齐目标、派活必须自包含、写作用域不重叠、共享任务的 list/get/claim/complete 流程、怎么等 teammate（两代答案不同，见「两代 Agent Teams 定义」）、teammate 的模型从哪来、最终验证自己做。
-
-其中两条是读源码才确认的，容易踩：
-
-| 事实 | 为什么重要 |
-|---|---|
-| teammate 收工会自动通知你，通知里带它收尾那条消息 | 派完活结束回合就够，不用盯着等 |
-| task 变更不会唤醒空闲的 Lead | 别指望「它把 task 标 complete 了我就知道了」。老一代只唤醒正在 `wait_agent` 的调用方；新一代谁都不唤醒，`wait_agent` 只等自己的收件箱 |
-
-所以 skill 的默认建议是：派完活就结束回合等通知（用户立刻看到进展），只有本回合内就必须拿到结果时才用一次 `wait_agent`。不要 `wait_agent` 套循环，也不要反复 `list_agents` 轮询。
-
-派活 prompt 里要要求 teammate **把交付物写进收尾那条消息**——那条消息会随通知回到你手上。
-
-### 三、团队汇总 skill
-
-收尾时全队产出散在 N 条收尾消息和 N 份工作日志里，没人合并，过一周想回看就得重新查一遍。这个 skill 把它们合成一份 `reports/<YYYY-MM-DD>-<effort>.md`。
-
-| 项 | 规则 |
-|---|---|
-| 什么时候写 | 给最终答复前，本 effort 有 2 个以上成员，或跨 2 轮以上 |
-| 写到哪 | `reports/<YYYY-MM-DD>-<effort>.md`，单一路径，收尾一次成型 |
-| 六块骨架 | 结论 / 谁干了什么 / 验收证据 / 偏离与未验证 / 死路与决策 / 未决与下一步 |
-| 原料分层 | 收尾消息做骨架，工作日志补过程细节，会话日志兜底 |
-
-六块标题写死，某块没内容就写「无」。原料按顺序取，上层够用就不下钻。细节看 `team-digest` skill。
-
-### 四、依赖自检命令
-
-`/lead-mode` 报告当前依赖状态。
-
-| 报什么 | 内容 |
-|---|---|
-| Team 运行时 | 挂没挂；老一代挂了再报 `maxMembers` |
-| lead-mode 预设 | 注册没注册 |
-| 缺东西时 | 按代际给下一步：新一代先提示会话开关，老一代给带版本号的安装命令 |
-
-依赖齐全返回 success，缺东西返回 error。不会静默跳过。
-
-### 五、两层前置提醒
-
-**本会话没有 Team 工具时，提醒你去开官方 Agent Teams，而不是让模型硬干。**
-
-走两条路：
-
-| 通道 | 谁看得见 | 什么时候出现 |
-|---|---|---|
-| persona 第一段 | 模型 | 一切到 Lead 模式就在。system prompt 的第 0 段 |
-| 启动 warn 与 `/lead-mode` | 用户 | 检测到 Team 运行时缺失时 |
-
-两条都让你在 Team 工具不齐时先停下。persona 只带判据和停手规则；下一步怎么做（新宿主开会话开关、老宿主装 profile 包）在 `/lead-mode` 输出和 skill 里，好让每轮上下文保持短。
-
-老一代宿主上，模型不会假装能派活，也不会拿 `subagent` 顶替 teammate；新一代的 teammate 本来就是 `subagent` 建的，这条不适用。
-
-## 两代 Agent Teams 定义
-
-Lead 模式靠 dsh 官方的 Team 运行时派活，本插件不带它。这套运行时在两代宿主上是两套 API：老一代是已发布的 0.2.2-rc.1；新一代只在本地 master 上，还没发版，没有版本号可指。
-
-| 维度 | 老一代：已发布宿主 0.2.2-rc.1 | 新一代：本地 master，未发布 |
-|---|---|---|
-| 定义在哪 | 桌面端 asar 内的 `@deepseek-ai/dsh-experimental-tool-agent-team@0.2.2-rc.1` | `packages/team/tool-agent-team` 与 `packages/subagent/*` |
-| 建成员 | `spawn_teammate({ name, description, prompt, context })` | `subagent({ name?, description, prompt, cwd?, agent_preset?, provider?, model?, reasoning_effort? })`；要继承历史用 `subagent_fork` |
-| 成员身份 | 持久命名的成员，带 `target` | Session id 加一个 agent 名；名字是从根算起的路径（如 `reviewer/checker`），根固定叫 `lead` |
-| 发消息 | `send_message({ target, message })` | `send_message({ agent, message })`，返回 `{ messageId }` |
-| 打断 | `interrupt_agent({ target })` | `interrupt_agent({ agent })`，返回 `{ accepted }` |
-| 名册 | `list_agents({})` 列 Lead 加成员 | `list_agents({})` 列整棵树，每行 `{ name, status, description? }`，状态多了 `corrupt`、`unsupported`、`unavailable` |
-| 等待语义 | team 作用域：等成员状态、消息、任务变更；没人能产出变更时立刻回 `noProgress` | 普通 subagent 控制工具：等调用者自己的下一条输入（成员消息、完成通知、用户插话），只回 `{ timedOut }`，没有 `noProgress` |
-| 任务板 owner | `team_task_*` 四个工具，owner 填成员名 | 同样四个工具，owner 填成员名或 Session id；判据字段从 `ownerName` 变成 `ownerId` |
-| 开启方式 | 装 profile 包 `@deepseek-ai/dsh-experimental-agent-team-profile@0.2.2-rc.1` | 不要装这个包：它已进 `RETIRED_BUNDLES`，app-boot 会把 profile 里的它删掉。Team 插件随 base 与 web 组合下发，按会话开：模型与推理等级菜单里的「使用智能体团队」 |
-| 成员模型 | 继承 Lead，`spawn_teammate` 没有模型参数 | `subagent` 有 `provider`、`model`、`reasoning_effort`（`standard` 预设已开 `modelSelection`）；`agent_preset` 可指定预设 |
-| 成员上限 | `agentTeams.config.maxMembers` | 配置键 `maxMembers` 已被拒绝，读不到上限 |
-
-新一代删掉了 `spawn_teammate`；`wait_agent` 从 team 工具搬到 subagent 控制工具，语义换成「等自己的收件箱」。
-
-### 怎么知道自己属于哪一代
-
-不按版本号认，按工具清单认。
-
-| 你看到的 | 属于 | 下一步 |
-|---|---|---|
-| 有 `spawn_teammate` | 老一代 | 装 profile 包，见下一节 |
-| 没有 `spawn_teammate`，但有 `subagent` 和 `team_task_*` | 新一代 | 不用装，确认会话开关已开 |
-| `team_task_*` 一个都没有 | Team 没开 | 先找会话开关；确认是老一代宿主没有这个开关，才去装包 |
-
-顺序不能反。新一代宿主上让人去装 profile 包是错的：那个包会被 app-boot 移除，装了也白装。
-
-### 老一代：装 profile 包
-
-```bash
-dsh plugin --profile <你的 profile 名> add @deepseek-ai/dsh-experimental-agent-team-profile@0.2.2-rc.1
-```
-
-上面写的 `0.2.2-rc.1` 是当前宿主线，按你自己 `dsh --version` 的输出替换。
-
-**必须带版本号，而且要和宿主版本一致。** 不带会装到 `latest` 上的 0.1.5-alpha.2，那是给 0.1.x 宿主用的，在 0.2.2 宿主上挂不上。`next` 指向的 0.2.2-rc.1 才是这条线现在对的版本，也是本插件文案里钉的那个。团队包把 `dsh-*` 的 peer 钉死到具体版本，老 rc 装到新宿主上，peer 对不上。装完重启 dsh。
-
-不确定装没装？进 dsh 敲 `/lead-mode`，它会报依赖状态。
-
-### 新一代：不要装 profile 包，开会话开关
-
-新一代宿主上不要执行上面那条命令。`@deepseek-ai/dsh-experimental-agent-team-profile` 已进官方的 `RETIRED_BUNDLES`，app-boot 会把它从 profile 里删掉。Team 插件随 base 与 web 组合下发。
-
-开法是按会话开：打开「模型与推理等级」菜单，把「使用智能体团队」开关打开。这个开关是会话级的，不是 profile 级的。
-
-## 装本插件
-
-两条路，选一条。
-
-从 npm：
-
-```bash
-dsh plugin --profile <你的 profile 名> add dsh-lead-mode
-```
-
-从 GitHub：
-
-```bash
-dsh plugin --profile <你的 profile 名> add https://github.com/xiebaiyuan/dsh-lead-mode
-```
-
-装完重启 dsh。在预设列表里选「Lead 模式」。
-
-## 用法
-
-三步。
-
-**1. 切到 Lead 模式。** 新会话的预设列表里选「Lead 模式」。切过去之后，模型 system prompt 的第一段就换成 Lead 人设，里面那句指向 `lead-mode` skill 的短指针跟着进去。
-
-**2. 敲 `/lead-mode` 查依赖。** 这条命令不派活，只报状态。缺东西时它按代际给下一步：新一代提示会话开关，老一代给出带版本号的安装命令。
-
-**3. 让模型干活。** 派活工具齐了，模型会自己拆活、派给 teammate、等齐再收尾。工具不齐，它第一句就是让你去开 Team 运行时。
-
-## 只用 skill，不换预设
-
-预设不动也能用。插件装好，预设保持 `standard` 或你自己的，任何会话敲 `/skill lead-mode` 就加载那套方法；模型判断任务需要时也会自己加载。
-
-少了一样东西：persona 里那句短指针只在 `lead-mode` 预设里，不切过去就看不到。所以第一次先敲 `/lead-mode` 看依赖：缺 Team 运行时它会给下一步，新一代是会话开关，老一代才是带版本号的安装命令。
-
-`team-digest` 同理。它不绑预设，任何会话可用，收尾时模型自己判断要不要写汇总。
+PTC 是官方的新工具形态：模型写一段 TypeScript 程序调工具，只有 `run_code` 能直调，其余工具都在程序里用 `tools.xxx()` 调。Lead 的派活、建任务、发消息都按这个写法走，细节在 `lead-mode` skill 里。`lead-cordis` 里工具能直调，并且带 `tool-cordis` —— 这就是这台宿主上「创造」的意思。
 
 ## 友链：dsh-context
 
-本插件只做 Lead 模式。团队状态与通信的可视化是 **dsh-context** 的活，那是另一个项目：
+本插件只做 Lead 模式。整队状态与通信的可视化是 [dsh-context](https://github.com/bowenliang123/dsh-context) 的活，那是另一个项目。
 
 | 项 | 值 |
 |---|---|
@@ -193,13 +91,9 @@ dsh plugin --profile <你的 profile 名> add https://github.com/xiebaiyuan/dsh-
 | 许可 | Apache-2.0 |
 | 装法 | `dsh plugin --profile <你的 profile 名> add dsh-context` |
 
-它不随本插件安装，也不是本插件的依赖。本插件只在文档和 skill 里指个路。
+它不随本插件安装，也不是本插件的依赖。只有装了它，编队页才存在。
 
-### 为什么指到这里
-
-工具调用只能一条条读。`list_agents` 给一行状态，`team_task_list` 给任务归属。要看整队谁在干什么、谁跟谁说了什么，得开一页。
-
-dsh-context 在每个会话里加一个 **编队 / Fleet** 标签页（在 **Context** 右边），右栏的 **Context** 面板里有同一张卡。
+装好后每个会话多一个「编队 / Fleet」标签页（在 Context 右边），右栏的 Context 面板里有同一张卡，五个区块：
 
 | 区块 | 看什么 |
 |---|---|
@@ -207,118 +101,23 @@ dsh-context 在每个会话里加一个 **编队 / Fleet** 标签页（在 **Con
 | Agent Network | 当前 agent、它的父级、全部子代理，一人一张卡 |
 | Fleet Members | 每个成员的角色、模型、最新回复、运行时长、步数、在办任务数 |
 | Tasks | 团队任务与子代理派活放一起，按 owner 分组，带 blocked-by 链 |
-| Agent Comms | 谁跟谁说了什么。团队消息、邮箱投递、运行时的结算通知都在这里 |
+| Agent Comms | 谁跟谁说了什么：团队消息、邮箱投递、运行时的结算通知 |
 
-点图上的成员或成员卡，Tasks 与 Agent Comms 会收窄到那一个人。Agent Comms 里点开一条能看到完整记录：来自哪个会话日志、第几号事件、是运行时写的结算通知还是子代理自己发的、完整收尾报告。
+## 文档地图
 
-Lead 模式 skill 里也写了这个入口，所以派活时模型会直接让你去这儿看进度。
-
-## 依赖的官方 bundle 与版本
-
-本插件不捆绑下面这些包。它们由宿主或官方 bundle 提供；带版本约束的那些写在 `peerDependencies` 里，profile 包不在其中，要用户自己装。
-
-| 包 | 版本要求 | 谁提供 | 缺了会怎样 |
-|---|---|---|---|
-| `@deepseek-ai/dsh-experimental-agent-team-profile` | `0.2.2-rc.1` | 用户显式安装，只给老一代宿主 | 只在老一代宿主上：派不了活，`/lead-mode` 报 error，启动 warn |
-| `@deepseek-ai/dsh` | `>=0.2.2-rc.1` | 宿主 | 装不上 |
-| `@deepseek-ai/cordis` | `^4.0.5` | 宿主 | 装不上 |
-| `@deepseek-ai/schemastery` | `^3.18.5` | 宿主 | 装不上 |
-| `@deepseek-ai/dsh-agent-preset-registry` | `>=0.2.2-rc.1` | 宿主 | 预设行不生效，`/lead-mode` 报「查不到」 |
-| `@deepseek-ai/dsh-skill` | `>=0.2.2-rc.1` | 宿主 | skill 不注册，启动 warn |
-| `@deepseek-ai/dsh-commands` | `>=0.2.2-rc.1` | 宿主 | `/lead-mode` 不注册，启动 warn |
-
-目标宿主版本写在 `package.json` 的 `dshTarget` 字段：`0.2.2-rc.1`。
-
-第一行只管老一代宿主。新一代宿主上这个包已进 `RETIRED_BUNDLES`，不需要装，也装不住。
-
-## 为什么老一代的安装命令要带版本号
-
-`@deepseek-ai/dsh-experimental-agent-team-profile` 在 npm 上有三个 dist-tag：
-
-| dist-tag | 版本 | 配哪个宿主 |
-|---|---|---|
-| `latest` | 0.1.5-alpha.2 | 0.1.x |
-| `alpha` | 0.2.2-alpha.3 | 0.2.2 线早期预览 |
-| `next` | 0.2.2-rc.1 | 0.2.2 |
-
-裸写包名，npm 解析 `latest`，装到 0.1.5-alpha.2。这个版本是给 0.1.x 宿主用的，在 0.2.2 宿主上挂不上。装完 dsh 里看不到 Team 工具，`/lead-mode` 还是报「未挂载」。
-
-实测（2026-10-26，npm 11.20.0）：
-
-```
-$ npm view @deepseek-ai/dsh-experimental-agent-team-profile version
-0.1.5-alpha.2
-```
-
-所以本插件文案里所有出现安装命令的地方都带 `@0.2.2-rc.1`：`/lead-mode` 输出、启动 warn、SKILL.md，也就是当前的 `dshTarget`。persona prefix 故意不带命令，`test/preset.test.mjs` 反过来断言它不该出现，好让每轮上下文保持短。
-
-`next` 现在指向 `0.2.2-rc.1`，就是本插件钉的版本；`alpha`（`0.2.2-alpha.3`）是同一条线的早期预览。
-
-## 与官方 standard 预设的差异
-
-只有 persona 一处。其余 21 行逐字段照抄 `standard`。
-
-| 项 | standard | lead-mode |
-|---|---|---|
-| persona prefix | `You are a coding agent powered by the {{model}} model.` | 短中文 Lead 人设：查工具、停手规则、指向 `lead-mode` skill |
-| 其余 21 行 | — | 与 standard 逐字段相同 |
-
-classic subagent 三行（`tool-subagent-control`、`tool-subagent`、`tool-subagent-fork`）保持启用，没有禁用。`list_agents` 现在由 `tool-subagent-control` 自己注册，不再单列一行。Team 工具由 host 决定，不由预设决定。
-
-## 为什么预设里不塞 Team 运行时
-
-`@deepseek-ai/dsh-experimental-tool-agent-team` 的 `apply()` 监听全局 `agent/created`，给每一个 agent 装 Team 工具。它是 host 平面的插件，放进预设会漏到所有会话。
-
-所以本插件的定位是：预设 + 两个 skill + 提醒。开不开 Team 运行时：老一代宿主由用户装官方 profile 包决定，新一代由会话开关决定。
-
-## 目录
-
-```
-package.json          包元数据，dsh.bundle.patch 指向 cordis.patch.yml
-cordis.patch.yml      两行 insert：本插件 + lead-mode 预设
-lib/index.js          host 半边：扫 skills/ 逐个注册、注册命令、启动自检
-skills/lead-mode/     Lead 工作法正文
-skills/team-digest/   团队汇总正文
-dsh-plugin.naming.json  命名清单
-test/                 行为断言，零依赖
-```
-
-## 开发
-
-```bash
-node --check lib/index.js
-node --test test/*.test.mjs
-node scripts/check-patch.mjs
-```
-
-测试零依赖，不用 `npm install`。`test/` 目录形式只在 Node 22+ 被接受，Node 20 会用 glob 展开。
-
-## 发新版本
-
-推 tag 触发 `.github/workflows/release.yml`，发布走 npm 的 Trusted Publishing（OIDC）。不存 token，也不弹 2FA。
-
-发之前先在 npmjs.com 配一次 Trusted Publisher：
-
-| 字段 | 填什么 |
+| 想看什么 | 去哪 |
 |---|---|
-| Organization or user | `xiebaiyuan` |
-| Repository | `dsh-lead-mode` |
-| Workflow filename | `release.yml` |
-| Allowed actions | 勾上 `npm publish` |
+| 为什么需要、问题拆解、边界 | [docs/why.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/why.md) |
+| 安装、开启 Team、用法、能力细说、依赖表 | [docs/usage.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/usage.md) |
+| 两代 Agent Teams 对照与判定 | [docs/agent-teams.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/agent-teams.md) |
+| 设计取舍：不干扰官方、预置差异 | [docs/design.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/design.md) |
+| 目录、开发、测试、发版 | [docs/development.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/development.md) |
+| 术语 | [GLOSSARY.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/GLOSSARY.md) |
+| 版本记录 | [CHANGELOG.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/CHANGELOG.md) |
+| 团队汇总样例 | [reports/](https://github.com/xiebaiyuan/dsh-lead-mode/tree/main/reports) |
 
-`npm stage publish` 是默认就允许的，只勾它的话 CI 只能暂存，还得人工 approve 才上线。
+`docs/` 不进 npm 包，这几篇只在 GitHub 上有；链接都写成绝对地址，在 npm 页面上也能点开。
 
-配好后：
+## 许可
 
-```bash
-npm version patch --no-git-tag-version
-git commit -am "chore: bump to 0.1.3"
-git tag v0.1.3
-git push origin main --tags
-```
-
-tag 的版本必须和 `package.json` 一致，否则 workflow 直接退出，不发。同一个版本发第二次会被 npm 拒掉，所以每次发都要先提版本号。
-
-## License
-
-MIT
+MIT。全文见 [LICENSE](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/LICENSE)。

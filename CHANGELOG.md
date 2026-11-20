@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.2.7
+
+原来一个 `lead-mode` 预置拆成两个：`lead-ptc`（照抄官方 `ptc`，24 行）与 `lead-cordis`（照抄官方 `cordis` 创造模式，23 行）。Lead 只换方法不换能力，PTC 会话与创造会话的工具面本来就不同，合成一个等于替用户做能力取舍。
+
+- **两个预置**。`cordis.patch.yml` 的三行 insert：本插件、`preset-lead-ptc`（id `lead-ptc`、order 5、24 行）、`preset-lead-cordis`（id `lead-cordis`、order 6、23 行）。两行官方预置一个字没动。
+- **persona 改写，398 字，两个预置逐字相同**。六段：只做决策/拆活/派活/验收、不自己写代码不改文件；加载 `lead-mode` skill；派活前 `list_subagent_models` 从可选清单挑 provider/model 成对给（可带推理档，别编造 id）；开局先判 Team 开没开、没开就停手让用户敲 `/lead-mode`；派完活结束回合、不调 `wait_agent`、不轮询；要求成员第一步建 `.scratch/<effort>/worklog-<mate>.md`。
+- **`lead-cordis` 的 `skill-filesystem` 不带 `customSkillDirs`**。官方 `cordis` 那条值是一段 `!!js`，按 patch 文件自己的 `baseUrl` 解析 `@deepseek-ai/dsh-agent-preset/package.json`；本插件的 `baseUrl` 在 profile 的 `node_modules/dsh-lead-mode/`，解析不到那个包，照抄加载即抛错。代价：`dsh-doc` skill 不在该预置里。
+- **`lib/index.js` 报两个预置**。`PRESET_IDS` 是 id 数组（`['lead-ptc','lead-cordis']`），`presetState()` 返回逐预置状态，`/lead-mode` 每行报「已注册」/「未注册」/「查不到」，两者都齐才算依赖齐；成功文案由同一份清单拼出来，不再硬编码两个 id。
+- **测试**。`test/preset.test.mjs` 改表驱动：`lead-ptc` 对 `test/fixtures/ptc-preset.yml`、`lead-cordis` 对新增的 `test/fixtures/cordis-preset.yml`（官方 `cordis.patch.yml` 原样副本），各比一遍行 id 集合与逐字段；断言两个 persona 逐字相同。`smoke.test.mjs` 的 `agentPresets.list` mock 全改成两个 id，新增「只注册了一个时点名缺的那个」用例。`scripts/check-patch.mjs` 改成逐个预置核对。
+- **`test/support/yaml-lite.mjs` 修 bug**。预处理会把 `- !!js expr` 拆成缩进 +2 的一行，`parseSeq` 当 mapping 解析而抛错；新增 `isMappingHead()`，非 seq 非 mapping 头就当行内标量解析。
+- **文档**。两份 README、`docs/{usage,design,why,agent-teams,development}.md`、`GLOSSARY.md` 全部改成两个预置；`design.md` 的「与官方 ptc 的差异」一节改成「与官方预置的差异」，带 24/23 对照与 `customSkillDirs` 的解析细节。
+- **禁止 Lead 等待**。Team 本来就是消息驱动：成员收工、发消息都会起 Lead 的新一轮，`wait_agent` 只等自己收件箱，挡不住成员干活，还白耗 `run_code` 的 120 秒预算。persona、`skills/lead-mode/SKILL.md`、`docs/usage.md`、`docs/agent-teams.md`、两份 README 统一成「派完活结束回合，不 `wait_agent`、不轮询，催人用 `send_message`」，测试加了禁等待断言。
+- **术语与开关名对齐宿主**。全仓「预设」统一成 GLOSSARY 定的「预置」；会话开关按 rc.5 的实际标签改为「开启智能体团队协作」（旧宿主是「使用智能体团队」）。
+- **迁移提示**。0.2.7 删掉了旧的 `lead-mode` 预置：已切到它的会话会回落到默认预置，重开一次预置下拉选 `lead-ptc` 或 `lead-cordis` 即可。
+- **文档对齐代码**。两份 README 的版本行、`docs/usage.md` 依赖表与 `dshTarget`、`docs/why.md` 的 `engines` 全部改到 `0.2.2-rc.3`；`lead-cordis` 有 `planning` 分组（此前写成没有）、`tool-office` 只加在 `lead-ptc`，两处纠正；persona 字数统一 398。
+- **兼容性核对报告**。新增 `reports/2026-11-20-compat-rc5.md`，逐项记录 0.2.2-rc.5 的工具名、必填参数、模型选择两层开关与 `session` 钉死清单。
+- **版本**。`package.json` 到 `0.2.7`；`engines.dsh` 与 `dshTarget` 先留 `>=0.2.2-rc.3`。
+
+## 0.2.6
+
+预置基线从官方 `standard` 换成官方 `ptc`，lead-mode 会话默认走 PTC（模型写 TypeScript 程序调工具）。同时跟上宿主 0.2.2-rc.3，会话开关的文案改到新版叫法。
+
+- **预置对齐 ptc**。照抄 `ptc` 相对 `standard` 的四处差异：新增 `tool-executor-ptc`，`workflow-ptc` 与 `tool-workflow` 各加 `disabled: true`，`tool-plugin-manager` 的 `disabled` 从条件表达式改成 `true`。与官方 `ptc` 逐字段一致，差异仍只有 persona。
+- **跟上 0.2.2-rc.3**。rc.3 的 `ptc` 又变了两处，一起照抄：`tool-subagent-control` 加 `config.interrupt: false`，`present` 之后加 `tool-office`。顶层 plugins 从 23 行变成 24 行。`standard` 新加的 `skill-filesystem.customSkillDirs` 只出现在 standard，`ptc` 没有，这里不补。
+- **`interrupt_agent` 默认关闭**。rc.3 起 `tool-subagent-control` 的 `interrupt` 默认 false，内置配置显式关掉。skill 里所有打断写法都加了条件：工具清单里没有它时改用 `send_message` 要求成员停在安全点；要硬打断，得让用户把 `interrupt` 开成 `true`。
+- **PTC 读工具可以并发**。rc.3 把 `team_task_list`、`team_task_get`、`list_agents` 标成并发安全（`isConcurrencySafe`），skill 的 PTC 一节补了 `Promise.all` 的用法。
+- **测试基线重切**。`test/fixtures/ptc-preset.yml` 取自 0.2.2-rc.3 的官方 `ptc.patch.yml`（块 md5 `508b07f82e449bf5998d019267f693e3`）；`test/preset.test.mjs` 的「与 standard 相同」断言全部改成与 ptc 相同，比较逻辑没放宽。
+- **skill 增一节「PTC 模式下怎么调工具」**。写清只有 `run_code` 能直调、`team_task_*` 与 `subagent` 走 SDK 里的 `tools.xxx()`、直调会被拒、派活可以一次程序里连派、不要在程序里用 `wait_agent` 等全部成员（一次程序默认 120 秒、上限 600 秒）。判据表补了执行形态判定：工具清单里只有 `run_code` 可直调就是 PTC，`team_task_*` 要出现在 SDK 块里才算 Team 已开。
+- **开关改名**。新版宿主菜单叫「开启智能体团队协作」，`lib/index.js` 的会话开关提示与两个 skill 桩位改成新名，并注明旧宿主叫「使用智能体团队」。`/lead-mode` 的分支结构没动。
+- **文档**。两份 README、`docs/why.md`、`docs/design.md`、`docs/usage.md`、`docs/agent-teams.md` 里「照抄 standard」的说法全部改成 `ptc`；`agent-teams.md` 新增 PTC 调用形态一节与「打断默认关」的说明；`GLOSSARY.md` 加 PTC 词条。
+- **版本**。`package.json` 到 `0.2.6`；`engines.dsh` 与 `dshTarget` 抬到 `>=0.2.2-rc.3` 与 `0.2.2-rc.3`，peer 同步。原因：`tool-office` 行与 `interrupt` 配置键都是 rc.3 才有，旧宿主装上会加载失败。
+
 ## 0.2.5
 
 persona prefix 从 2002 字压到 314 字（issue #1）。两代工具的逐个参数、装包命令、等通知与验收细则本来就在 `lead-mode` skill 里，prefix 只留判据、停手规则和一句指路。另把 GitHub Release 接进发布流水线。
@@ -16,7 +48,7 @@ persona prefix 从 2002 字压到 314 字（issue #1）。两代工具的逐个�
 
 - **两代定义分开写**。老一代的 teammate 由 `spawn_teammate` 建，是持久命名的成员，`send_message` 用 `target`，`wait_agent` 属 team 工具、等成员状态与任务变更、没人能产出变更时立刻回 `noProgress`。新一代的 teammate 由 `subagent` 建（要继承历史用 `subagent_fork`），成员身份是 Session id 加一个从根算起的 agent 名（根固定叫 `lead`），`send_message` 与 `interrupt_agent` 改用 `agent` 参数，`wait_agent` 搬进 subagent 控制工具，只等调用者自己的收件箱，只回 `{ timedOut }`。
 - **任务变更不再指望唤醒**。新一代里 task 变更不唤醒任何等待、也不启动空闲成员；要成员处理任务就得 `send_message` 叫它。老一代仍是「task 变更只唤醒正在 `wait_agent` 的调用方」。
-- **成员可以单独挑模型**。新一代的 `subagent` 接受 `provider`、`model`、`reasoning_effort`（`standard` 预设已开 `modelSelection`），`agent_preset` 可指定预设。老的「teammate 继承 Lead、不能单独指定模型」只对老一代成立。
+- **成员可以单独挑模型**。新一代的 `subagent` 接受 `provider`、`model`、`reasoning_effort`（`standard` 预置已开 `modelSelection`），`agent_preset` 可指定预置。老的「teammate 继承 Lead、不能单独指定模型」只对老一代成立。
 - **任务板字段**。四个 `team_task_*` 工具名字不变，`claim` 照旧要带当前 `revision`；新一代 owner 可以填成员名或 Session id，判据字段是 `ownerId` 而不是 `ownerName`。
 - **新宿主不要再装 profile 包**。`@deepseek-ai/dsh-experimental-agent-team-profile` 已进 `RETIRED_BUNDLES`，app-boot 会把它从 profile 里删掉，装了也白装。新一代的 Team 插件随 base 与 web 组合下发，按会话在「模型与推理等级」菜单里打开「使用智能体团队」。装包命令只留给老一代宿主，版本号要跟 `dsh --version` 的输出一致。
 - **判定按工具清单，不按版本号**。新一代只在 master 上，没有版本号可指，`@deepseek-ai/dsh-tool-agent-team` 在 npm 上也不存在，所以别用版本边界去判代际。有 `spawn_teammate` 是老一代；没有它但有 `subagent` 和 `team_task_*` 是新一代；`team_task_*` 一个都没有是 Team 没开，先提示会话开关，确认是老宿主才给装包命令。
@@ -28,10 +60,10 @@ persona prefix 从 2002 字压到 314 字（issue #1）。两代工具的逐个�
 
 适配宿主 0.2.2-rc.1。修的是升级后 Lead 模式面板显示「加载失败」。
 
-- **根因**：0.2.2 删掉了 `@deepseek-ai/dsh-tool-subagent-control` 的 `/list-agents` 子路径导出，`list_agents` 并进主入口的 `apply()`。预设还照抄着 0.2.1 的 `tool-subagent-list-agents` 行，import 解析不到，那行 fiber 停在 `never started`，整个 `preset-lead-mode` 跟着加载失败。上游 `v0.2.1-rc.1/subagent-control-tools` 升级指南写明这三件事。
+- **根因**：0.2.2 删掉了 `@deepseek-ai/dsh-tool-subagent-control` 的 `/list-agents` 子路径导出，`list_agents` 并进主入口的 `apply()`。预置还照抄着 0.2.1 的 `tool-subagent-list-agents` 行，import 解析不到，那行 fiber 停在 `never started`，整个 `preset-lead-mode` 跟着加载失败。上游 `v0.2.1-rc.1/subagent-control-tools` 升级指南写明这三件事。
 - **删掉 `tool-subagent-list-agents` 行**。`list_agents` 现在由 `tool-subagent-control` 自己注册，delegation 组内子行从 6 行降到 5 行。
 - **`modelSelectionSettings: true` 换成 `modelSelection: true` + `modelDiscovery: true`**。上游把路由选择与发现拆成两个开关，旧键名不再读。工具参数名没变，仍是 `provider`、`model`、`reasoning_effort`、`agent_preset`。
-- **`tool-fs` 补 `applyPatch: false`，`tool-plugin-manager` 的 `disabled` 改成 `!!js "!ctx.get('profileContext')"`**。这两处是 standard 预设本次的改动，逐字段对齐的测试要求跟着改。
+- **`tool-fs` 补 `applyPatch: false`，`tool-plugin-manager` 的 `disabled` 改成 `!!js "!ctx.get('profileContext')"`**。这两处是 standard 预置本次的改动，逐字段对齐的测试要求跟着改。
 - **基线重切**：`test/fixtures/standard-preset.yml` 换成 0.2.2-rc.1 的 app.asar 切块。块 md5 `34ddbab4cf5f76afbf055b61c8501659`，130 行，22 个顶层行。
 - **版本跟着走**：`dshTarget` 与 `engines.dsh` 改 `0.2.2-rc.1`，团队运行时钉 `@deepseek-ai/dsh-experimental-agent-team-profile@0.2.2-rc.1`（正好是 npm 的 `next`）。persona prefix、`/lead-mode` 输出、启动 warn、`SKILL.md`、两份 README、`docs/why.md` 一起改。`0.2.1` 宿主请继续用 0.2.2 那版。
 - **验证**：`npm test` 34 条全绿，`npm run check` 通过。
@@ -43,7 +75,7 @@ persona prefix 从 2002 字压到 314 字（issue #1）。两代工具的逐个�
 - **团队运行时从 `0.2.1-rc.3` 改钉 `0.2.1-rc.5`**。团队包把 `dsh-*` 的 peer 钉到具体版本，rc.3 的包在 rc.5 宿主上 peer 对不上。宿主升到 rc.5 后，照旧提示装 rc.3 会把 Team 运行时装成对不上的版本。改动覆盖 persona prefix、`/lead-mode` 输出、启动 warn、`SKILL.md`、两份 README、`docs/why.md`、两条测试常量。
 - **`dshTarget` 跟着改成 `0.2.1-rc.5`**，提示文案补一句「版本号要跟 `dsh --version` 的输出一致」，下次宿主升版至少知道该改哪。
 - **两份 README 的 dist-tag 数字更新**：`next` 现在指 `0.2.1-rc.5`；`alpha` 已经跳到 `0.2.2-alpha.2`，属于 0.2.2 线，不能和 0.2.1 宿主混用。
-- **`standard` 预设基线在 rc.5 上复核**：从 rc.5 的 app.asar 按同一字节串切出的块与 `test/fixtures/standard-preset.yml` 逐字节相同，预设没有漂移。
+- **`standard` 预置基线在 rc.5 上复核**：从 rc.5 的 app.asar 按同一字节串切出的块与 `test/fixtures/standard-preset.yml` 逐字节相同，预置没有漂移。
 - **补 `npm test` / `npm run check`**：以前只有 CI 直接调 node，仓库里没有 scripts 字段，`npm test` 会报缺脚本。
 - **release workflow 补门禁**：发布前跑命名清单校验与 patch 解析；加一步拒绝低于已发布 `latest` 的版本。
 
@@ -53,8 +85,8 @@ README 补上定位与 `team-digest` 的说明。代码与 0.2.0 相同，只改
 
 - **开头写明与官方 Team 模式的关系**：官方 Team 运行时只给 `spawn_teammate`、`send_message`、`team_task_*` 这些工具，不管什么时候派活、怎么等结果、收尾怎么写、多成员产出怎么合并。本插件补这一层，不替代官方 Team 模式。
 - **能力表四样改五样**，新增「团队汇总 skill」一节：什么时候写、写到哪、六块骨架、原料分层，细节指回 skill。0.2.0 发版时 README 漏了这一项，还写着「一个 skill」。
-- **新增「不干扰官方」三段**：`cordis.patch.yml` 只有两行 `insert`，官方 `standard` 预设一个字没动；不注册工具、不监听 agent 生命周期、不拦截请求；只往 `skills` 与 `commands` 两个注册表写。唯一可能撞的是同名 skill 或命令，宿主按先到先得，撞了只是本插件让位。
-- **新增「只用 skill，不换预设」一节**：预设保持 `standard` 也能用，代价是没有 persona 里那段前置提醒，第一次先敲 `/lead-mode` 看依赖。
+- **新增「不干扰官方」三段**：`cordis.patch.yml` 只有两行 `insert`，官方 `standard` 预置一个字没动；不注册工具、不监听 agent 生命周期、不拦截请求；只往 `skills` 与 `commands` 两个注册表写。唯一可能撞的是同名 skill 或命令，宿主按先到先得，撞了只是本插件让位。
+- **新增「只用 skill，不换预置」一节**：预置保持 `standard` 也能用，代价是没有 persona 里那段前置提醒，第一次先敲 `/lead-mode` 看依赖。
 
 ## 0.2.0
 
@@ -75,7 +107,7 @@ README 补上定位与 `team-digest` 的说明。代码与 0.2.0 相同，只改
 
 仓库根 `GLOSSARY.md` 加四个词：过程产物、证据指针、死路、团队汇总。`obsidian-docs/adr/` 起第一条 `0001-team-digest.md`，把四条选择各写清备选、依据和推翻条件：不复用任务板、不做增量、独立成 skill、不加命令。
 
-预设与官方 `standard` 的差异仍只有 persona 一处。
+预置与官方 `standard` 的差异仍只有 persona 一处。
 
 ## 0.1.7
 
@@ -97,7 +129,7 @@ skill 新增「上下文变长怎么办：压缩、复用、交接、换人」�
 
 仓库根新增 `GLOSSARY.md`，定名十个术语：Lead、成员、成员名额、收尾消息、工作日志、状态摘要、上下文降级、交接文档、交接阶梯、续作成员。
 
-预设与官方 `standard` 的差异仍只有 persona 一处。
+预置与官方 `standard` 的差异仍只有 persona 一处。
 
 ## 0.1.6
 
@@ -107,7 +139,7 @@ skill 新增「上下文变长怎么办：压缩、复用、交接、换人」�
 - skill 同一节补上仓库地址与许可，并写明「不随本插件安装，也不是本插件的依赖」。
 - skill 补一句提醒：只有用户装了它，编队页才存在，别让用户去找一个没有的页面。
 - 新增一条测试逐项核对两份 README 的友链节（标题、仓库地址、许可、安装命令、三个区块名），并把仓库地址与许可也纳入 skill 的断言。三个变异各删一处都变红。
-- 预设与官方 `standard` 的差异仍只有 persona 一处。
+- 预置与官方 `standard` 的差异仍只有 persona 一处。
 
 ## 0.1.5
 
@@ -117,7 +149,7 @@ skill 新增「上下文变长怎么办：压缩、复用、交接、换人」�
 - 两份 README 新增「看工作和通信状态：配 dsh-context」一节，含安装命令与区块表。
 - 新增一条测试守住友链、标签页名与三个区块名；删 dsh-context 或删 Agent Comms 都会红（已做变异验证）。
 - dsh-context 是另一个插件，不随本插件安装。
-- 预设与官方 `standard` 的差异仍只有 persona 一处。
+- 预置与官方 `standard` 的差异仍只有 persona 一处。
 
 ## 0.1.4
 
@@ -154,7 +186,7 @@ skill 新增「上下文变长怎么办：压缩、复用、交接、换人」�
 - skill 新增状态含义表，写清 `inactive` 不代表完成或失败。
 - persona 同步加入唤醒规则、不要轮询、模型继承。
 - 两份 README 的 skill 覆盖描述同步。
-- 预设与官方 `standard` 的差异仍只有 persona 一处。
+- 预置与官方 `standard` 的差异仍只有 persona 一处。
 
 ## 0.1.2
 
@@ -174,9 +206,9 @@ skill 新增「上下文变长怎么办：压缩、复用、交接、换人」�
 
 首个版本。
 
-- 新增 `lead-mode` 预设：镜像官方 `standard` 预设的全部 22 个插件行，只把 persona 换成 Lead 人设。
+- 新增 `lead-mode` 预置：镜像官方 `standard` 预置的全部 22 个插件行，只把 persona 换成 Lead 人设。
 - persona prefix 里写明 Agent Teams 前置条件：本会话没有 `spawn_teammate` / `send_message` / `team_task_*` 时，先让用户开官方 Team 模式，不要自己硬干。
 - 新增 `lead-mode` 运行时 skill，内容随包分发。
-- 新增 `/lead-mode` 斜杠命令，报告 Team 运行时与预设的挂载状态。
+- 新增 `/lead-mode` 斜杠命令，报告 Team 运行时与预置的挂载状态。
 - 启动自检：`agentTeams` 服务缺失时输出中文警告。
 - 不捆绑 Team 运行时。`@deepseek-ai/dsh-experimental-tool-agent-team` 监听全局 `agent/created`，属宿主平面，由官方 profile 包提供。

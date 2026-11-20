@@ -1,15 +1,29 @@
 # dsh-lead-mode bundle patch
 #
-# Two inserts.
+# Three inserts.
 #
-# 1. `dsh-lead-mode` — this plugin's own host half. It registers the `lead-mode`
-#    runtime skill, the `/lead-mode` slash command, and the startup check that
+# 1. `dsh-lead-mode` — this plugin's own host half. It registers the bundled
+#    runtime skills, the `/lead-mode` slash command, and the startup check that
 #    warns when the Team runtime is missing. The loader id equals the package
 #    name, matching `dsh-plugin.naming.json` (`names.loaderIds`).
-# 2. `preset-lead-mode` — the `lead-mode` agent preset. Its `config.plugins`
-#    mirrors the official `standard` preset row for row; the only difference is
-#    the persona prefix, which switches the session into Lead mode and states
-#    the Agent Teams prerequisite up front.
+# 2. `preset-lead-ptc` — the Lead preset for PTC sessions. Its
+#    `config.plugins` mirrors the official `ptc` preset row for row; the only
+#    difference is the persona prefix, which switches the session into Lead mode,
+#    states the Agent Teams prerequisite up front, and tells the model to pick
+#    delegation models from `list_subagent_models` instead of inventing ids.
+#    PTC means only `run_code` is callable directly; every other tool is an SDK
+#    binding called inside the program.
+# 3. `preset-lead-cordis` — the Lead preset for creator work (the official
+#    `cordis` preset's shape). Same persona; rows mirror `cordis` except for one
+#    documented delta: the official `skill-filesystem` row carries
+#    `customSkillDirs` computed from the patch file's `baseUrl`, and that
+#    expression cannot resolve the host package from this plugin's directory, so
+#    the row is mounted without it. Consequence: the `dsh-doc` skill is not in
+#    this preset's filesystem skill dirs.
+#
+# Both presets keep the same tool rows as their official counterparts because the
+# Lead layer is method, not capability: it adds no tools, only the persona. Any
+# row added here would be a capability change the official preset does not have.
 #
 # This plugin does NOT mount the Team runtime. There are two generations of it,
 # and they are turned on in completely different ways:
@@ -28,37 +42,42 @@
 #   peers, so a profile built for an older rc installs peers this host does not
 #   satisfy.
 #
-# - New generation (local master, not released yet): Team tools ship with the base
-#   and web bundles, and a teammate is just a `subagent`. Nothing is installed.
-#   Users flip the per-session switch 「使用智能体团队」 in the model & reasoning
-#   menu. The profile package above is now in `RETIRED_BUNDLES`, and app-boot
-#   deletes it from a profile, so the install command must never be shown to a
-#   user on a new host.
+# - New generation (0.2.2-rc.3 and later): Team tools ship with the base and web
+#   bundles, and a teammate is just a `subagent`. Nothing is installed. Users flip
+#   the per-session switch 「开启智能体团队协作」 in the model & reasoning menu. The
+#   profile package above is now in `RETIRED_BUNDLES`, and app-boot deletes it
+#   from a profile, so the install command must never be shown to a user on a new
+#   host.
 #
 # The persona prefix below decides which generation it is addressing from the
 # session's tool list, not from a version string.
+
 - insert:
     - id: dsh-lead-mode
       name: 'dsh-lead-mode'
-    - id: preset-lead-mode
+    - id: preset-lead-ptc
       name: '@deepseek-ai/dsh-agent-preset'
       config:
-        id: lead-mode
-        name: Lead 模式
-        description: 拆活、派活、验收。需要先开 dsh 官方 Agent Teams。
+        id: lead-ptc
+        name: Lead · PTC
+        description: 只决策、拆活、派活、验收。PTC 形态：只有 run_code 能直调。需要先开 dsh 官方 Agent Teams。
         order: 5
         plugins:
           - id: persona
             name: '@deepseek-ai/dsh-persona'
             config:
               prefix: |
-                你是 Lead，负责拆活、派活、验收。动手的活尽量派出去。
+                你是 Lead：只做决策、拆活、派活、验收，不自己写代码、不改文件；查证、跑验收、回话自己做。
 
-                派活前先加载 `lead-mode` skill。两代 Agent Teams 的工具差异、派活写法、等通知与验收都在里面。
+                派活前加载 `lead-mode` skill：Agent Teams 两代差异、PTC 与 native 写法、验收在里面。
 
-                开工第一件事：看本会话有没有 `team_task_*` 工具。一个都没有就是 Team 没开：停下，别自己干完，也别拿 subagent 顶替 teammate；让用户敲 `/lead-mode`，照它给出的下一步开 Agent Teams。装包命令里的版本号必须跟 `dsh --version` 的输出一致。
+                派活先 `list_subagent_models` 挑 provider/model 成对，别编造 id；只有一条跟随父模型。
 
-                派活时要求成员第一步建 `.scratch/<effort>/worklog-<mate>.md`，收尾前补完最后一轮。
+                派完活结束回合等通知，不 `wait_agent`、不轮询，叫成员用 `send_message`。
+
+                开局先确认 Team 开没开：PTC 查 SDK 块有没有 `team_task_*`，其他看工具清单。没有就停手，别自己干完或拿 subagent 顶替 teammate，让用户敲 `/lead-mode`。
+
+                派活要求成员第一步建 `.scratch/<effort>/worklog-<mate>.md`，收尾前补完最后一轮。
           - id: agent-instructions
             name: '@deepseek-ai/dsh-agent-instructions'
             config:
@@ -74,7 +93,7 @@
           - id: tool-fs
             name: '@deepseek-ai/dsh-tool-fs'
             config:
-              # 0.2.2 起 apply_patch 默认开启。standard 显式关掉，这里跟着关。
+              # 0.2.2 起 apply_patch 默认开启。官方预置显式关掉，这里跟着关。
               applyPatch: false
           - id: tool-fs-search
             name: '@deepseek-ai/dsh-tool-fs-search'
@@ -138,6 +157,155 @@
             config:
               - id: tool-subagent-control
                 name: '@deepseek-ai/dsh-tool-subagent-control'
+                config:
+                  interrupt: false
+              - id: tool-subagent
+                name: '@deepseek-ai/dsh-tool-subagent'
+                config:
+                  provider: spawn
+                  toolName: subagent
+                  modelSelection: true
+                  modelDiscovery: true
+              - id: tool-subagent-fork
+                name: '@deepseek-ai/dsh-tool-subagent'
+                config:
+                  provider: fork
+                  toolName: subagent_fork
+              - id: workflow-ptc
+                name: '@deepseek-ai/dsh-workflow-ptc'
+                disabled: true
+                config:
+                  provider: spawn
+              - id: tool-workflow
+                name: '@deepseek-ai/dsh-tool-workflow'
+                disabled: true
+          - id: tool-ask-user
+            name: '@deepseek-ai/dsh-tool-ask-user'
+          - id: tool-todo
+            name: '@deepseek-ai/dsh-tool-todo'
+            config:
+              allowParallelInProgress: true
+          - id: tool-web
+            name: '@deepseek-ai/dsh-tool-web'
+            config:
+              fetch: true
+              searchTimeoutMs: 60000
+          - id: tool-executor-ptc
+            name: '@deepseek-ai/dsh-tool-executor-ptc'
+          - id: present
+            name: '@deepseek-ai/dsh-tool-present'
+          - id: tool-office
+            name: '@deepseek-ai/dsh-tool-office'
+          - id: tool-plugin-manager
+            name: '@deepseek-ai/dsh-plugin-manager/tools'
+            disabled: true
+          - id: tool-plugin-market
+            name: '@deepseek-ai/dsh-plugin-market/tools'
+            disabled: true
+
+
+- insert:
+    - id: preset-lead-cordis
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: lead-cordis
+        name: Lead · 创造
+        description: 只决策、拆活、派活、验收。创造形态：能直调工具、能改 DSH 自己。需要先开 dsh 官方 Agent Teams。
+        order: 6
+        plugins:
+          # The dsh-doc skill owns plugin implementation and authorization guidance.
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: |
+                你是 Lead：只做决策、拆活、派活、验收，不自己写代码、不改文件；查证、跑验收、回话自己做。
+
+                派活前加载 `lead-mode` skill：Agent Teams 两代差异、PTC 与 native 写法、验收在里面。
+
+                派活先 `list_subagent_models` 挑 provider/model 成对，别编造 id；只有一条跟随父模型。
+
+                派完活结束回合等通知，不 `wait_agent`、不轮询，叫成员用 `send_message`。
+
+                开局先确认 Team 开没开：PTC 查 SDK 块有没有 `team_task_*`，其他看工具清单。没有就停手，别自己干完或拿 subagent 顶替 teammate，让用户敲 `/lead-mode`。
+
+                派活要求成员第一步建 `.scratch/<effort>/worklog-<mate>.md`，收尾前补完最后一轮。
+          - id: agent-instructions
+            name: '@deepseek-ai/dsh-agent-instructions'
+            config:
+              maxBytes: 65536
+          - id: time-context
+            name: '@deepseek-ai/dsh-time-context'
+          - id: tool-bash
+            name: '@deepseek-ai/dsh-tool-bash'
+            disabled: !!js process.platform === 'win32'
+          - id: tool-pwsh
+            name: '@deepseek-ai/dsh-tool-pwsh'
+            disabled: !!js process.platform !== 'win32'
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+            config:
+              # Set true to add the apply_patch tool beside edit.
+              applyPatch: false
+          - id: tool-fs-search
+            name: '@deepseek-ai/dsh-tool-fs-search'
+            config:
+              sampleOverCapGlobResults: false
+          - id: tool-jobs
+            name: '@deepseek-ai/dsh-tool-jobs'
+          - id: tool-schedule
+            name: '@deepseek-ai/dsh-tool-schedule'
+          - id: command-goal
+            name: '@deepseek-ai/dsh-command-goal'
+          - id: tool-goal
+            name: '@deepseek-ai/dsh-tool-goal'
+          - id: planning
+            name: cordis:group
+            group: true
+            isolate:
+              planMode: true
+            config:
+              - id: plan-mode
+                name: '@deepseek-ai/dsh-plan-mode'
+                config:
+                  section: |
+                    You are in plan mode. Stay in plan mode until the user approves your plan through exit_plan_mode or switches the session mode. Imperative language to implement changes means plan the implementation, not execute it. A user's conversational agreement — including an answer confirming something you asked — approves nothing and does not end plan mode; fold the confirmed decision into the plan and submit it through exit_plan_mode.
+
+                    Explore first. Use non-mutating reads, searches, static analysis, and checks to ground the plan in the actual repository. Do not edit or write files, change configuration, run formatters or code generation that rewrites tracked files, commit, or otherwise carry out the plan. Prefer existing functions and patterns over new machinery.
+
+                    The tool catalog stays the same across modes for request-cache stability. These plan-mode rules override any later tool description or guidance that suggests using mutation tools; those tools remain listed to keep the tool catalog unchanged. Do not use todo_write to track this planning phase: it tracks implementation after an approved plan, while the plan itself belongs in exit_plan_mode.
+
+                    Resolve discoverable facts by inspection. Use ask_user_question only for user-owned choices or material ambiguity that inspection cannot answer. Do not ask the user where code lives or how current behavior works when you can find out.
+
+                    Make the plan decision-complete: state the goal and success criteria; group implementation changes by subsystem; identify public API, schema, and data-flow changes; cover edge cases, failure modes, tests, acceptance criteria, and explicit assumptions. Keep it concise enough to review but detailed enough that another engineer can implement it without making design decisions.
+
+                    When ready, call exit_plan_mode with the complete plan markdown, starting with a # title. Make exit_plan_mode the only and final tool call in that assistant response: it presents the plan for approval, and implementation begins only in a later step after approval. Do not paste the final plan as a plain reply or ask "should I proceed?" through prose or ask_user_question. If review rejects it, incorporate the feedback and present again. If the review channel is unavailable or aborted, stay in plan mode and ask the user to switch modes manually; do not proceed with implementation.
+          - id: compaction
+            name: cordis:group
+            group: true
+            isolate:
+              compaction: true
+              toolResultPruner: true
+            config:
+              - id: compaction-basic
+                name: '@deepseek-ai/dsh-compaction-basic'
+              - id: command-compact
+                name: '@deepseek-ai/dsh-command-compact'
+              - id: tool-result-pruner
+                name: '@deepseek-ai/dsh-compaction-tool-result-pruner'
+                config:
+                  thresholdChars: 8192
+                  headChars: 4096
+                  tailChars: 1024
+          - id: delegation
+            name: cordis:group
+            group: true
+            isolate:
+              workflowEngine: true
+            config:
+              - id: tool-subagent-control
+                name: '@deepseek-ai/dsh-tool-subagent-control'
+                config:
+                  interrupt: false
               - id: tool-subagent
                 name: '@deepseek-ai/dsh-tool-subagent'
                 config:
@@ -167,6 +335,16 @@
             config:
               fetch: true
               searchTimeoutMs: 60000
+          - id: tool-cordis
+            name: '@deepseek-ai/dsh-tool-cordis'
+          - id: skill-filesystem
+            name: '@deepseek-ai/dsh-skill-filesystem'
+            # 官方 cordis 预置这一行还带 customSkillDirs，指向
+            # @deepseek-ai/dsh-agent-preset 包里的 dsh-doc skill。那条 !!js 用
+            # patch 文件的 baseUrl 解析，官方预置的 baseUrl 在 app.asar 里；
+            # 从本插件包的位置解析不到宿主包，照抄会在加载时抛错，所以不带。
+          - id: tool-skill
+            name: '@deepseek-ai/dsh-tool-skill'
           - id: present
             name: '@deepseek-ai/dsh-tool-present'
           - id: tool-plugin-manager
@@ -174,4 +352,5 @@
             disabled: !!js "!ctx.get('profileContext')"
           - id: tool-plugin-market
             name: '@deepseek-ai/dsh-plugin-market/tools'
-            disabled: true
+            disabled: !!js "!ctx.get('profileContext')"
+

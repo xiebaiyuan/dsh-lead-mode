@@ -203,7 +203,7 @@ test('缺 agentTeams 时 warn 一次，文本是中文且带安装命令与版�
     services: {
       skills: {},
       commands: {},
-      agentPresets: { list: async () => [{ id: 'lead-mode' }] },
+      agentPresets: { list: async () => [{ id: 'lead-ptc' }, { id: 'lead-cordis' }] },
     },
   })
 
@@ -229,7 +229,7 @@ test('服务齐全时注册 skill 与 command，且不再 warn agentTeams', asyn
       skills: {},
       commands: {},
       agentTeams: { config: { maxMembers: 8 } },
-      agentPresets: { list: async () => [{ id: 'lead-mode' }] },
+      agentPresets: { list: async () => [{ id: 'lead-ptc' }, { id: 'lead-cordis' }] },
     },
   })
 
@@ -430,6 +430,24 @@ test('skill 正文写明唤醒规则与不要轮询', async () => {
   for (const word of ['轮询', 'list_agents', 'wait_agent']) {
     assert.ok(body.includes(word), `skill 必须覆盖「不要用 ${word} 等」这条`)
   }
+
+  // 不是「少用」而是「不用」：Team 是消息驱动，等待纯属空转。
+  assert.ok(
+    body.includes('派完活就结束回合'),
+    'skill 必须写明派完活就结束回合，靠收工通知起下一轮',
+  )
+  assert.ok(
+    body.includes('不调 `wait_agent`') || body.includes('不 `wait_agent`'),
+    'skill 必须直接禁掉 wait_agent',
+  )
+  assert.ok(
+    !/时用一次 `wait_agent`/.test(body),
+    'skill 不该再留「必要时用一次 wait_agent」这种许可',
+  )
+  assert.ok(
+    body.includes('send_message'),
+    'skill 要给出催成员的替代手段 send_message',
+  )
 })
 
 test('skill 正文写明 teammate 不能单独指定模型', async () => {
@@ -519,7 +537,7 @@ test('/lead-mode 老一代依赖齐全时返回 success，并报出 maxMembers',
       commands: {},
       // 老一代：服务上带 spawnTeammate，config.maxMembers 是真实上限
       agentTeams: { spawnTeammate: () => {}, config: { maxMembers: 8 } },
-      agentPresets: { list: async () => [{ id: 'lead-mode' }] },
+      agentPresets: { list: async () => [{ id: 'lead-ptc' }, { id: 'lead-cordis' }] },
     },
   })
 
@@ -528,7 +546,7 @@ test('/lead-mode 老一代依赖齐全时返回 success，并报出 maxMembers',
 
   assert.equal(result.kind, 'success')
   assert.ok(result.text.includes('Team 运行时'), '文本要报告 Team 运行时状态')
-  assert.ok(result.text.includes('已注册'), '文本要报告预设已注册')
+  assert.ok(result.text.includes('已注册'), '文本要报告预置已注册')
   assert.ok(result.text.includes('maxMembers 8'), '有 maxMembers 时要报出来')
   assert.ok(!result.text.includes('新一代'), '老一代不该被报成新一代')
 })
@@ -541,7 +559,7 @@ test('/lead-mode 新一代依赖齐全时返回 success，不报 maxMembers、�
       commands: {},
       // 新一代：服务在，但没有 spawnTeammate（teammate 换成 subagent）
       agentTeams: { config: { maxMembers: 8 } },
-      agentPresets: { list: async () => [{ id: 'lead-mode' }] },
+      agentPresets: { list: async () => [{ id: 'lead-ptc' }, { id: 'lead-cordis' }] },
     },
   })
 
@@ -560,8 +578,8 @@ test('/lead-mode 新一代依赖齐全时返回 success，不报 maxMembers、�
     '新一代不该再让人装 profile 包（它已进 RETIRED_BUNDLES）',
   )
   assert.ok(
-    result.text.includes('使用智能体团队'),
-    '新一代要给会话级开关的位置：模型与推理等级菜单里的「使用智能体团队」',
+    result.text.includes('开启智能体团队协作'),
+    '新一代要给会话级开关的位置：模型与推理等级菜单里的「开启智能体团队协作」',
   )
   assert.equal(
     warnings.filter((message) => message.includes('Team 运行时') || message.includes('agentTeams')).length,
@@ -578,7 +596,7 @@ test('老一代的判据是 typeof spawnTeammate === "function"，同名非函�
       commands: {},
       // 服务上有这个键但不是函数：不算老一代，否则会在调用时炸
       agentTeams: { spawnTeammate: null, config: { maxMembers: 8 } },
-      agentPresets: { list: async () => [{ id: 'lead-mode' }] },
+      agentPresets: { list: async () => [{ id: 'lead-ptc' }, { id: 'lead-cordis' }] },
     },
   })
 
@@ -589,7 +607,7 @@ test('老一代的判据是 typeof spawnTeammate === "function"，同名非函�
   assert.ok(!result.text.includes('maxMembers'), '新一代不报 maxMembers')
 })
 
-test('/lead-mode 新一代预设未注册时返回 error，仍不给装包命令', async () => {
+test('/lead-mode 新一代预置未注册时返回 error，仍不给装包命令', async () => {
   const plugin = await loadPlugin()
   const { ctx, registered } = makeCtx({
     services: {
@@ -604,8 +622,8 @@ test('/lead-mode 新一代预设未注册时返回 error，仍不给装包命令
   const result = await registered.commands[0].handler(ctx)
 
   assert.equal(result.kind, 'error')
-  assert.ok(result.text.includes('未注册'), '文本要说明预设未注册')
-  assert.ok(result.text.includes('使用智能体团队'), '新一代的下一步是会话开关')
+  assert.ok(result.text.includes('未注册'), '文本要说明预置未注册')
+  assert.ok(result.text.includes('开启智能体团队协作'), '新一代的下一步是会话开关')
   assert.ok(!result.text.includes('dsh plugin'), '新一代不该出现 profile 包安装命令')
 })
 
@@ -615,7 +633,7 @@ test('/lead-mode 未挂载时先给会话开关、后给老宿主的装包命令
     services: {
       skills: {},
       commands: {},
-      agentPresets: { list: async () => [{ id: 'lead-mode' }] },
+      agentPresets: { list: async () => [{ id: 'lead-ptc' }, { id: 'lead-cordis' }] },
     },
   })
 
@@ -625,7 +643,7 @@ test('/lead-mode 未挂载时先给会话开关、后给老宿主的装包命令
   assert.equal(result.kind, 'error')
   assert.ok(result.text.includes('未挂载'), '文本要说明 Team 运行时未挂载')
 
-  const switchAt = result.text.indexOf('使用智能体团队')
+  const switchAt = result.text.indexOf('开启智能体团队协作')
   const commandAt = result.text.indexOf('dsh plugin')
   assert.ok(switchAt >= 0, '未挂载也要提示会话开关')
   assert.ok(commandAt >= 0, '老宿主仍要拿到装包命令')
@@ -646,7 +664,7 @@ test('/lead-mode 缺 Team 运行时返回 error，文本含 agentTeams 与 dsh p
     services: {
       skills: {},
       commands: {},
-      agentPresets: { list: async () => [{ id: 'lead-mode' }] },
+      agentPresets: { list: async () => [{ id: 'lead-ptc' }, { id: 'lead-cordis' }] },
     },
   })
 
@@ -661,7 +679,7 @@ test('/lead-mode 缺 Team 运行时返回 error，文本含 agentTeams 与 dsh p
   assert.ok(hanCount >= 8, `命令输出必须是中文，实测汉字 ${hanCount} 个`)
 })
 
-test('/lead-mode 预设未注册时返回 error 并说明', async () => {
+test('/lead-mode 预置未注册时返回 error 并说明', async () => {
   const plugin = await loadPlugin()
   const { ctx, registered } = makeCtx({
     services: {
@@ -676,7 +694,29 @@ test('/lead-mode 预设未注册时返回 error 并说明', async () => {
   const result = await registered.commands[0].handler(ctx)
 
   assert.equal(result.kind, 'error')
-  assert.ok(result.text.includes('未注册'), '文本要说明预设未注册')
+  assert.ok(result.text.includes('未注册'), '文本要说明预置未注册')
+})
+
+test('/lead-mode 只注册了一个预置时点名缺的那个', async () => {
+  const plugin = await loadPlugin()
+  const { ctx, registered } = makeCtx({
+    services: {
+      skills: {},
+      commands: {},
+      agentTeams: {},
+      // 两个预置里只生效了一个：不能报「依赖齐了」，要点名落到哪个 id 上。
+      agentPresets: { list: async () => [{ id: 'lead-ptc' }] },
+    },
+  })
+
+  plugin.apply(ctx)
+  const result = await registered.commands[0].handler(ctx)
+
+  assert.equal(result.kind, 'error')
+  assert.ok(result.text.includes('lead-ptc 预置：已注册'), '已生效的那个要报已注册')
+  assert.ok(/lead-cordis 预置：未注册/.test(result.text), '没生效的那个要报未注册')
+  assert.ok(result.text.includes('lead-cordis 预置行没生效'), '失败那行要点名是哪个预置行')
+  assert.ok(!result.text.includes('依赖齐了'), '只注册一半不算依赖齐')
 })
 
 test('agentPresets 服务不在时 handler 不抛异常', async () => {
