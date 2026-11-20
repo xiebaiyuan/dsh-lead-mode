@@ -21,17 +21,17 @@ A Lead mode for DSH: the model decides, splits work, delegates, and reviews. Mem
 
 ## What this is
 
-A Lead mode plugin for DSH (DeepSeek Harness). Version 0.2.7, requires host >= 0.2.2-rc.3, MIT licensed.
+A Lead mode plugin for DSH (DeepSeek Harness). Version 0.2.7, requires host (the program running dsh) >= 0.2.2-rc.3, MIT licensed.
 
 It covers the method layer. The official Agent Teams runtime hands you tools: the older generation has `spawn_teammate`, `send_message`, `team_task_*`; the newer one builds members with `subagent`, keeps `send_message` and `team_task_*`, and gets completion notices from the runtime instead of `wait_agent` polling. When to delegate, to whom, how to wait, how to review, how to merge several streams — none of that comes with the runtime.
 
-Installing adds four things: two presets (`Lead · PTC`, `Lead · Create`), two skills (`lead-mode`, `team-digest`), one `/lead-mode` command, and two standing reminders. Not a single official preset is modified, and host behavior is untouched.
+Installing adds four things: two presets (`Lead · PTC`, `Lead · Create`), two skills (`lead-mode`, `team-digest`), one `/lead-mode` command, and two opening reminders. Not a single official preset is modified, and host behavior is untouched.
 
 It does not replace the official Team mode. When Team is off it will not pretend it can delegate — it stops and hands you the next step.
 
 ## Why it is worth it
 
-Agent Teams is off by default. Official Team tools are not in official presets; a session switch controls them, and on older hosts you also install a profile package. When those tools are missing there are two typical reactions: do everything serially in one context, or use `subagent` as a stand-in for a teammate. Both are wrong, and neither the user nor the model learns which piece was missing.
+Agent Teams is off by default. Official Team tools are not in official presets; a session switch controls them, and on older hosts you also install a profile package. When those tools are missing there are two typical reactions: do everything serially in one context, or use `subagent` as a stand-in for a member. Both are wrong, and neither the user nor the model learns which piece was missing.
 
 This plugin does three things:
 
@@ -48,7 +48,7 @@ The vision:
 Three invariants:
 
 1. The method outlives the tools. Tools get renamed, hosts move on, the working method stays. Supporting two generations of Agent Teams is the first stress test of that claim.
-2. Deliverables land in files. Worklogs, closing messages, and team digests live on disk and still read fine a week later.
+2. Deliverables land in files. Progress logs, closing messages, and team summaries live on disk and still read fine a week later.
 3. Missing pieces come with a next step. Never silence, never a workaround.
 
 ## Install
@@ -96,11 +96,11 @@ Both presets are copied from the web-app presets, so they only fit desktop and W
 
 Four beats: a request arrives, the Lead splits and delegates, members work and report on a shared task board, the Lead reviews. The dashed line is the loop back when review fails.
 
-**Split.** The Lead does four things only: decide, split, delegate, review. It does not write code or edit files; verifying, running acceptance checks, and answering stay with the Lead. If it cannot delegate, it stops and asks you to turn Team on — it does not finish the job alone and does not put `subagent` in a teammate's seat. Before delegating it calls `list_subagent_models` and picks provider/model pairs from what comes back, reasoning effort included. No invented ids. A single-entry list means the host authorized nothing else, so members inherit the Lead's route.
+**Split.** The Lead does four things only: decide, split, delegate, review. It does not write code or edit files; verifying, running acceptance checks, and answering stay with the Lead. If it cannot delegate, it stops and asks you to turn Team on — it does not finish the job alone and does not put `subagent` in a member's seat. Before delegating it calls `list_subagent_models` and picks provider/model pairs from what comes back, reasoning effort included. No invented ids. A single-entry list means the host authorized nothing else, so members inherit the Lead's route.
 
-**Shared task board and worklogs.** Each member gets its own context. The Lead creates tickets on `team_task_*` with goal and acceptance criteria spelled out; members claim them and work. Every member's first step is `.scratch/<effort>/worklog-<mate>.md`, append-only, with the final round written before wrapping up. Write scopes are split by file or directory; when they overlap, task dependencies set the order. Who owns what, and who is stuck, is on the board — not in the chat log.
+**Shared task board and progress logs.** Each member gets its own context. The Lead creates tasks on `team_task_*` with goal and acceptance criteria spelled out; members claim them and work. Every member's first step is `.scratch/<effort>/worklog-<mate>.md` (`<effort>` names this round of work; `worklog-*.md` is the progress log), append-only, with the final round written before wrapping up. Write scopes (each member only touches its own files) are split by file or directory; when they overlap, task dependencies set the order. Who owns what, and who is stuck, is on the board — not in the chat log.
 
-**Review.** The Lead does not wait. It ends its turn after delegating; a member's completion notice starts the next round. Nudging goes through `send_message`, never `wait_agent` polling. This holds across both generations: older `send_message` takes `target`, newer takes `agent`. Reports must carry evidence: `path:line`, a command that can be pasted, a worklog section name, or `session-<id>#seq`. The Lead re-checks the load-bearing conclusions itself before the final answer.
+**Review.** The Lead does not wait. It ends its turn after delegating; a member's completion notice starts the next round. Nudging goes through `send_message`, never `wait_agent` polling. This holds across both generations: older `send_message` takes `target`, newer takes `agent`. Reports must carry evidence: `path:line`, a command that can be pasted, a progress log section name, or `session-<id>#seq`. The Lead re-checks the load-bearing conclusions itself before the final answer.
 
 ## What it looks like
 
@@ -133,13 +133,13 @@ Team 开关是会话级的：模型与推理等级菜单里打开「开启智能
 |---|---|---|
 | Lead presets | `Lead · PTC` or `Lead · Create` in the preset picker | Pick one |
 | Lead method skill | `/skill lead-mode`, also self-loaded by the model | Nothing |
-| Team digest skill | `/skill team-digest`, loaded at the model's discretion before wrapping up | Nothing |
+| Team summary skill | `/skill team-digest`, loaded at the model's discretion before wrapping up | Nothing |
 | Dependency self-check | `/lead-mode` | Run it when dependencies look off |
-| Two standing reminders | automatic | Nothing |
+| Two opening reminders | automatic | Nothing |
 
-`lead-mode` covers: agreeing on the goal before starting; reading the tool list to tell which generation you are on; delegating with self-contained prompts; keeping write scopes disjoint; the list/get/claim/complete flow on shared tasks; why not to wait on a teammate; where member models come from; the four-level handoff ladder as context grows; and doing the final verification yourself.
+`lead-mode` covers: agreeing on the goal before starting; reading the tool list to tell which generation you are on; delegating with self-contained prompts; keeping write scopes disjoint (each member only touches its own files); the list/get/claim/complete flow on shared tasks; why not to wait on a member; where member models come from; the four-step handoff as context grows; and doing the final verification yourself.
 
-`team-digest` merges the whole team's wrap-up into `reports/<YYYY-MM-DD>-<effort>.md` with six blocks: conclusion / who did what / acceptance evidence / deviations and unverified claims / dead ends and decisions / open items and next steps. It is written only when the effort had two or more members, or spanned two or more rounds.
+`team-digest` merges the whole team's wrap-up into `reports/<YYYY-MM-DD>-<effort>.md` with six blocks: conclusion / who did what / acceptance evidence / deviations and unverified claims / what did not work and the decisions / open items and next steps. It is written only when this round of work had two or more members, or spanned two or more rounds.
 
 Delegation uses three groups of tools: `subagent` / `subagent_fork` to create members, `send_message` to continue and nudge, and `team_task_create` / `team_task_get` / `team_task_list` / `team_task_update` for shared tasks. The older generation maps to `spawn_teammate` and `send_message({ target })` — same rules, different parameter names.
 
@@ -157,7 +157,7 @@ Additive only, nothing modified. If a same-named skill or command already exists
 | Subagent models | The host's Subagent → Model selection is off by default; while off, explicit provider/model is rejected and members inherit the Lead's route. Changes apply to new sessions only |
 | Interrupting members | Newer hosts ship `interrupt_agent` off (`interrupt: false`); ask the user to enable it before a hard interrupt |
 | Host footprint | `cordis.patch.yml` is three `insert` rows in total: this plugin and its two presets. No tools registered, no agent lifecycle hooks, no request interception; uninstalling reclaims it all |
-| Missing services | If `skills`, `commands`, or `agentTeams` is absent, the plugin still mounts, logs a warning, and drops that one surface |
+| Missing services | If `skills`, `commands`, or `agentTeams` is absent, the plugin still mounts, logs a warning, and drops that part of the toolset |
 | Never opens Team for you | Installing the older profile package or flipping the newer session switch is always an explicit user action |
 
 A field-by-field comparison of the two generations is in [docs/agent-teams.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/agent-teams.md); what goes wrong when versions are mismatched is in [docs/why.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/why.md).
@@ -172,10 +172,10 @@ A field-by-field comparison of the two generations is in [docs/agent-teams.md](h
 | Design tradeoffs: staying out of the official way, preset differences | [docs/design.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/design.md) |
 | Layout, development, tests, releases | [docs/development.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/development.md) |
 | The Lead method itself | [skills/lead-mode/SKILL.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/skills/lead-mode/SKILL.md) |
-| Team digest rules | [skills/team-digest/SKILL.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/skills/team-digest/SKILL.md) |
+| Team summary rules | [skills/team-digest/SKILL.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/skills/team-digest/SKILL.md) |
 | Vocabulary | [GLOSSARY.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/GLOSSARY.md) |
 | Change history | [CHANGELOG.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/CHANGELOG.md) |
-| Sample digests | [reports/](https://github.com/xiebaiyuan/dsh-lead-mode/tree/main/reports) |
+| Sample team summaries | [reports/](https://github.com/xiebaiyuan/dsh-lead-mode/tree/main/reports) |
 
 `docs/` is not shipped in the npm package, so those pages exist on GitHub only; every link is absolute, which also keeps them clickable from the npm page.
 

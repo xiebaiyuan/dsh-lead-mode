@@ -21,21 +21,21 @@
 
 ## 这是什么
 
-DSH（DeepSeek Harness）的 Lead 模式插件。当前版本 0.2.7，宿主要求 >= 0.2.2-rc.3，MIT 许可。
+DSH（DeepSeek Harness）的 Lead 模式插件。当前版本 0.2.7，对宿主（跑 dsh 的那个程序）的要求是 >= 0.2.2-rc.3，MIT 许可。
 
 它补的是方法层。官方的 Agent Teams 运行时给工具：老一代是 `spawn_teammate`、`send_message`、`team_task_*`；新一代用 `subagent` 建成员，`send_message` 与 `team_task_*` 还在；成员收工由运行时通知，不需要 `wait_agent` 轮询。什么时候派活、派给谁、怎么等结果、怎么验收、多路产出怎么合并，运行时不管。
 
-装完多出四样东西：两个预置（「Lead · PTC」「Lead · 创造」）、两个 skill（`lead-mode`、`team-digest`）、一条 `/lead-mode` 命令、两条前置提醒。官方预置一个字没改，宿主行为也没改。
+装完多出四样东西：两个预置（「Lead · PTC」「Lead · 创造」）、两个 skill（`lead-mode`、`team-digest`）、一条 `/lead-mode` 命令、两条开场提示。官方预置一个字没改，宿主行为也没改。
 
 不替代官方 Team 模式。没开 Team 时它不会假装能派活，而是停手，把下一步交给你。
 
 ## 为什么值得用
 
-官方的 Agent Teams 默认不开。官方预置里没有 Team 工具，它由会话开关单独控制；老一代宿主还要先装一个 profile 包。工具不齐时，模型常见两种反应：自己串行干完，或者拿 `subagent` 顶替 teammate。两种都不对，而且用户和模型都不知道缺了哪一步。
+官方的 Agent Teams 默认不开。官方预置里没有 Team 工具，它由会话开关单独控制；老一代宿主还要先装一个 profile 包。工具不齐时，模型常见两种反应：自己串行干完，或者拿 `subagent` 顶替成员。两种都不对，而且用户和模型都不知道缺了哪一步。
 
 本插件做三件事：
 
-1. 两个预置，只换 persona。其余字段逐行照抄官方 `ptc`（24 行）与 `cordis`（23 行），能力面一点不少。
+1. 两个预置，只换 persona。其余字段逐行照抄官方 `ptc`（24 行）与 `cordis`（23 行），能用的工具一点不少。
 2. 两个 skill，把拆活、派活、共享任务板、验收、收尾合并成一套可执行的规矩。
 3. 一条自检命令加两条提醒，Team 不齐时让模型停手，下一步写成可粘贴的命令或具体开关。
 
@@ -96,11 +96,11 @@ Lead 只换方法、不换能力，所以两个预置各镜像一个官方预置
 
 四拍：需求进来，Lead 拆活派活，成员在共享任务板上动手并回报，Lead 验收。虚线是验收不通过时的回路。
 
-**拆活。** Lead 只做四件事：决策、拆活、派活、验收。它不写代码、不改文件；查证、跑验收、回话仍归 Lead。派不下去就停手，让你去开 Team，不自己干完，也不拿 `subagent` 顶替 teammate。派活前先调 `list_subagent_models`，从返回的清单里成对挑 provider/model，可以带推理档，不许编造 id。清单只有一条，说明宿主没授权别的模型，成员一律继承 Lead 的路由。
+**拆活。** Lead 只做四件事：决策、拆活、派活、验收。它不写代码、不改文件；查证、跑验收、回话仍归 Lead。派不下去就停手，让你去开 Team，不自己干完，也不拿 `subagent` 顶替成员。派活前先调 `list_subagent_models`，从返回的清单里成对挑 provider/model，可以带推理档，不许编造 id。清单只有一条，说明宿主没授权别的模型，成员一律继承 Lead 的路由。
 
-**共享任务板与工作日志。** 成员各有自己的上下文。Lead 在任务板 `team_task_*` 上建单、写清目标与验收标准，成员领单后动手；每个成员第一步建 `.scratch/<effort>/worklog-<mate>.md`，只追加轮次记录，收尾前补完最后一轮。写作用域按文件或目录分开，重叠时用任务依赖排顺序。谁领了哪张单、卡在谁身上，看板子，不看聊天记录。
+**共享任务板与工作日志。** 成员各有自己的上下文。Lead 在任务板 `team_task_*` 上建单、写清目标与验收标准，成员领单后动手；每个成员第一步建 `.scratch/<effort>/worklog-<mate>.md`（`<effort>` 是这轮活的名字，`worklog-*.md` 是工作日志），只追加轮次记录，收尾前补完最后一轮。写作用域（各成员只改自己那摊文件）按文件或目录分开，重叠时用任务依赖排顺序。谁领了哪张单、卡在谁身上，看板子，不看聊天记录。
 
-**验收。** Lead 不等。派完活结束回合，成员收工的通知会起下一轮；催人用 `send_message`，不调 `wait_agent` 轮询。两代 Agent Teams 都按这个规矩：老一代 `send_message` 的参数叫 `target`，新一代叫 `agent`。成员回报要带证据：`路径:行号`、能粘贴的命令、工作日志段名，或 `session-<id>#seq`。Lead 自己复查关键结论，再给最终答复。
+**验收。** Lead 不等。派完活结束回合，成员收工的通知会起下一轮；催人用 `send_message`，不调 `wait_agent` 轮询。两代 Agent Teams 都按这个规矩：老一代 `send_message` 的参数叫 `target`，新一代叫 `agent`。成员回报要带来源标记：`路径:行号`、能粘贴的命令、工作日志段名，或 `session-<id>#seq`。Lead 自己复查关键结论，再给最终答复。
 
 ## 看到的样子
 
@@ -135,11 +135,11 @@ Team 开关是会话级的：模型与推理等级菜单里打开「开启智能
 | Lead 工作法 skill | `/skill lead-mode`，模型也会自己加载 | 不用管 |
 | 团队汇总 skill | `/skill team-digest`，模型收尾前自己判断写不写 | 不用管 |
 | 依赖自检 | `/lead-mode` | 依赖不对时敲一下 |
-| 两层前置提醒 | 自动 | 不用管 |
+| 两层开场提示 | 自动 | 不用管 |
 
-`lead-mode` skill 覆盖这些：开工前对齐目标；按工具清单判代际；派活自包含；写作用域不重叠；共享任务的 list/get/claim/complete 流程；为什么不等 teammate；成员模型从哪来；上下文变长后的四级交接阶梯；最终验证自己做。
+`lead-mode` skill 覆盖这些：开工前对齐目标；按工具清单判代际；派活自包含；写作用域不重叠；共享任务的 list/get/claim/complete 流程；为什么不等成员；成员模型从哪来；上下文变长后的交接四步；最终验证自己做。
 
-`team-digest` 把全队收尾合成一份 `reports/<YYYY-MM-DD>-<effort>.md`，六块骨架：结论 / 谁干了什么 / 验收证据 / 偏离与未验证 / 死路与决策 / 未决与下一步。本 effort 有 2 个以上成员，或跨 2 轮以上，才写。
+`team-digest` 把全队收尾合成一份 `reports/<YYYY-MM-DD>-<effort>.md`，六块骨架：结论 / 谁干了什么 / 验收证据 / 偏离与未验证 / 死路与决策 / 未决与下一步。这轮活有 2 个以上成员，或跨 2 轮以上，才写。
 
 派活用到三组工具：`subagent` / `subagent_fork` 建成员，`send_message` 续聊与催办，`team_task_create` / `team_task_get` / `team_task_list` / `team_task_update` 管共享任务。老一代对应 `spawn_teammate` 与 `send_message({ target })`，规矩一样，参数名不同。
 
@@ -157,7 +157,7 @@ Team 开关是会话级的：模型与推理等级菜单里打开「开启智能
 | 子智能体模型 | 宿主「子智能体 → 模型选择」默认关闭；关着时显式 provider/model 会被拒，成员继承 Lead 的路由。改完设置只有新会话生效 |
 | 打断成员 | 新宿主 `interrupt_agent` 默认关闭（`interrupt: false`）；要硬打断，先让用户打开 |
 | 不碰宿主 | `cordis.patch.yml` 全文三行 `insert`：本插件加两个预置。不注册工具、不监听 agent 生命周期、不拦截请求；卸载即回收 |
-| 缺服务 | `skills` / `commands` / `agentTeams` 任一缺失时插件照常挂载，只打 warn，丢掉对应那一面 |
+| 缺服务 | `skills` / `commands` / `agentTeams` 任一缺失时插件照常挂载，只打 warn，丢掉对应的那部分工具 |
 | 不代开 Team | 老一代装 profile 包、新一代开会话开关，都是用户显式动作 |
 
 老一代与新一代码差异的逐项对照在 [docs/agent-teams.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/agent-teams.md)，装错版本的后果在 [docs/why.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/why.md)。

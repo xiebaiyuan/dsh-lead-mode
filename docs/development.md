@@ -41,7 +41,7 @@ node scripts/check-patch.mjs
 | Workflow filename | `release.yml` |
 | Allowed actions | 勾上 `npm publish` |
 
-`npm stage publish` 是默认就允许的，只勾它的话 CI 只能暂存，还得人工 approve 才上线。
+`npm stage publish` 是默认就允许的。只勾它，CI 就只能暂存，上线还要人工确认。
 
 配好后：
 
@@ -52,4 +52,4 @@ git tag v0.1.3
 git push origin main --tags
 ```
 
-tag 的版本必须和 `package.json` 一致，否则 workflow 直接退出，不发。同一个版本发第二次会被 npm 拒掉，所以每次发都要先提版本号。
+tag 的版本必须和 `package.json` 一致，否则 workflow 直接退出，不发。同一个版本不能发第二次，npm 会拒掉。每次发都要先提版本号。

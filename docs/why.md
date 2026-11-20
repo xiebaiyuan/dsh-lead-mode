@@ -8,7 +8,7 @@ DSH 有两套派活的工具。
 |---|---|---|
 | 工具名 | `subagent`、`subagent_fork` | 老一代：`spawn_teammate`、`send_message`、`team_task_*`；新一代：`subagent`、`send_message`、`team_task_*` |
 | 子 agent 之间 | 互相看不见 | 共享任务板，能互相发消息 |
-| 谁派活 | 父 agent 一次派一个，拿回结果就结束 | Lead 常驻，teammate 也常驻，可以多轮 |
+| 谁派活 | 父 agent 一次派一个，拿回结果就结束 | Lead 常驻，成员也常驻，可以多轮 |
 | 能不能中途改主意 | 不能，子 agent 跑完才回来 | 能，`send_message` 在下一个 step 边界改方向 |
 | 默认装不装 | 不装。Team 由会话开关控制，与预置无关 | 不装。老一代要单独加 profile 包；新一代随 base 与 web 组合下发，按会话打开开关 |
 
@@ -18,7 +18,7 @@ DSH 有两套派活的工具。
 
 ## 问题二：提醒没地方放
 
-官方 Team 运行时在两代宿主上来源不同。
+官方 Team 运行时在两代宿主上来源不同。宿主就是跑 dsh 的那个程序。
 
 老一代（≤ 0.2.2-rc.1）由 profile 包提供，要用户显式安装：
 
@@ -42,9 +42,9 @@ dsh plugin --profile <你的 profile 名> add @deepseek-ai/dsh-experimental-agen
 
 `cordis.patch.yml` 里插两行 `@deepseek-ai/dsh-agent-preset`。一行 `config.plugins` 逐行照抄官方 `ptc`（24 行），另一行照抄官方 `cordis`（创造，23 行）。两边都只改一处：persona 的 prefix 换成 Lead 人设。
 
-为什么要两个：Lead 只换方法、不换能力。PTC 会话与创造会话的工具面本来就不一样，合成一个预置等于替用户做能力取舍。
+为什么要两个：Lead 只换方法、不换能力。PTC 会话与创造会话的工具集本来就不一样，合成一个预置等于替用户做能力取舍。
 
-prefix 398 字，六段：只决策/派活/验收、不自己写代码；加载 `lead-mode` skill；派活先 `list_subagent_models` 从可选清单挑 provider/model；先判 Team 开没开、没开就停手让用户敲 `/lead-mode`；派完活结束回合、不调 `wait_agent`；要求成员第一步建工作日志。两代工具的逐个参数、装包命令、工作法细节全在 `lead-mode` skill 与命令输出里，prefix 每轮都进上下文，不带细节。
+prefix 398 字，六段：只决策/派活/验收、不自己写代码；加载 `lead-mode` skill；派活先 `list_subagent_models` 从可选清单挑 provider/model；先判 Team 开没开、没开就停手让用户敲 `/lead-mode`；派完活结束回合、不调 `wait_agent`；要求成员第一步建工作日志。两代工具的参数、装包命令、工作法细节，全在 `lead-mode` skill 与命令输出里。prefix 每轮都进上下文，所以不带细节。
 
 这段 prefix 进 system prompt 的 `DEPLOYMENT_PERSONA_PREFIX` 段，模型一定看得见。
 
@@ -52,11 +52,11 @@ prefix 398 字，六段：只决策/派活/验收、不自己写代码；加载 
 
 ### 2. 两个 skill：`lead-mode` 与 `team-digest`
 
-随包分发的 `skills/lead-mode/SKILL.md`，运行时注册进 skill 列表。内容是 Lead 工作法：派活自包含、写作用域不重叠、共享任务 list/get/claim/complete、等齐 teammate 再收尾、最终验证自己做。
+随包分发的 `skills/lead-mode/SKILL.md`，运行时注册进 skill 列表。内容是 Lead 工作法：派活自包含、写作用域不重叠（各成员只改自己那摊文件）、共享任务 list/get/claim/complete、等齐成员再收尾、最终验证自己做。
 
 模型调到它就能拿到这些规则，不用用户每次复述。
 
-另一个是 `skills/team-digest/SKILL.md`，同样不绑预置。收尾时全队产出散在 N 条收尾消息和 N 份工作日志里，它把这些合成一份 `reports/<YYYY-MM-DD>-<effort>.md`：本 effort 有 2 个以上成员，或跨 2 轮以上，才写。
+另一个是 `skills/team-digest/SKILL.md`，同样不绑预置。收尾时全队产出散在 N 条收尾消息和 N 份工作日志里，它把这些合成一份 `reports/<YYYY-MM-DD>-<effort>.md`（`<effort>` 是这轮活的名字）：这轮活有 2 个以上成员，或跨 2 轮以上，才写。
 
 ### 3. 一个 `/lead-mode` 斜杠命令
 
@@ -129,7 +129,7 @@ dsh 在装插件前会做一次兼容性预检。看上去这该拦住装错版�
 
 早期想法是在 `cordis.patch.yml` 里顺手把 `@deepseek-ai/dsh-experimental-agent-team` 也插进去，用户装一个包就全齐。
 
-这个想法行不通。`@deepseek-ai/dsh-experimental-tool-agent-team` 的 `apply()` 监听全局 `agent/created` 事件，给每个 agent 装 Team 工具。它是宿主平面的插件，不是预置里的一行。
+这个想法行不通。`@deepseek-ai/dsh-experimental-tool-agent-team` 的 `apply()` 监听全局 `agent/created` 事件，给每个 agent 装 Team 工具。它是宿主那一层的插件，不是预置里的一行。
 
 塞进预置的结果是双挂：宿主已经有一份，预置再挂一份，工具注册冲突。用 `!!js` 守卫判断「已存在就禁用」能绕开，但这是在跟宿主的装配方式较劲，不是解决问题。
 
@@ -155,6 +155,6 @@ dsh 在装插件前会做一次兼容性预检。看上去这该拦住装错版�
 
 - 不改宿主行为。只插入预置行、注册 skill 和命令。
 - 不代开 Team 模式。老一代装 profile 包、新一代开会话开关，都是用户显式动作。
-- 缺服务只警告，不阻断。`skills` / `commands` / `agentTeams` 任一缺失时插件照常挂载，只丢掉对应的面。
+- 缺服务只警告，不阻断。`skills` / `commands` / `agentTeams` 任一缺失时插件照常挂载，只丢掉对应的那部分功能。
 
 装包、开 Team、日常用法与能力细说见 [usage.md](usage.md)；不干扰官方的具体动作与预置差异见 [design.md](design.md)。
