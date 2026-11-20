@@ -21,7 +21,7 @@ Lead 只换工作方法，不改工具能力，所以两个预置各照抄一个
 | `lead-ptc` | 24 | `ptc` | 只有 persona |
 | `lead-cordis` | 23 | `cordis`（创造） | persona；`skill-filesystem` 不带 `customSkillDirs` |
 
-两个预置的 persona 逐字相同，408 字，分六段：判断、派活、把结论讲给用户，查证与验收都派成员做、回话自己做；加载 `lead-mode` skill（控制面工具自己调、业务面派成员，从零还是继承、挑模型、任务板、写作用域，验收也在里面）；派活前先用 `list_subagent_models` 从清单挑 provider/model（清单只有一条，说明没有授权别的模型）；先看 Team 开没开，没开就停手；派完活结束回合，不调 `wait_agent`，等通知不轮询；要求成员第一步建工作日志。字数上限 479（到 480 才报错），放宽是为了留余量。官方 persona 只有一句英文：`You are a coding agent powered by the {{model}} model.`。
+两个预置的 persona 逐字相同，443 字，分六段：判断、派活，了解现状与验收都派成员做，结论由自己判断并讲给用户；标准要严、判据要具体、不将就，退回返工不自己补位；加载 `lead-mode` skill（控制面工具自己调、业务面派成员，从零还是继承、挑模型、任务板、写作用域，验收也在里面）；派活前先用 `list_subagent_models` 从清单挑 provider/model（清单只有一条，说明没有授权别的模型）；先看 Team 开没开，没开就停手；派完活结束回合，不调 `wait_agent`，等通知不轮询；要求成员第一步建工作日志。字数上限 479（到 480 才报错），放宽是为了留余量。官方 persona 只有一句英文：`You are a coding agent powered by the {{model}} model.`。
 
 `lead-ptc` 照抄 `ptc` 相对 `standard` 的四处差异：新增 `tool-executor-ptc`，禁用 `workflow-ptc` 和 `tool-workflow`，`tool-plugin-manager` 直接禁用。结果这个预置里只有 `run_code` 能直调，其他工具都在程序里用 `tools.xxx()` 调，没有 workflow 工具。
 

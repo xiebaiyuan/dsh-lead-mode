@@ -160,6 +160,11 @@ test('persona prefix 只留短指针：判定 + 停手 + 派活规矩，不带�
     assert.ok(prefix.includes('只做决策'), 'prefix 要写明 Lead 只做决策')
     assert.ok(prefix.includes('不自己写代码'), 'prefix 要写明 Lead 不自己写代码')
 
+    // 标准定高但不亲力亲为：判据要能核对，退回返工由成员做。
+    // 锁的是可执行那条（判据要具体）与方向（不自己补位），不是「标准要严」这类标签词。
+    assert.ok(prefix.includes('判据要具体'), 'prefix 要写明判据要具体，不能只写「标准要严」')
+    assert.ok(prefix.includes('不自己补位'), 'prefix 要写明退回返工不自己补位')
+
     // 派完活不许等：Team 是消息驱动，wait_agent 只等自己收件箱，白耗 run_code 预算。
     assert.ok(prefix.includes('派完活'), 'prefix 要写明派完活就结束回合')
     assert.ok(
