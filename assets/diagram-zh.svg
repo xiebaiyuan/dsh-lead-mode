@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="460" viewBox="0 0 1280 460" role="img" aria-label="Lead 模式怎么派活：需求 → Lead 拆活派活 → 共享任务板与工作日志 → 成员动手回报 → Lead 验收，再回到 Lead 起下一轮">
+  <title>Lead 模式怎么派活</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4D6BFE"/>
+    </marker>
+  </defs>
+
+  <rect x="0.75" y="0.75" width="1278.5" height="458.5" rx="28" fill="#0B1220" stroke="#1E2A45" stroke-width="1.5"/>
+
+  <g font-family="PingFang SC, Helvetica Neue, Arial, sans-serif">
+    <text x="60" y="72" font-size="28" font-weight="700" fill="#E6EDF3">Lead 模式怎么派活</text>
+
+    <!-- 节点 -->
+    <g>
+      <rect x="60" y="118" width="120" height="112" rx="16" fill="#121C33" stroke="#2B3A5C" stroke-width="1.5"/>
+      <text x="115" y="178" font-size="26" font-weight="600" text-anchor="middle" fill="#E6EDF3">需求</text>
+      <text x="115" y="208" font-size="20" text-anchor="middle" fill="#8FA3C4">用户提出</text>
+    </g>
+    <g>
+      <rect x="222.5" y="118" width="240" height="112" rx="16" fill="#14224A" stroke="#4D6BFE" stroke-width="2"/>
+      <text x="342.5" y="178" font-size="26" font-weight="600" text-anchor="middle" fill="#E6EDF3">Lead 拆活派活</text>
+      <text x="342.5" y="208" font-size="20" text-anchor="middle" fill="#9FB2D4">拆任务 · 派给成员</text>
+    </g>
+    <g>
+      <rect x="505" y="118" width="240" height="112" rx="16" fill="#121C33" stroke="#2B3A5C" stroke-width="1.5"/>
+      <text x="625" y="178" font-size="26" font-weight="600" text-anchor="middle" fill="#E6EDF3">共享任务板 · 日志</text>
+      <text x="625" y="208" font-size="20" text-anchor="middle" fill="#8FA3C4">owner · 写作用域</text>
+    </g>
+    <g>
+      <rect x="787.5" y="118" width="210" height="112" rx="16" fill="#121C33" stroke="#2B3A5C" stroke-width="1.5"/>
+      <text x="892.5" y="178" font-size="26" font-weight="600" text-anchor="middle" fill="#E6EDF3">成员动手回报</text>
+      <text x="892.5" y="208" font-size="20" text-anchor="middle" fill="#8FA3C4">各自独立上下文</text>
+    </g>
+    <g>
+      <rect x="1040" y="118" width="180" height="112" rx="16" fill="#121C33" stroke="#2B3A5C" stroke-width="1.5"/>
+      <text x="1130" y="178" font-size="26" font-weight="600" text-anchor="middle" fill="#E6EDF3">Lead 验收</text>
+      <text x="1130" y="208" font-size="20" text-anchor="middle" fill="#8FA3C4">看证据</text>
+    </g>
+
+    <!-- 箭头 -->
+    <g stroke="#4D6BFE" stroke-width="2" marker-end="url(#arrow)">
+      <line x1="188" y1="174" x2="212.5" y2="174"/>
+      <line x1="470.5" y1="174" x2="495" y2="174"/>
+      <line x1="753" y1="174" x2="777.5" y2="174"/>
+      <line x1="1005.5" y1="174" x2="1030" y2="174"/>
+    </g>
+
+    <!-- 虚线回路 -->
+    <path d="M1130 230 V330 H342.5 V246" fill="none" stroke="#4D6BFE" stroke-width="2.5" stroke-dasharray="10 8" opacity="0.75" marker-end="url(#arrow)"/>
+    <text x="700" y="316" font-size="20" text-anchor="middle" fill="#7E93B8">收工通知 → 起下一轮</text>
+
+    <text x="60" y="408" font-size="21" fill="#8FA3C4">Lead 只做决策、拆活、验收；成员在各自独立上下文里动手。</text>
+  </g>
+</svg>

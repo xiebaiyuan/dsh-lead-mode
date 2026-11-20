@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="dsh-lead-mode mark">
+  <title>dsh-lead-mode mark</title>
+
+  <!-- 图形整体下移 88，让包围盒在画布内垂直居中 -->
+  <g transform="translate(0 88)">
+    <!-- 三条派活连线：从中心点边缘到空心圆外缘 -->
+    <g stroke="#4D6BFE" stroke-width="34" stroke-linecap="round">
+      <line x1="512" y1="462" x2="512" y2="368"/>
+      <line x1="631.511" y1="669" x2="712.918" y2="716"/>
+      <line x1="392.489" y1="669" x2="311.082" y2="716"/>
+    </g>
+
+    <!-- Lead：实心主圆点 -->
+    <circle cx="512" cy="600" r="138" fill="#4D6BFE"/>
+
+    <!-- 三个成员：空心圆 -->
+    <g fill="none" stroke="#E6EDF3" stroke-width="40">
+      <circle cx="512" cy="248" r="100"/>
+      <circle cx="816.841" cy="776" r="100"/>
+      <circle cx="207.159" cy="776" r="100"/>
+    </g>
+  </g>
+</svg>

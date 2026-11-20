@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="460" viewBox="0 0 1280 460" role="img" aria-label="How Lead mode delegates: request → Lead splits and assigns → shared task board and worklog → members work and report → Lead accepts, then back to Lead for the next round">
+  <title>How Lead mode delegates</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4D6BFE"/>
+    </marker>
+  </defs>
+
+  <rect x="0.75" y="0.75" width="1278.5" height="458.5" rx="28" fill="#0B1220" stroke="#1E2A45" stroke-width="1.5"/>
+
+  <g font-family="PingFang SC, Helvetica Neue, Arial, sans-serif">
+    <text x="60" y="72" font-size="28" font-weight="700" fill="#E6EDF3">How Lead mode delegates</text>
+
+    <!-- nodes -->
+    <g>
+      <rect x="60" y="118" width="120" height="112" rx="16" fill="#121C33" stroke="#2B3A5C" stroke-width="1.5"/>
+      <text x="115" y="178" font-size="26" font-weight="600" text-anchor="middle" fill="#E6EDF3">Request</text>
+      <text x="115" y="208" font-size="20" text-anchor="middle" fill="#8FA3C4">user asks</text>
+    </g>
+    <g>
+      <rect x="222.5" y="118" width="240" height="112" rx="16" fill="#14224A" stroke="#4D6BFE" stroke-width="2"/>
+      <text x="342.5" y="178" font-size="26" font-weight="600" text-anchor="middle" fill="#E6EDF3">Lead delegates</text>
+      <text x="342.5" y="208" font-size="20" text-anchor="middle" fill="#9FB2D4">split · assign</text>
+    </g>
+    <g>
+      <rect x="505" y="118" width="240" height="112" rx="16" fill="#121C33" stroke="#2B3A5C" stroke-width="1.5"/>
+      <text x="625" y="178" font-size="26" font-weight="600" text-anchor="middle" fill="#E6EDF3">Task board · log</text>
+      <text x="625" y="208" font-size="20" text-anchor="middle" fill="#8FA3C4">owner · write scope</text>
+    </g>
+    <g>
+      <rect x="787.5" y="118" width="210" height="112" rx="16" fill="#121C33" stroke="#2B3A5C" stroke-width="1.5"/>
+      <text x="892.5" y="178" font-size="26" font-weight="600" text-anchor="middle" fill="#E6EDF3">Members work</text>
+      <text x="892.5" y="208" font-size="20" text-anchor="middle" fill="#8FA3C4">own context</text>
+    </g>
+    <g>
+      <rect x="1040" y="118" width="180" height="112" rx="16" fill="#121C33" stroke="#2B3A5C" stroke-width="1.5"/>
+      <text x="1130" y="178" font-size="26" font-weight="600" text-anchor="middle" fill="#E6EDF3">Lead accepts</text>
+      <text x="1130" y="208" font-size="20" text-anchor="middle" fill="#8FA3C4">checks evidence</text>
+    </g>
+
+    <!-- arrows -->
+    <g stroke="#4D6BFE" stroke-width="2" marker-end="url(#arrow)">
+      <line x1="188" y1="174" x2="212.5" y2="174"/>
+      <line x1="470.5" y1="174" x2="495" y2="174"/>
+      <line x1="753" y1="174" x2="777.5" y2="174"/>
+      <line x1="1005.5" y1="174" x2="1030" y2="174"/>
+    </g>
+
+    <!-- dashed loop -->
+    <path d="M1130 230 V330 H342.5 V246" fill="none" stroke="#4D6BFE" stroke-width="2.5" stroke-dasharray="10 8" opacity="0.75" marker-end="url(#arrow)"/>
+    <text x="700" y="316" font-size="20" text-anchor="middle" fill="#7E93B8">completion notice → next round</text>
+
+    <text x="60" y="408" font-size="21" fill="#8FA3C4">Lead decides, splits, accepts. Members work in their own contexts.</text>
+  </g>
+</svg>
