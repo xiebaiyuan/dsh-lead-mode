@@ -1,6 +1,6 @@
 {
   "name": "dsh-lead-mode",
-  "version": "0.2.10",
+  "version": "0.2.11",
   "description": "Lead mode for DSH: two agent presets (PTC and creation), a working-method skill, a team digest skill, a dependency self-check, and two opening reminders that tell you to enable the official Agent Teams. | 给 DSH 加 Lead 模式：PTC 与创造两个预置、两个 skill、依赖自检、两条开场提示。",
   "type": "module",
   "main": "lib/index.js",

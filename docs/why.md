@@ -44,7 +44,7 @@ dsh plugin --profile <你的 profile 名> add @deepseek-ai/dsh-experimental-agen
 
 为什么要两个：Lead 只换方法、不换能力。PTC 会话与创造会话的工具集本来就不一样，合成一个预置等于替用户做能力取舍。
 
-prefix 443 字，六段：判断、派活，了解现状与验收都派成员做，结论由自己判断并讲给用户；标准要严、判据要具体、不将就，退回返工不自己补位；加载 `lead-mode` skill，控制面工具自己调、业务面调查都派成员，两代差异、从零还是继承、挑模型、任务板、写作用域、验收都在里面；派活先 `list_subagent_models` 从可选清单挑 provider/model；先判 Team 开没开、没开就停手让用户敲 `/lead-mode`；派完活结束回合、不调 `wait_agent`；要求成员第一步建工作日志。字数那条线从 400 提到 480（写满 479 通过，到 480 报错），给后面加规则留余量。两代工具的参数、装包命令、工作法细节，全在 `lead-mode` skill 与命令输出里。prefix 每轮都进上下文，所以不带细节。
+prefix 448 字，六段：判断、派活，了解现状与验收都派成员做，结论由自己判断并讲给用户；标准要严、判据要具体、不将就，退回返工不自己补位；加载 `lead-mode` skill，控制面工具自己调、业务面调查都派成员，两代差异、从零还是继承、挑模型、任务板、写作用域、验收、难度升级都在里面；派活先 `list_subagent_models` 从可选清单挑 provider/model；先判 Team 开没开、没开就停手让用户敲 `/lead-mode`；派完活结束回合、不调 `wait_agent`；要求成员第一步建工作日志。字数那条线从 400 提到 480（写满 479 通过，到 480 报错），给后面加规则留余量。两代工具的参数、装包命令、工作法细节，全在 `lead-mode` skill 与命令输出里。prefix 每轮都进上下文，所以不带细节。
 
 这段 prefix 进 system prompt 的 `DEPLOYMENT_PERSONA_PREFIX` 段，模型一定看得见。
 

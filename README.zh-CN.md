@@ -21,7 +21,7 @@
 
 ## 这是什么
 
-DSH（DeepSeek Harness）的 Lead 模式插件。当前版本 0.2.10，对宿主（跑 dsh 的那个程序）的要求是 >= 0.2.2-rc.3，MIT 许可。
+DSH（DeepSeek Harness）的 Lead 模式插件。当前版本 0.2.11，对宿主（跑 dsh 的那个程序）的要求是 >= 0.2.2-rc.3，MIT 许可。
 
 它补的是方法层。官方的 Agent Teams 运行时给工具：老一代是 `spawn_teammate`、`send_message`、`team_task_*`；新一代用 `subagent` 建成员，`send_message` 与 `team_task_*` 还在；成员收工由运行时通知，不需要 `wait_agent` 轮询。什么时候派活、派给谁、怎么等结果、怎么验收、多路产出怎么合并，运行时不管。
 
@@ -137,13 +137,13 @@ Team 开关是会话级的：模型与推理等级菜单里打开「开启智能
 | 依赖自检 | `/lead-mode` | 依赖不对时敲一下 |
 | 两层开场提示 | 自动 | 不用管 |
 
-`lead-mode` skill 覆盖这些：开工前对齐目标；按工具清单判代际；派活自包含；写作用域不重叠；共享任务的 list/get/claim/complete 流程；为什么不等成员；成员模型从哪来；上下文变长后的交接四步；标准定高、判据写成能对照的命令与数字，退回返工由成员做（同一件事退回两次还不过就换人、缩范围或停下来问，缩范围是砍做不到的部分、判据不降）；最终验证派独立成员做。
+`lead-mode` skill 覆盖这些：开工前对齐目标；按工具清单判代际；派活自包含；写作用域不重叠；共享任务的 list/get/claim/complete 流程；为什么不等成员；成员模型从哪来；上下文变长后的交接四步；标准定高、判据写成能对照的命令与数字，退回返工由成员做（同一件事退回两次还不过就换人、缩范围或停下来问，缩范围是砍做不到的部分、判据不降）；最终验证派独立成员做；活反复做不对、三个条件都够时，可派一个与 Lead 同模型的独立成员只出方案（难度升级，是最后手段，不是默认手段）。
 
 `team-digest` 把全队收尾合成一份 `reports/<YYYY-MM-DD>-<effort>.md`，六块骨架：结论 / 谁干了什么 / 验收证据 / 偏离与未验证 / 死路与决策 / 未决与下一步。这轮活有 2 个以上成员，或跨 2 轮以上，才写。
 
 派活用到三组工具：`subagent` / `subagent_fork` 建成员，`send_message` 续聊与催办，`team_task_create` / `team_task_get` / `team_task_list` / `team_task_update` 管共享任务。老一代对应 `spawn_teammate` 与 `send_message({ target })`，规矩一样，参数名不同。
 
-两个预置的 persona 逐字相同，443 字，每轮都进 system prompt；细节按需从 skill 加载，不占常驻上下文。
+两个预置的 persona 逐字相同，448 字，每轮都进 system prompt；细节按需从 skill 加载，不占常驻上下文。
 
 只新增，不修改。同名 skill 或命令撞了，宿主先到先得，本插件让位。
 
