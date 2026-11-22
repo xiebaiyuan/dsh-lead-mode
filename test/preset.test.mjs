@@ -173,6 +173,11 @@ test('persona prefix 只留短指针：判定 + 停手 + 派活规矩，不带�
     )
     assert.ok(prefix.includes('send_message'), 'prefix 要给出替代手段 send_message')
 
+    // 并行是默认动作：用户反馈「不容易派发并行任务」，persona 不写就没人并行。
+    // 锁两条：互不依赖的活一次派完（P4），skill 指针里带「并行」（P2）。
+    assert.ok(prefix.includes('一次派完'), 'prefix 要写明互不依赖的活一次派完，别一件一件等')
+    assert.ok(prefix.includes('并行'), 'prefix 的 skill 指针要带「并行」这一项')
+
     // 反向断言：完整命令与版本说明不进每轮上下文（issue #1）。
     // 它们由 /lead-mode 输出与 lead-mode skill 承担。
     assert.ok(!prefix.includes('dsh plugin'), 'prefix 不该再带完整安装命令')
