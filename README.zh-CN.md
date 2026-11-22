@@ -21,7 +21,7 @@
 
 ## 这是什么
 
-DSH（DeepSeek Harness）的 Lead 模式插件。当前版本 0.2.12，对宿主（跑 dsh 的那个程序）的要求是 >= 0.2.2-rc.3，MIT 许可。
+DSH（DeepSeek Harness）的 Lead 模式插件。当前版本 0.2.13，对宿主（跑 dsh 的那个程序）的要求是 >= 0.2.2-rc.3，MIT 许可。
 
 它补的是方法层。官方的 Agent Teams 运行时给工具：老一代是 `spawn_teammate`、`send_message`、`team_task_*`；新一代用 `subagent` 建成员，`send_message` 与 `team_task_*` 还在；成员收工由运行时通知，不需要 `wait_agent` 轮询。什么时候派活、派给谁、怎么等结果、怎么验收、多路产出怎么合并，运行时不管。
 
