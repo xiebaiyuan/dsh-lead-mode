@@ -21,7 +21,7 @@
 
 ## 这是什么
 
-DSH（DeepSeek Harness）的 Lead 模式插件。当前版本 0.2.14，对宿主（跑 dsh 的那个程序）的要求是 >= 0.2.2-rc.3，MIT 许可。
+DSH（DeepSeek Harness）的 Lead 模式插件。当前版本 0.2.15，对宿主（跑 dsh 的那个程序）的要求是 >= 0.2.2-rc.3，MIT 许可。
 
 它补的是方法层。官方的 Agent Teams 运行时给工具：老一代是 `spawn_teammate`、`send_message`、`team_task_*`；新一代用 `subagent` 建成员，`send_message` 与 `team_task_*` 还在；成员收尾由运行时通知，不需要 `wait_agent` 轮询。什么时候派活、派给谁、怎么等结果、怎么验收、多路产出怎么合并，运行时不管。
 
@@ -138,6 +138,8 @@ Team 开关是会话级的：模型与推理等级菜单里打开「开启智能
 | 两层开场提示 | 自动 | 不用管 |
 
 `lead-mode` skill 覆盖这些：开工前先定目标；按工具清单判哪一代；派活自包含；写作用域不重叠；共享任务的 list/get/claim/complete 流程；为什么不等成员；成员模型从哪来；上下文变长后的交接四步；标准定高、判据写成能对照的命令与数字，退回返工由成员做（同一件事退回两次还不过就换人、缩范围或停下来问，缩范围是砍做不到的部分、判据不降）；最终验证派独立成员做；活反复做不对、三个条件都够时，可派一个与 Lead 同模型的独立成员只出方案（难度升级，是最后手段，不是默认手段）。
+
+拆活分主目标、支撑、枝节；枝节和降了优先级的耗时验收进 `.scratch/<effort>/leftovers.md`，五列与规矩见 [skills/lead-mode/SKILL.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/skills/lead-mode/SKILL.md) 的 §12「主目标优先：枝节进遗留清单」一节。
 
 `team-digest` 把全队收尾合成一份 `reports/<YYYY-MM-DD>-<effort>.md`，六块骨架：结论 / 谁干了什么 / 验收证据 / 偏离与未验证 / 死路与决策 / 未决与下一步。这轮活有 2 个以上成员，或跨 2 轮以上，才写。
 

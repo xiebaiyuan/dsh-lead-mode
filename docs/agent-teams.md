@@ -89,6 +89,8 @@ dsh plugin --profile <你的 profile 名> add @deepseek-ai/dsh-experimental-agen
 | 独立验收 | 一块交付就验一块，不必攒到全部做完 | 文档那摊先回来，就先验它那份：`pnpm test` 加 `git diff --stat docs/` |
 | 互不重叠的实现 | 不同文件、不同模块、不同 skill 各派一人 | 一人改 `docs/`，一人改 `skills/`，一人改 `test/` |
 
+只读验收不占写作用域：一块交付就开验，别的实现还在跑也不用等。
+
 不能并行的三类，是硬约束不是建议：
 
 - 后一块要读前一块的产出。用 `blocked_by` 串起来。

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.15
+
+这版修一处 skill 外挂读不到的缺陷，再补两条 Lead 的干活规矩：拆活先分主目标与枝节，并行把账算清。
+
+- **修掉一个会让 skill 外挂读不到的问题**。插件注册 skill 时没有传 `resourceBase`，宿主就拿不到基准目录，`skills/lead-mode/SKILL.md` 里 10 处 `references/*.md` 相对路径因此解析不了（表现为静默读不到，或者在项目里撞上同名 `references/` 目录读错文件）。现在注册时传 `{ kind: 'directory', path: <包内该 skill 目录> }`，宿主会渲染 `Base directory for this skill: …`；`test/smoke.test.mjs` 锁住该字段。0.2.14 带这个缺陷，装 0.2.14 的人升上来就好。
+- **新增「主目标优先，枝节进遗留清单」**。拆活分主目标、支撑、枝节，枝节不进本轮并行队列。验收分两档：核心判据必跑，耗时的全量验收可以降优先级，但降了必须落进 `.scratch/<effort>/leftovers.md`（五列：编号、问题、为什么现在不做、后面怎么查、什么时候回看）；「后面怎么查」必须能粘贴，写不出来不许降级；收尾必须报数，一条也没有就写「遗留：无」。`team-digest` 第 6 块只写编号、一句话、清单路径，不把整张表贴进汇总。
+- **并行补强**。写明并行只省墙钟时间，没有依赖还排队是纯亏；只读验收不占写作用域，可以和实现同时开。
+- **文档与预置注释**。`GLOSSARY.md` 新增「遗留问题清单」；`docs/usage.md` 补拆活分三级、遗留清单与 `resourceBase` 机制；`docs/agent-teams.md` 补只读验收并行；两份 README 各加一句；`cordis.patch.yml` 一处注释改成说清 persona 不判代际、只指向 skill 与查 `team_task_*`（persona 未动，两预置配置行未动）。
+- **版本**。`package.json` 到 `0.2.15`，两份 README 的版本行同步。
+
 ## 0.2.14
 
 两个随包 skill 按「写给 agent 读」那套写法重写：压掉自造词，按会话类型重排读法，只在特定会话用得上的细节挂到外挂文件。代码、预置、命令、测试行为不变。

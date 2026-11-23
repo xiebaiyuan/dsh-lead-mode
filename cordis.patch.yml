@@ -49,8 +49,9 @@
 #   from a profile, so the install command must never be shown to a user on a new
 #   host.
 #
-# The persona prefix below decides which generation it is addressing from the
-# session's tool list, not from a version string.
+# The persona prefix below does not decide the generation: it points at the
+# `lead-mode` skill and checks `team_task_*` to see whether Team is on. The
+# generation comes from the skill's §2.2, which reads the session's tool list.
 
 - insert:
     - id: dsh-lead-mode

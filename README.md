@@ -21,7 +21,7 @@ A Lead mode for DSH: the model judges, delegates, and reports the conclusion; me
 
 ## What this is
 
-A Lead mode plugin for DSH (DeepSeek Harness). Version 0.2.14, requires host (the program running dsh) >= 0.2.2-rc.3, MIT licensed.
+A Lead mode plugin for DSH (DeepSeek Harness). Version 0.2.15, requires host (the program running dsh) >= 0.2.2-rc.3, MIT licensed.
 
 It covers the method layer. The official Agent Teams runtime hands you tools: the older generation has `spawn_teammate`, `send_message`, `team_task_*`; the newer one builds members with `subagent`, keeps `send_message` and `team_task_*`, and gets completion notices from the runtime instead of `wait_agent` polling. When to delegate, to whom, how to wait, how to review, how to merge several streams — none of that comes with the runtime.
 
@@ -138,6 +138,8 @@ Team 开关是会话级的：模型与推理等级菜单里打开「开启智能
 | Two opening reminders | automatic | Nothing |
 
 `lead-mode` covers: agreeing on the goal before starting; reading the tool list to tell which generation you are on; delegating with self-contained prompts; keeping write scopes disjoint (each member only touches its own files); the list/get/claim/complete flow on shared tasks; why not to wait on a member; where member models come from; the four-step handoff as context grows; setting the bar high with pass criteria you can actually check, without patching a rework yourself (two failed retries and you change the member, cut scope, or stop and ask — cutting scope means dropping what cannot be done and saying what was dropped, never lowering the bar); handing the final verification to an independent member; and, when a task keeps coming back wrong and the three conditions hold, escalating once to a single plan-only member on the same model as the Lead (a last resort, never the default).
+
+Work is split into primary, supporting, and side items; side items plus deprioritized slow checks go onto `.scratch/<effort>/leftovers.md`, with the five columns and rules in [skills/lead-mode/SKILL.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/skills/lead-mode/SKILL.md) §12.
 
 `team-digest` merges the whole team's wrap-up into `reports/<YYYY-MM-DD>-<effort>.md` with six blocks: conclusion / who did what / acceptance evidence / deviations and unverified claims / what did not work and the decisions / open items and next steps. It is written only when this round of work had two or more members, or spanned two or more rounds.
 

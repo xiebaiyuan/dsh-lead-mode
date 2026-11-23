@@ -304,6 +304,11 @@ test('扫描 skills/ 时每个合规目录注册一个，坏目录只 warn 不�
       assert.ok(skill.content.startsWith('# '), `${skill.name} 的 content 不该带 frontmatter`)
       assert.equal(skill.source, `dsh-lead-mode/skills/${skill.name}/SKILL.md`)
       assert.equal(skill.path, join(root, skill.name, 'SKILL.md'))
+      assert.deepEqual(
+        skill.resourceBase,
+        { kind: 'directory', path: join(root, skill.name) },
+        `${skill.name} 的资源基准目录要让宿主渲染成 Base directory，否则正文里的相对路径解析不了`,
+      )
       assert.equal(skill.invocation?.modelInvocable, true)
       assert.equal(skill.invocation?.userInvocable, true)
     }

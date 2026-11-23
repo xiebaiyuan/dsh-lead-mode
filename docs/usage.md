@@ -95,9 +95,11 @@ Lead 只换方法、不换能力，所以两个预置分别镜像官方两个预
 - 模型判断需要时自己加载（skill 标记为模型可调用）
 - 你直接敲 `/skill lead-mode`
 
-覆盖这些内容：你的角色（控制面自己调、业务面派成员）、开工先判断 PTC 还是 native、哪一代、Team 开没开（没开就停手）、开工前先定三件事、派活的 prompt 与收尾消息（为什么不等成员、派完就结束回合，见 [agent-teams.md](agent-teams.md)）、六维过一遍（派活方式由你判断）、老一代 `spawn_teammate` 与新一代 `subagent` 各走哪条路、写作用域与并行（两条判据、四类天然可并行、三类不能并行，细节在 [agent-teams.md](agent-teams.md) 的「哪些活能并行派」一节）、共享任务板（list/get/claim/complete 流程）、上下文变长怎么办（压缩、复用、交接四步、换人）、验收与收尾（标准定高、退回返工不自己补位，同一件事退回两次还不过就换人、缩范围或停下来问；难度升级——一次同模型专家的三条件与五条硬限制见 [skills/lead-mode/SKILL.md](../skills/lead-mode/SKILL.md) 的「难度升级：一次同模型专家」一节，不是默认手段）、dsh-context 编队页（可选）、回报怎么写。
+覆盖这些内容：你的角色（控制面自己调、业务面派成员）、开工先判断 PTC 还是 native、哪一代、Team 开没开（没开就停手）、开工前先定三件事、派活的 prompt 与收尾消息（为什么不等成员、派完就结束回合，见 [agent-teams.md](agent-teams.md)）、六维过一遍（派活方式由你判断）、老一代 `spawn_teammate` 与新一代 `subagent` 各走哪条路、写作用域与并行（两条判据、四类天然可并行、三类不能并行，细节在 [agent-teams.md](agent-teams.md) 的「哪些活能并行派」一节）、共享任务板（list/get/claim/complete 流程）、上下文变长怎么办（压缩、复用、交接四步、换人）、验收与收尾（拆活先分主目标、支撑、枝节，枝节与降了优先级的耗时验收进 `.scratch/<effort>/leftovers.md`，见 [skills/lead-mode/SKILL.md](../skills/lead-mode/SKILL.md) 的 §12「主目标优先：枝节进遗留清单」一节；标准定高、退回返工不自己补位，同一件事退回两次还不过就换人、缩范围或停下来问；难度升级——一次同模型专家的三条件与五条硬限制见 [skills/lead-mode/SKILL.md](../skills/lead-mode/SKILL.md) 的「难度升级：一次同模型专家」一节，不是默认手段）、dsh-context 编队页（可选）、回报怎么写。
 
 正文之外还有四份外挂，放在 `skills/lead-mode/references/`，要哪份读哪份，不占常驻上下文：`ptc-calls.md`（PTC 下的调用形状，PTC 会话才读）、`old-gen.md`（老一代：`spawn_teammate` 的细节，只有这个工具的会话才读）、`member-models.md`（按活挑成员模型，要按活挑才读）、`tool-signatures.md`（两代工具名与参数差异，写调用前对一眼）。
+
+正文里能用 `references/*.md` 这样的相对路径指到它们，靠的是注册 skill 时传的 `resourceBase: { kind: 'directory', path }`：宿主只在 `kind` 是 `directory` 时渲染一行 `Base directory for this skill: <路径>`，并不代理解析路径，模型是拿这行当基准目录自己去拼（`lib/index.js`）。
 
 其中两条是读源码才确认的，容易踩：
 
