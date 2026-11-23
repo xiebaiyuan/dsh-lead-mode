@@ -95,9 +95,9 @@ Lead 只换方法、不换能力，所以两个预置分别镜像官方两个预
 - 模型判断需要时自己加载（skill 标记为模型可调用）
 - 你直接敲 `/skill lead-mode`
 
-覆盖这些内容：你的角色（控制面自己调、业务面派成员）、开工先判断 PTC 还是 native、哪一代、Team 开没开（没开就停手）、开工前先定三件事、派活的 prompt 与收尾消息（为什么不等成员、派完就结束回合，见 [agent-teams.md](agent-teams.md)）、六维过一遍（派活方式由你判断）、老一代 `spawn_teammate` 与新一代 `subagent` 各走哪条路、写作用域与并行（两条判据、四类天然可并行、三类不能并行，细节在 [agent-teams.md](agent-teams.md) 的「哪些活能并行派」一节）、共享任务板（list/get/claim/complete 流程）、上下文变长怎么办（压缩、复用、交接四步、换人）、验收与收尾（拆活先分主目标、支撑、枝节，枝节与降了优先级的耗时验收进 `.scratch/<effort>/leftovers.md`，见 [skills/lead-mode/SKILL.md](../skills/lead-mode/SKILL.md) 的 §12「主目标优先：枝节进遗留清单」一节；标准定高、退回返工不自己补位，同一件事退回两次还不过就换人、缩范围或停下来问；难度升级——一次同模型专家的三条件与五条硬限制见 [skills/lead-mode/SKILL.md](../skills/lead-mode/SKILL.md) 的「难度升级：一次同模型专家」一节，不是默认手段）、dsh-context 编队页（可选）、回报怎么写。
+覆盖这些内容：你的角色（控制面自己调、业务面派成员）、开工先判断 PTC 还是 native、哪一代、Team 开没开（没开就停手）、开工前先定三件事、派活的 prompt 与收尾消息（为什么不等成员、派完就结束回合，见 [agent-teams.md](agent-teams.md)）、六维过一遍（派活方式由你判断）、老一代 `spawn_teammate` 与新一代 `subagent` 各走哪条路、写作用域与并行（先按 §12 判级再按 §9.2 判并行、醒来先核主目标见 §9.3，细节在 [agent-teams.md](agent-teams.md) 的「哪些活能并行派」一节）、共享任务板（list/get/claim/complete 流程）、上下文变长怎么办（压缩、复用、交接四步、换人）、验收与收尾（拆活先分主目标、支撑、枝节，支撑须写明阻塞判据与停止线，枝节与降了优先级的耗时验收进 `.scratch/<effort>/leftovers.md`，降级查法支持可粘贴命令、文件路径或「对象 + 入口 + 判据」走查步骤，见 [skills/lead-mode/SKILL.md](../skills/lead-mode/SKILL.md) 的 §12「主目标优先：枝节进遗留清单」一节；标准定高、判据全过即停、独立验收只核既有判据不扩范围、退回返工不自己补位，同一件事退回两次还不过就换人、缩范围或停下来问；难度升级——一次同模型专家的三条件与五条硬限制见 [skills/lead-mode/SKILL.md](../skills/lead-mode/SKILL.md) 的「难度升级：一次同模型专家」一节，不是默认手段）、dsh-context 编队页（可选）、回报怎么写。
 
-正文之外还有四份外挂，放在 `skills/lead-mode/references/`，要哪份读哪份，不占常驻上下文：`ptc-calls.md`（PTC 下的调用形状，PTC 会话才读）、`old-gen.md`（老一代：`spawn_teammate` 的细节，只有这个工具的会话才读）、`member-models.md`（按活挑成员模型，要按活挑才读）、`tool-signatures.md`（两代工具名与参数差异，写调用前对一眼）。
+正文（462 行）之外还有五份外挂，放在 `skills/lead-mode/references/`，要哪份读哪份，不占常驻上下文：`ptc-calls.md`（PTC 下的调用形状，PTC 会话才读）、`old-gen.md`（老一代：`spawn_teammate` 的细节，只有这个工具的会话才读）、`member-models.md`（按活挑成员模型，要按活挑才读；并联动长程停滞升级）、`tool-signatures.md`（两代工具名与参数差异，写调用前对一眼）、`long-horizon.md`（多轮长程控制回路，121 行，预计 ≥2 轮派单/验收或跨模块推进时才读：覆盖 N/M 进度账与 `todo_write`/`create_goal` 边界、分层验收默认全量最多 2 次、连续 2 轮无增长先查 `list_subagent_models` 切更强模型如 Opus `fresh` 接手跑 1 轮再止损问用户、Lead 压缩后三步重锚）。
 
 正文里能用 `references/*.md` 这样的相对路径指到它们，靠的是注册 skill 时传的 `resourceBase: { kind: 'directory', path }`：宿主只在 `kind` 是 `directory` 时渲染一行 `Base directory for this skill: <路径>`，并不代理解析路径，模型是拿这行当基准目录自己去拼（`lib/index.js`）。
 
@@ -123,7 +123,7 @@ Lead 只换方法、不换能力，所以两个预置分别镜像官方两个预
 | 六块骨架 | 结论 / 谁干了什么 / 验收证据 / 偏离与未验证 / 死路与决策 / 未决与下一步 |
 | 原料分层 | 收尾消息做骨架，工作日志补过程细节，会话日志兜底 |
 
-六块标题写死，某块没内容就写「无」。原料按顺序取，上层够用就不下钻。细节看 `team-digest` skill（十节，按写汇总的顺序排）。
+六块标题写死，第 1 块「结论」首行固定报 `主目标：达成/部分达成/未达成（N/M）`（单独调用缺主目标判据时降级写 `主目标：未验证（缺主目标判据）`），某块没内容就写「无」。原料按顺序取，上层够用就不下钻。`reports/` 下两份早期历史样例（`2026-10-29-team-digest.md`、`2026-11-11-readme-redesign.md`）已加历史说明横幅，不作当前范例效仿。细节看 `team-digest` skill（十节，按写汇总的顺序排）。
 
 ### 四、依赖自检命令
 

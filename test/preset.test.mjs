@@ -215,6 +215,21 @@ test('persona prefix 要求成员第一步建工作日志', async () => {
   }
 })
 
+test('persona prefix 锁定主目标优先、遗留与长程止损指针', async () => {
+  const { byId } = findLeadPresets(await loadPatch())
+  for (const expected of PRESETS) {
+    const persona = byId
+      .get(expected.id)
+      .config.plugins.find((row) => row.name === '@deepseek-ai/dsh-persona')
+    const prefix = persona.config?.prefix
+    assert.equal(typeof prefix, 'string', `${expected.id} 的 persona.config.prefix 必须是字符串`)
+
+    assert.ok(prefix.includes('先保主目标'), `${expected.id}: prefix 必须写明「先保主目标」`)
+    assert.ok(prefix.includes('遗留'), `${expected.id}: prefix 必须写明枝节记「遗留」`)
+    assert.ok(prefix.includes('长程止损'), `${expected.id}: prefix 的 skill 指针必须带「长程止损」`)
+  }
+})
+
 test('完整安装命令与版本号在 skill 里，没丢', async () => {
   const skill = await readFile(resolve(repoRoot, 'skills/lead-mode/SKILL.md'), 'utf8')
   assert.ok(skill.includes('dsh plugin --profile'), 'skill 要保留可粘贴的安装命令')

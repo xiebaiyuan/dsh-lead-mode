@@ -900,3 +900,317 @@ test('skill 正文不写死自动压缩的阈值数字', async () => {
     )
   }
 })
+
+// ---------------------------------------------------------------------------
+// 长程防跑偏与模型升级止损测试锁（O5）。
+//
+// 锁住 lead-mode、references/long-horizon.md、references/member-models.md、
+// team-digest 与 GLOSSARY 的跨文档契约，防止后续编辑静默退化。
+// ---------------------------------------------------------------------------
+
+/** 从指定 markdown 文档切出一节：从 heading 开始，到下一个同级或更高级标题前结束。 */
+function sliceSection(doc, heading, label) {
+  const start = doc.indexOf(heading)
+  assert.notEqual(start, -1, `${label} 必须有「${heading}」这一节`)
+  const level = /^#+/.exec(heading)[0].length
+  const rest = doc.slice(start + heading.length)
+  const next = new RegExp(`\\n#{1,${level}} `).exec(rest)
+  assert.notEqual(next, null, `${label} 的「${heading}」后面必须有下一节，否则切片会吃掉全文`)
+  return rest.slice(0, next.index)
+}
+
+/** 递归列出目录下全部 .md 文件的相对路径（POSIX 分隔符）。 */
+function collectMarkdownFiles(dir, prefix) {
+  const results = []
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const rel = `${prefix}/${entry.name}`
+    const abs = join(dir, entry.name)
+    if (entry.isDirectory()) {
+      results.push(...collectMarkdownFiles(abs, rel))
+    } else if (entry.isFile() && entry.name.endsWith('.md')) {
+      results.push(rel)
+    }
+  }
+  return results.sort()
+}
+
+test('lead-mode 正文在路由表与 §12 指向 references/long-horizon.md', async () => {
+  const { body } = await readSkillBody()
+
+  const routing = sliceSection(body, '### 2.3 路由表：按你的组合读', 'skills/lead-mode/SKILL.md')
+  assert.ok(
+    routing.includes('references/long-horizon.md'),
+    '§2.3 路由表必须指向 references/long-horizon.md',
+  )
+
+  const mainGoal = sliceSection(body, '### 主目标优先：枝节进遗留清单', 'skills/lead-mode/SKILL.md')
+  assert.ok(
+    mainGoal.includes('references/long-horizon.md'),
+    '§12 主目标优先一节必须指向 references/long-horizon.md',
+  )
+
+  const escalate = sliceSection(body, '### 难度升级：一次同模型专家', 'skills/lead-mode/SKILL.md')
+  assert.ok(
+    escalate.includes('references/long-horizon.md'),
+    '§12 难度升级一节必须明确与 references/long-horizon.md 的分工指向',
+  )
+})
+
+test('lead-mode 正文写死裁决顺序（先按 §12 判级再判并行）并包含 §9.3 醒来动作', async () => {
+  const { body } = await readSkillBody()
+
+  const sixDims = sliceSection(body, '## 6 六维过一遍：派活方式由你判断', 'skills/lead-mode/SKILL.md')
+  assert.ok(sixDims.includes('先按 §12 判级'), '§6 六维表并行度一栏必须先按 §12 判级拦下枝节')
+
+  const parallel = sliceSection(body, '### 9.2 能并行的就一起派', 'skills/lead-mode/SKILL.md')
+  assert.ok(parallel.includes('先按 §12 判级'), '§9.2 必须写明「先按 §12 判级」')
+  assert.ok(parallel.includes('裁决顺序'), '§9.2 必须显式写死裁决顺序')
+  assert.ok(parallel.includes('不进并行队列'), '§9.2 必须写明枝节即使写作用域不重叠也不进并行队列')
+  assert.ok(parallel.includes('遗留清单'), '§9.2 必须写明枝节直接记入遗留清单')
+  const orderAt = parallel.indexOf('裁决顺序')
+  const rankAt = parallel.indexOf('先按 §12 判级', orderAt)
+  const parAt = parallel.indexOf('判并行', orderAt)
+  assert.ok(
+    rankAt > orderAt && parAt > rankAt,
+    '§9.2 裁决顺序必须满足「先按 §12 判级」在「判并行」之前',
+  )
+
+  const wake = sliceSection(body, '### 9.3 醒来动作', 'skills/lead-mode/SKILL.md')
+  assert.ok(wake.includes('先核主目标'), '§9.3 醒来动作必须要求先核主目标')
+  assert.ok(wake.includes('枝节带偏'), '§9.3 醒来动作必须写明不被枝节带偏')
+  assert.ok(wake.includes('leftovers.md'), '§9.3 醒来动作必须写明枝节回报记入 leftovers.md')
+  assert.ok(wake.includes('不新派单'), '§9.3 醒来动作必须写明枝节回报不新派单')
+})
+
+test('lead-mode 正文锁定判据追踪与支撑活硬约束（阻塞判据 + 停止线）', async () => {
+  const { body } = await readSkillBody()
+
+  const kickoff = sliceSection(body, '## 4 开工前先定三件事', 'skills/lead-mode/SKILL.md')
+  for (const token of ['#1..#M', '服务的主目标判据', '阻塞哪条主目标判据', '停止线']) {
+    assert.ok(kickoff.includes(token), `§4 开工前先定三件事必须包含 ${token}`)
+  }
+
+  const promptSec = sliceSection(body, '### 5.1 prompt 怎么写', 'skills/lead-mode/SKILL.md')
+  for (const token of ['服务的主目标判据', '#k', '阻塞哪条主目标判据', '停止线']) {
+    assert.ok(promptSec.includes(token), `§5.1 prompt 怎么写必须包含 ${token}`)
+  }
+
+  const parallel = sliceSection(body, '### 9.2 能并行的就一起派', 'skills/lead-mode/SKILL.md')
+  assert.ok(parallel.includes('#k'), '§9.2 派单四要素必须包含服务判据 #k')
+
+  const docsSec = sliceSection(body, '### 工作日志与交接文档放哪', 'skills/lead-mode/SKILL.md')
+  const worklogRow = docsSec.split('\n').find((line) => line.startsWith('| 工作日志 |'))
+  const handoffRow = docsSec.split('\n').find((line) => line.startsWith('| 交接文档 |'))
+  assert.ok(worklogRow !== undefined, '§11 表格必须有工作日志一行')
+  assert.ok(handoffRow !== undefined, '§11 表格必须有交接文档一行')
+  assert.ok(
+    worklogRow.includes('服务的主目标判据') && worklogRow.includes('#k') && worklogRow.includes('停止线'),
+    '§11 工作日志骨架必须包含服务的主目标判据 #k 与停止线',
+  )
+  assert.ok(
+    /服务.{0,6}判据/.test(handoffRow) && handoffRow.includes('#k') && handoffRow.includes('停止线'),
+    '§11 交接文档骨架必须包含服务判据 #k 与支撑停止线',
+  )
+
+  const mainGoal = sliceSection(body, '### 主目标优先：枝节进遗留清单', 'skills/lead-mode/SKILL.md')
+  for (const token of ['服务的主目标判据', '#k', '阻塞哪条主目标判据', '停止线', '解除阻塞即止']) {
+    assert.ok(mainGoal.includes(token), `§12 主目标优先一节必须包含 ${token}`)
+  }
+})
+
+test('lead-mode 正文锁定降级走查步骤、判据全过即停与独立验收不扩范围', async () => {
+  const { body } = await readSkillBody()
+
+  const mainGoal = sliceSection(body, '### 主目标优先：枝节进遗留清单', 'skills/lead-mode/SKILL.md')
+  for (const token of ['可复现走查步骤', '对象 + 入口 + 判据', '不许降级']) {
+    assert.ok(mainGoal.includes(token), `§12 降级验收口径必须包含 ${token}`)
+  }
+
+  const strict = sliceSection(body, '### 标准定高，返工不自己补位', 'skills/lead-mode/SKILL.md')
+  for (const token of ['判据全过即停', '不顺手加检', '独立验收不扩范围', 'leftovers.md', '不触发额外返工']) {
+    assert.ok(strict.includes(token), `§12 标准定高一节必须包含 ${token}`)
+  }
+
+  const finalReply = sliceSection(body, '### 给最终答复前', 'skills/lead-mode/SKILL.md')
+  assert.ok(finalReply.includes('不扩验收范围'), '§12 给最终答复前一节必须强调独立验收不扩验收范围')
+})
+
+test('references/long-horizon.md 存在非空且随 skills/ 纳入发布包', async () => {
+  const refDir = resolve(repoRoot, 'skills/lead-mode/references')
+  const entries = readdirSync(refDir)
+  assert.ok(entries.includes('long-horizon.md'), 'skills/lead-mode/references/ 下必须存在 long-horizon.md')
+
+  const content = await readFile(join(refDir, 'long-horizon.md'), 'utf8')
+  assert.ok(content.trim().length > 0, 'skills/lead-mode/references/long-horizon.md 不能为空')
+
+  const pkg = JSON.parse(await readFile(resolve(repoRoot, 'package.json'), 'utf8'))
+  assert.ok(
+    Array.isArray(pkg.files) && pkg.files.some((entry) => entry === 'skills' || entry === 'skills/'),
+    'package.json 的 files 必须包含 skills，确保 references/long-horizon.md 随包发布',
+  )
+
+  const plugin = await loadPlugin()
+  const { ctx, registered } = makeCtx({
+    services: { skills: {}, commands: {}, agentTeams: {} },
+  })
+  plugin.apply(ctx)
+  const leadSkill = registered.skills.find((skill) => skill.name === 'lead-mode')
+  assert.ok(leadSkill !== undefined, 'lead-mode skill 必须注册')
+  assert.deepEqual(
+    leadSkill.resourceBase,
+    { kind: 'directory', path: resolve(repoRoot, 'skills/lead-mode') },
+    'lead-mode 的 resourceBase 必须指向 skills/lead-mode，使 references/long-horizon.md 相对路径可解析',
+  )
+})
+
+test('references/long-horizon.md 锁定 6 项长程控制与止损硬规则', async () => {
+  const label = 'skills/lead-mode/references/long-horizon.md'
+  const doc = await readFile(resolve(repoRoot, label), 'utf8')
+
+  // 1) N/M 进度账 + 2) todo_write 与 create_goal 边界 + 3) 不新增 status/acceptance 文件
+  const sec2 = sliceSection(doc, '## 2 主目标判据进度账（N/M）与工具边界', label)
+  for (const token of ['N/M', '#1..#M', '不计入', 'todo_write', '只放主目标判据', 'create_goal', '无人值守', 'reports/status-*.md', 'acceptance.md']) {
+    assert.ok(sec2.includes(token), `${label} §2 必须包含 ${token}`)
+  }
+  assert.ok(/不默认开|用户没授权就不调/.test(sec2), `${label} §2 必须写明 create_goal 不默认开启`)
+  assert.ok(/不新增.{0,12}reports\/status-\*\.md/.test(sec2), `${label} §2 必须明确禁止新增 reports/status-*.md`)
+
+  // 4) 分层验收与全量验收默认最多 2 次
+  const sec3 = sliceSection(doc, '## 3 分层验收与验收预算', label)
+  for (const token of ['局部验收', '全量验收', '判据全过即停', '独立验收只核既有判据', '对象 + 入口 + 判据']) {
+    assert.ok(sec3.includes(token), `${label} §3 必须包含 ${token}`)
+  }
+  assert.ok(/默认最多.{0,8}2\s*次/.test(sec3), `${label} §3 必须锁定全量验收默认最多 2 次`)
+
+  // 5) 连续 2 轮无增长：先调 list_subagent_models 切更强模型（含 Opus、fresh），无可切或切后仍无增长再问用户
+  const sec4 = sliceSection(doc, '## 4 连续 2 轮无增长：先升模型，再止损问用户', label)
+  for (const token of [
+    '连续 2 轮',
+    '无增长',
+    'list_subagent_models',
+    'Opus',
+    'fresh',
+    'subagent_fork',
+    '无更强模型',
+    '切后仍无增长',
+    '问用户',
+    'references/member-models.md',
+  ]) {
+    assert.ok(sec4.includes(token), `${label} §4 必须包含 ${token}`)
+  }
+
+  // 6) Lead 上下文压缩后重锚
+  const sec5 = sliceSection(doc, '## 5 Lead 上下文压缩后重锚', label)
+  const anchorSteps = [...sec5.matchAll(/^\d+\. /gm)].length
+  assert.ok(anchorSteps >= 3, `${label} §5 压缩后重锚必须写成至少 3 步有序清单，实测 ${anchorSteps} 步`)
+  for (const token of ['N/M', 'team_task_list', 'leftovers.md', '重锚完成前不派新单']) {
+    assert.ok(sec5.includes(token), `${label} §5 必须包含 ${token}`)
+  }
+})
+
+test('skills/ 下全部 markdown（含 references/long-horizon.md）不出现禁用字面', async () => {
+  const mdFiles = collectMarkdownFiles(resolve(repoRoot, 'skills'), 'skills')
+  for (const required of [
+    'skills/lead-mode/SKILL.md',
+    'skills/lead-mode/references/long-horizon.md',
+    'skills/lead-mode/references/member-models.md',
+    'skills/team-digest/SKILL.md',
+  ]) {
+    assert.ok(mdFiles.includes(required), `扫描清单必须覆盖 ${required}`)
+  }
+
+  for (const relPath of mdFiles) {
+    const content = await readFile(resolve(repoRoot, relPath), 'utf8')
+    for (const number of ['0.8', '65536', '0.16']) {
+      assert.ok(
+        !content.includes(number),
+        `${relPath} 不该出现硬编码阈值数字 ${number}`,
+      )
+    }
+    assert.ok(
+      !/时用一次 `wait_agent`/.test(content),
+      `${relPath} 不该出现「时用一次 \`wait_agent\`」这类许可`,
+    )
+  }
+})
+
+test('references/member-models.md 锁定与 long-horizon.md 的停滞升级联动', async () => {
+  const label = 'skills/lead-mode/references/member-models.md'
+  const doc = await readFile(resolve(repoRoot, label), 'utf8')
+
+  for (const token of [
+    'references/long-horizon.md',
+    '停滞升级联动',
+    '连续 2 轮',
+    '无增长',
+    'list_subagent_models',
+    '更强的模型',
+    'Opus',
+    'fresh',
+    '请示用户',
+  ]) {
+    assert.ok(doc.includes(token), `${label} 必须包含 ${token}`)
+  }
+})
+
+test('team-digest 正文锁定第 1 块主目标首行与第 6 块遗留走查口径', async () => {
+  const label = 'skills/team-digest/SKILL.md'
+  const doc = await readFile(resolve(repoRoot, label), 'utf8')
+
+  const skeleton = sliceSection(doc, '## 六块骨架', label)
+  assert.ok(
+    skeleton.includes('主目标：达成/部分达成/未达成（N/M）'),
+    `${label} 六块骨架必须锁定第 1 块首行「主目标：达成/部分达成/未达成（N/M）」`,
+  )
+
+  const block1 = sliceSection(doc, '### 第 1 块首行怎么写', label)
+  for (const token of [
+    '主目标：达成/部分达成/未达成（N/M）',
+    '不把遗留清单里的枝节混进分母',
+    '主目标：未验证（缺主目标判据）',
+  ]) {
+    assert.ok(block1.includes(token), `${label} 第 1 块说明必须包含 ${token}`)
+  }
+
+  const block6 = sliceSection(doc, '### 第 6 块里的遗留', label)
+  for (const token of ['leftovers.md', '对象 + 入口 + 判据', '分开记账']) {
+    assert.ok(block6.includes(token), `${label} 第 6 块遗留说明必须包含 ${token}`)
+  }
+})
+
+test('GLOSSARY.md 锁定新增的主目标、支撑、枝节三词条', async () => {
+  const glossary = await readFile(resolve(repoRoot, 'GLOSSARY.md'), 'utf8')
+
+  for (const term of ['主目标', '支撑', '枝节']) {
+    assert.ok(
+      new RegExp(`^\\*\\*${term}\\*\\*:`, 'm').test(glossary),
+      `GLOSSARY.md 必须定义「${term}」词条`,
+    )
+  }
+
+  const sliceTerm = (term) => {
+    const start = glossary.indexOf(`**${term}**:`)
+    assert.notEqual(start, -1, `GLOSSARY.md 缺少「${term}」词条`)
+    const rest = glossary.slice(start)
+    const end = rest.indexOf('\n\n')
+    return end === -1 ? rest : rest.slice(0, end)
+  }
+
+  const mainGoalTerm = sliceTerm('主目标')
+  assert.ok(mainGoalTerm.includes('#1') && mainGoalTerm.includes('不许去修枝节'), '主目标词条须包含编号与禁先修枝节')
+
+  const supportTerm = sliceTerm('支撑')
+  assert.ok(
+    supportTerm.includes('阻塞哪条主目标判据 #k') && supportTerm.includes('停止线'),
+    '支撑词条须包含阻塞判据 #k 与停止线',
+  )
+
+  const minorTerm = sliceTerm('枝节')
+  assert.ok(
+    minorTerm.includes('不进本轮并行队列') && minorTerm.includes('遗留问题清单'),
+    '枝节词条须包含不进并行队列与入遗留问题清单',
+  )
+
+  const leftoversTerm = sliceTerm('遗留问题清单（leftovers）')
+  assert.ok(leftoversTerm.includes('对象 + 入口 + 判据'), '遗留问题清单词条须同步走查步骤（对象 + 入口 + 判据）')
+})

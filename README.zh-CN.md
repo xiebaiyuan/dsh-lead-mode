@@ -9,7 +9,7 @@
 [![npm 版本](https://img.shields.io/npm/v/dsh-lead-mode?color=4D6BFE)](https://www.npmjs.com/package/dsh-lead-mode)
 [![dsh 版本](https://img.shields.io/badge/dsh-%3E%3D0.2.2--rc.3-4D6BFE)](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/package.json)
 [![许可](https://img.shields.io/badge/license-MIT-3DA639)](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/LICENSE)
-[![测试](https://img.shields.io/badge/tests-45%20passing-3DA639)](https://github.com/xiebaiyuan/dsh-lead-mode/actions/workflows/ci.yml)
+[![测试](https://img.shields.io/badge/tests-56%20passing-3DA639)](https://github.com/xiebaiyuan/dsh-lead-mode/actions/workflows/ci.yml)
 [![下载量](https://img.shields.io/npm/dm/dsh-lead-mode)](https://www.npmjs.com/package/dsh-lead-mode)
 [![CI](https://github.com/xiebaiyuan/dsh-lead-mode/actions/workflows/ci.yml/badge.svg)](https://github.com/xiebaiyuan/dsh-lead-mode/actions/workflows/ci.yml)
 
@@ -21,7 +21,7 @@
 
 ## 这是什么
 
-DSH（DeepSeek Harness）的 Lead 模式插件。当前版本 0.2.15，对宿主（跑 dsh 的那个程序）的要求是 >= 0.2.2-rc.3，MIT 许可。
+DSH（DeepSeek Harness）的 Lead 模式插件。当前版本 0.2.16，对宿主（跑 dsh 的那个程序）的要求是 >= 0.2.2-rc.3，MIT 许可。
 
 它补的是方法层。官方的 Agent Teams 运行时给工具：老一代是 `spawn_teammate`、`send_message`、`team_task_*`；新一代用 `subagent` 建成员，`send_message` 与 `team_task_*` 还在；成员收尾由运行时通知，不需要 `wait_agent` 轮询。什么时候派活、派给谁、怎么等结果、怎么验收、多路产出怎么合并，运行时不管。
 
@@ -139,13 +139,15 @@ Team 开关是会话级的：模型与推理等级菜单里打开「开启智能
 
 `lead-mode` skill 覆盖这些：开工前先定目标；按工具清单判哪一代；派活自包含；写作用域不重叠；共享任务的 list/get/claim/complete 流程；为什么不等成员；成员模型从哪来；上下文变长后的交接四步；标准定高、判据写成能对照的命令与数字，退回返工由成员做（同一件事退回两次还不过就换人、缩范围或停下来问，缩范围是砍做不到的部分、判据不降）；最终验证派独立成员做；活反复做不对、三个条件都够时，可派一个与 Lead 同模型的独立成员只出方案（难度升级，是最后手段，不是默认手段）。
 
-拆活分主目标、支撑、枝节；枝节和降了优先级的耗时验收进 `.scratch/<effort>/leftovers.md`，五列与规矩见 [skills/lead-mode/SKILL.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/skills/lead-mode/SKILL.md) 的 §12「主目标优先：枝节进遗留清单」一节。
+拆活先按 [skills/lead-mode/SKILL.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/skills/lead-mode/SKILL.md) §12 判级（主目标、支撑、枝节），再按 §9.2 判并行：枝节即使写作用域不重叠也不进并行队列，直接和降了优先级的耗时验收一起记进 `.scratch/<effort>/leftovers.md`（降级查法支持可粘贴命令、文件路径，或「对象 + 入口 + 判据」走查步骤）；判据全过即停，独立验收只核既有判据与主目标直接回归、不扩范围。
 
-`team-digest` 把全队收尾合成一份 `reports/<YYYY-MM-DD>-<effort>.md`，六块骨架：结论 / 谁干了什么 / 验收证据 / 偏离与未验证 / 死路与决策 / 未决与下一步。这轮活有 2 个以上成员，或跨 2 轮以上，才写。
+`lead-mode` 正文外挂 5 份按需参考（`skills/lead-mode/references/`：`ptc-calls.md`、`old-gen.md`、`member-models.md`、`tool-signatures.md`、`long-horizon.md`）。预计 ≥2 轮派单/验收或跨模块推进的长程任务按需加载 [long-horizon.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/skills/lead-mode/references/long-horizon.md)：维护主目标判据 `N/M` 进度账、分层验收（全量默认最多 2 次）、连续 2 轮 `N` 无增长先查 `list_subagent_models` 切更强模型（如 Opus 等旗舰推理档）`fresh` 接手跑 1 轮，无可切或切后仍无增长再止损问用户，以及 Lead 上下文压缩后三步重锚。
+
+`team-digest` 把全队收尾合成一份 `reports/<YYYY-MM-DD>-<effort>.md`，六块骨架：结论（首行固定 `主目标：达成/部分达成/未达成（N/M）`）/ 谁干了什么 / 验收证据 / 偏离与未验证 / 死路与决策 / 未决与下一步。这轮活有 2 个以上成员，或跨 2 轮以上，才写。
 
 派活用到三组工具：`subagent` / `subagent_fork` 建成员，`send_message` 续聊与催办，`team_task_create` / `team_task_get` / `team_task_list` / `team_task_update` 管共享任务。老一代对应 `spawn_teammate` 与 `send_message({ target })`，规矩一样，参数名不同。
 
-两个预置的 persona 逐字相同，469 字，每轮都进 system prompt；细节按需从 skill 加载，不占常驻上下文。
+两个预置的 persona 逐字相同，468 字，常驻锚定「先保主目标，枝节记遗留」与「长程止损」，每轮都进 system prompt；细节按需从 skill 与 5 份外挂加载，不占常驻上下文。
 
 只新增，不修改。同名 skill 或命令撞了，宿主先到先得，本插件让位。
 

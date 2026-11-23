@@ -1,5 +1,7 @@
 # 团队汇总 · team-digest
 
+> 历史样例说明：本报告记录于早期版本，当时尚未要求独立成员验收与 §12 主目标分级。文中 Lead 亲自跑命令/核 diff 等做法仅作历史记录，**不可作为当前范例效仿**；当前规范见 `skills/lead-mode/SKILL.md`。
+
 ## 结论
 
 Lead 收尾时不再临场拼装：插件新增 `team-digest` runtime skill，收尾一次成型写一份 `reports/<日期>-<effort>.md`；`lib/index.js` 从硬编码单 skill 改成扫目录注册多个。四条 CI 命令我全部复跑通过，34 个测试全绿，两个 skill 随包分发。已发 `0.2.0`，npm `latest` 指向它，从 registry 装回来验过两个 skill 都在。

@@ -9,7 +9,7 @@ A Lead mode for DSH: the model judges, delegates, and reports the conclusion; me
 [![npm version](https://img.shields.io/npm/v/dsh-lead-mode?color=4D6BFE)](https://www.npmjs.com/package/dsh-lead-mode)
 [![dsh version](https://img.shields.io/badge/dsh-%3E%3D0.2.2--rc.3-4D6BFE)](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/package.json)
 [![license](https://img.shields.io/badge/license-MIT-3DA639)](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/LICENSE)
-[![tests](https://img.shields.io/badge/tests-45%20passing-3DA639)](https://github.com/xiebaiyuan/dsh-lead-mode/actions/workflows/ci.yml)
+[![tests](https://img.shields.io/badge/tests-56%20passing-3DA639)](https://github.com/xiebaiyuan/dsh-lead-mode/actions/workflows/ci.yml)
 [![downloads](https://img.shields.io/npm/dm/dsh-lead-mode)](https://www.npmjs.com/package/dsh-lead-mode)
 [![CI](https://github.com/xiebaiyuan/dsh-lead-mode/actions/workflows/ci.yml/badge.svg)](https://github.com/xiebaiyuan/dsh-lead-mode/actions/workflows/ci.yml)
 
@@ -21,7 +21,7 @@ A Lead mode for DSH: the model judges, delegates, and reports the conclusion; me
 
 ## What this is
 
-A Lead mode plugin for DSH (DeepSeek Harness). Version 0.2.15, requires host (the program running dsh) >= 0.2.2-rc.3, MIT licensed.
+A Lead mode plugin for DSH (DeepSeek Harness). Version 0.2.16, requires host (the program running dsh) >= 0.2.2-rc.3, MIT licensed.
 
 It covers the method layer. The official Agent Teams runtime hands you tools: the older generation has `spawn_teammate`, `send_message`, `team_task_*`; the newer one builds members with `subagent`, keeps `send_message` and `team_task_*`, and gets completion notices from the runtime instead of `wait_agent` polling. When to delegate, to whom, how to wait, how to review, how to merge several streams — none of that comes with the runtime.
 
@@ -139,13 +139,15 @@ Team 开关是会话级的：模型与推理等级菜单里打开「开启智能
 
 `lead-mode` covers: agreeing on the goal before starting; reading the tool list to tell which generation you are on; delegating with self-contained prompts; keeping write scopes disjoint (each member only touches its own files); the list/get/claim/complete flow on shared tasks; why not to wait on a member; where member models come from; the four-step handoff as context grows; setting the bar high with pass criteria you can actually check, without patching a rework yourself (two failed retries and you change the member, cut scope, or stop and ask — cutting scope means dropping what cannot be done and saying what was dropped, never lowering the bar); handing the final verification to an independent member; and, when a task keeps coming back wrong and the three conditions hold, escalating once to a single plan-only member on the same model as the Lead (a last resort, never the default).
 
-Work is split into primary, supporting, and side items; side items plus deprioritized slow checks go onto `.scratch/<effort>/leftovers.md`, with the five columns and rules in [skills/lead-mode/SKILL.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/skills/lead-mode/SKILL.md) §12.
+Work is classified first under [skills/lead-mode/SKILL.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/skills/lead-mode/SKILL.md) §12 (primary, supporting, side) before §9.2 checks parallelism: side items never enter the parallel queue even when write scopes do not overlap, and go straight onto `.scratch/<effort>/leftovers.md` alongside deprioritized slow checks (follow-up checks accept pasteable commands, file paths, or reproducible walk-through steps: target + entry point + criterion). Once all criteria pass, stop; independent acceptance checks only existing criteria and direct regressions without expanding scope.
 
-`team-digest` merges the whole team's wrap-up into `reports/<YYYY-MM-DD>-<effort>.md` with six blocks: conclusion / who did what / acceptance evidence / deviations and unverified claims / what did not work and the decisions / open items and next steps. It is written only when this round of work had two or more members, or spanned two or more rounds.
+Five on-demand reference files sit under `skills/lead-mode/references/` (`ptc-calls.md`, `old-gen.md`, `member-models.md`, `tool-signatures.md`, `long-horizon.md`). Multi-round or cross-module work (≥2 delegation/acceptance rounds) loads [long-horizon.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/skills/lead-mode/references/long-horizon.md) on demand: an `N/M` primary-criteria ledger, tiered acceptance (at most 2 full runs by default), stalling recovery when `N` shows no growth for 2 consecutive rounds (check `list_subagent_models` to switch to a stronger model such as Opus via `fresh` for 1 round, or stop and ask the user if none is available or `N` still does not grow), and three-step re-anchoring after Lead context compaction.
+
+`team-digest` merges the whole team's wrap-up into `reports/<YYYY-MM-DD>-<effort>.md` with six blocks: conclusion (first line fixed as `主目标：达成/部分达成/未达成（N/M）`) / who did what / acceptance evidence / deviations and unverified claims / what did not work and the decisions / open items and next steps. It is written only when this round of work had two or more members, or spanned two or more rounds.
 
 Delegation uses three groups of tools: `subagent` / `subagent_fork` to create members, `send_message` to continue and nudge, and `team_task_create` / `team_task_get` / `team_task_list` / `team_task_update` for shared tasks. The older generation maps to `spawn_teammate` and `send_message({ target })` — same rules, different parameter names.
 
-Both presets share one persona, 469 characters, injected into the system prompt every turn; details load from the skills on demand and cost no standing context.
+Both presets share one persona, 468 characters, anchoring "protect the primary goal, log side items as leftovers" and "long-horizon stop-loss" in the system prompt every turn; details load on demand from the skills and five references and cost no standing context.
 
 Additive only, nothing modified. If a same-named skill or command already exists, the host takes first-come and this plugin steps aside.
 

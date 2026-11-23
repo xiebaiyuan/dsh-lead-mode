@@ -44,7 +44,7 @@ dsh plugin --profile <你的 profile 名> add @deepseek-ai/dsh-experimental-agen
 
 为什么要两个：Lead 只换方法、不换能力。PTC 会话与创造会话的工具集本来就不一样，合成一个预置等于替用户做能力取舍。
 
-prefix 469 字，六段：判断、派活，了解现状与验收都派成员做，结论由自己判断并讲给用户；标准要严、判据要具体、不将就，退回返工不自己补位；加载 `lead-mode` skill，控制面工具自己调、业务面调查都派成员，两代差异、从零还是继承、挑模型、任务板、写作用域、并行、验收、难度升级都在里面；派活先 `list_subagent_models` 从可选清单挑 provider/model；先判 Team 开没开、没开就停手让用户敲 `/lead-mode`；派完活结束回合、不调 `wait_agent`，互不依赖的活一次派完，别一件一件等；要求成员第一步建工作日志。字数那条线从 400 提到 480（写满 479 通过，到 480 报错），给后面加规则留余量。两代工具的参数、装包命令、工作法细节，全在 `lead-mode` skill 与命令输出里。prefix 每轮都进上下文，所以不带细节。
+prefix 468 字，六段：只做决策、拆活、派活，调查与验收都派成员，结论由自己判断并讲给用户；先保主目标、枝节记遗留，判据要具体，退回返工不自己补位；加载 `lead-mode` skill，两代差异、从零或继承、挑模型、任务板、写作用域、并行、验收、长程止损、难度升级都在里面；派活先 `list_subagent_models` 从可选清单挑 provider/model；派完活结束回合、不调 `wait_agent`，互不依赖的活一次派完，别一件一件等；开局先确认 Team 开没开、没开就停手让用户敲 `/lead-mode`；要求成员第一步建工作日志。字数那条线从 400 提到 480（写满 479 通过，到 480 报错），给后面加规则留余量。两代工具的参数、装包命令、长程控制与工作法细节，全在 `lead-mode` skill、五份外挂与命令输出里。prefix 每轮都进上下文，所以不带细节。
 
 这段 prefix 进 system prompt 的 `DEPLOYMENT_PERSONA_PREFIX` 段，模型一定看得见。
 
@@ -52,11 +52,11 @@ prefix 469 字，六段：判断、派活，了解现状与验收都派成员做
 
 ### 2. 两个 skill：`lead-mode` 与 `team-digest`
 
-随包分发的 `skills/lead-mode/SKILL.md`，运行时注册进 skill 列表。内容是 Lead 工作法：派活自包含、写作用域不重叠（各成员只改自己那摊文件）、共享任务 list/get/claim/complete、等齐成员再收尾、最终验证派独立成员做。
+随包分发的 `skills/lead-mode/SKILL.md`（462 行，外挂 5 份按需参考），运行时注册进 skill 列表。内容是 Lead 工作法：派活自包含、拆活先按主目标/支撑/枝节判级、写作用域不重叠（各成员只改自己那摊文件）、共享任务 list/get/claim/complete、等齐成员再收尾、最终验证派独立成员做、多轮长程按需走 `references/long-horizon.md`。
 
 模型调到它就能拿到这些规则，不用用户每次复述。
 
-另一个是 `skills/team-digest/SKILL.md`，同样不绑预置。收尾时全队产出散在 N 条收尾消息和 N 份工作日志里，它把这些合成一份 `reports/<YYYY-MM-DD>-<effort>.md`（`<effort>` 是这轮活的名字）：这轮活有 2 个以上成员，或跨 2 轮以上，才写。
+另一个是 `skills/team-digest/SKILL.md`，同样不绑预置。收尾时全队产出散在 N 条收尾消息和 N 份工作日志里，它把这些合成一份 `reports/<YYYY-MM-DD>-<effort>.md`（`<effort>` 是这轮活的名字），第 1 块「结论」首行固定报 `主目标：达成/部分达成/未达成（N/M）`：这轮活有 2 个以上成员，或跨 2 轮以上，才写。
 
 ### 3. 一个 `/lead-mode` 斜杠命令
 

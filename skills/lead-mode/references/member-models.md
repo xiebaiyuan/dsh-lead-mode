@@ -40,4 +40,6 @@ checkout 里已经改成每次派活现读设置（commit `7622766814` `feat(sub
 
 `provider` 与 `model` 要成对给；`reasoning_effort` 要在两者都给了的前提下用。三级都从 `list_subagent_models` 返回原文里抄，大小写和分隔符一个字符都别改。
 
+**停滞升级联动（见 `references/long-horizon.md`）**：长程任务连续 2 轮主目标判据无增长时，优先调 `list_subagent_models` 从清单里切比现用执行成员更强的模型（如 Opus 等旗舰推理档或更高推理档）`fresh` 接手卡点跑 1 轮；清单只有一条、已是最高档，或切换后仍无增长，就停下请示用户。
+
 路由不合法会在启动前被拒：工具先向 LLM 运行时预检 provider 和 model，出错就到不了启动那一步。但那一次派活已经白跑，所以还是先看清单。清单里没有这个工具，就一个参数都别传。

@@ -9,13 +9,13 @@ package.json          包元数据，dsh.bundle.patch 指向 cordis.patch.yml
 cordis.patch.yml      三行 insert：本插件 + lead-ptc 预置 + lead-cordis 预置
 lib/index.js          host 半边：扫 skills/ 逐个注册、注册命令、启动自检
 skills/lead-mode/     Lead 工作法正文
-skills/lead-mode/references/   四份外挂：ptc-calls、old-gen、member-models、tool-signatures
+skills/lead-mode/references/   五份外挂：ptc-calls、old-gen、member-models、tool-signatures、long-horizon
 skills/team-digest/   团队汇总正文
 dsh-plugin.naming.json  命名清单
 test/                 行为断言，零依赖（fixtures/ 是官方预置原样副本）
 scripts/              发布与校验脚本（check-patch、changelog-section）
 docs/                 使用、设计、why、两代对照、开发说明
-reports/              按 effort 归档的核对报告与团队汇总
+reports/              按 effort 归档的核对报告与团队汇总（两份早期样例带历史说明横幅）
 obsidian-docs/adr/    可回看的决策记录
 ```
 
