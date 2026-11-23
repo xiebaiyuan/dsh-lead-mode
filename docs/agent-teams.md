@@ -58,7 +58,7 @@ dsh plugin --profile <你的 profile 名> add @deepseek-ai/dsh-experimental-agen
 
 ## PTC 下怎么调这些工具
 
-`lead-ptc` 预置是 PTC 形态，`lead-cordis` 是创造形态（工具能直调）。下面四条注意：第 1、3 条只对 `lead-ptc` 成立，第 2、4 条两个预置一样。
+`lead-ptc` 预置是 PTC（只能直调 `run_code`），`lead-cordis` 是 native（工具能直调）。下面四条注意：第 1、3 条只对 `lead-ptc` 成立，第 2、4 条两个预置一样。
 
 - 只有 `run_code` 能直调。`team_task_*`、`subagent`、`send_message`、`wait_agent` 都在 system prompt 的 SDK 块里，程序里写 `await tools.team_task_list({})` 这种。
 - 不要用 `wait_agent` 等成员（本插件两个预置都不许）。一次 `run_code` 默认 120 秒、上限 600 秒；派完活结束回合，通知会回来。要催成员用 `send_message`。

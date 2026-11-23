@@ -28,7 +28,7 @@ dsh plugin --profile <你的 profile 名> add https://github.com/xiebaiyuan/dsh-
 
 **1. 切到 Lead 预置。** 新会话的预置列表里选「Lead · PTC」或「Lead · 创造」。切过去之后，模型 system prompt 的第一段就换成 Lead 人设，里面那句指向 `lead-mode` skill 的短指针跟着进去。两个预置的人设逐字相同，只有工具集不同。
 
-**2. 敲 `/lead-mode` 查依赖。** 这条命令不派活，只报状态。缺东西时它按代际给下一步：新一代提示会话开关，老一代给出带版本号的安装命令。
+**2. 敲 `/lead-mode` 查依赖。** 这条命令不派活，只报状态。缺东西时它按你属于哪一代给下一步：新一代提示会话开关，老一代给出带版本号的安装命令。
 
 **3. 让模型干活。** 派活工具齐了，模型会自己拆活、派给成员、等齐再收尾。工具不齐，它第一句就是让你去开 Team 运行时。
 
@@ -65,7 +65,7 @@ Lead 只换方法、不换能力，所以两个预置分别镜像官方两个预
 | `lead-ptc` | 24 | 官方 `ptc` 逐字段 | 只换 persona |
 | `lead-cordis` | 23 | 官方 `cordis`（创造）逐字段 | persona，外加 `skill-filesystem` 不带 `customSkillDirs` |
 
-`lead-ptc` 的工具都在，形态是 PTC：只有 `run_code` 能直调，bash、文件读写、搜索、web、todo、skill、goal、plan、compaction、subagent、office、`team_task_*` 都在程序里用 `tools.xxx()` 调。`workflow` 两行被 `ptc` 禁用，这个预置里也没有。
+`lead-ptc` 的工具都在，是 PTC：只有 `run_code` 能直调，bash、文件读写、搜索、web、todo、skill、goal、plan、compaction、subagent、office、`team_task_*` 都在程序里用 `tools.xxx()` 调。`workflow` 两行被 `ptc` 禁用，这个预置里也没有。
 
 `lead-cordis` 对应官方「创造」预置：工具能直调，带 `tool-cordis`，适合要改 DSH 自己的会话；它有 `planning` 分组，但没有 `ptc` 侧的 `tool-executor-ptc` 与 `tool-office`，这些差异全部照抄官方。
 
@@ -95,13 +95,15 @@ Lead 只换方法、不换能力，所以两个预置分别镜像官方两个预
 - 模型判断需要时自己加载（skill 标记为模型可调用）
 - 你直接敲 `/skill lead-mode`
 
-覆盖这些内容：开工前对齐目标、派活必须自包含、写作用域不重叠（各成员只改自己那摊文件）、共享任务的 list/get/claim/complete 流程、为什么不等成员（派完就结束回合，见 [agent-teams.md](agent-teams.md)）、哪些活能并行派（两条判据、四类天然可并行、三类不能并行，细节在 [agent-teams.md](agent-teams.md) 的「哪些活能并行派」一节）、成员的模型从哪来、最终验证派独立成员做、以及难度升级——同一件事反复做不对时，条件够可以派一个与 Lead 同模型的独立成员只出方案（三条件与五条硬限制见 skill 的「难度升级：一次同模型专家」一节，不是默认手段）。
+覆盖这些内容：你的角色（控制面自己调、业务面派成员）、开工先判断 PTC 还是 native、哪一代、Team 开没开（没开就停手）、开工前先定三件事、派活的 prompt 与收尾消息（为什么不等成员、派完就结束回合，见 [agent-teams.md](agent-teams.md)）、六维过一遍（派活方式由你判断）、老一代 `spawn_teammate` 与新一代 `subagent` 各走哪条路、写作用域与并行（两条判据、四类天然可并行、三类不能并行，细节在 [agent-teams.md](agent-teams.md) 的「哪些活能并行派」一节）、共享任务板（list/get/claim/complete 流程）、上下文变长怎么办（压缩、复用、交接四步、换人）、验收与收尾（标准定高、退回返工不自己补位，同一件事退回两次还不过就换人、缩范围或停下来问；难度升级——一次同模型专家的三条件与五条硬限制见 [skills/lead-mode/SKILL.md](../skills/lead-mode/SKILL.md) 的「难度升级：一次同模型专家」一节，不是默认手段）、dsh-context 编队页（可选）、回报怎么写。
+
+正文之外还有四份外挂，放在 `skills/lead-mode/references/`，要哪份读哪份，不占常驻上下文：`ptc-calls.md`（PTC 下的调用形状，PTC 会话才读）、`old-gen.md`（老一代：`spawn_teammate` 的细节，只有这个工具的会话才读）、`member-models.md`（按活挑成员模型，要按活挑才读）、`tool-signatures.md`（两代工具名与参数差异，写调用前对一眼）。
 
 其中两条是读源码才确认的，容易踩：
 
 | 事实 | 为什么重要 |
 |---|---|
-| 成员收工会自动通知你，通知里带它收尾那条消息 | 派完活结束回合就够，不用盯着等 |
+| 成员收尾会自动通知你，通知里带它收尾那条消息 | 派完活结束回合就够，不用盯着等 |
 | task 变更不会唤醒空闲的 Lead | 别指望「它把 task 标 complete 了我就知道了」。老一代只唤醒正在 `wait_agent` 的调用方；新一代谁都不唤醒，`wait_agent` 只等自己的收件箱 |
 
 所以 skill 的规矩是：派完活就结束回合等通知（用户立刻看到进展）。**Lead 不调 `wait_agent`**——它只等自己收件箱，挡不住成员干活，还白耗 `run_code` 的 120 秒预算；要催成员就 `send_message`，也别反复 `list_agents` 轮询。
@@ -119,7 +121,7 @@ Lead 只换方法、不换能力，所以两个预置分别镜像官方两个预
 | 六块骨架 | 结论 / 谁干了什么 / 验收证据 / 偏离与未验证 / 死路与决策 / 未决与下一步 |
 | 原料分层 | 收尾消息做骨架，工作日志补过程细节，会话日志兜底 |
 
-六块标题写死，某块没内容就写「无」。原料按顺序取，上层够用就不下钻。细节看 `team-digest` skill。
+六块标题写死，某块没内容就写「无」。原料按顺序取，上层够用就不下钻。细节看 `team-digest` skill（十节，按写汇总的顺序排）。
 
 ### 四、依赖自检命令
 
@@ -129,7 +131,7 @@ Lead 只换方法、不换能力，所以两个预置分别镜像官方两个预
 |---|---|
 | Team 运行时 | 挂没挂；老一代挂了再报 `maxMembers` |
 | 两个预置 | `lead-ptc`、`lead-cordis` 各自注册没注册；只生效一个会点名缺的那个 |
-| 缺东西时 | 按代际给下一步：新一代先提示会话开关，老一代给带版本号的安装命令 |
+| 缺东西时 | 按你属于哪一代给下一步：新一代先提示会话开关，老一代给带版本号的安装命令 |
 
 依赖齐全返回 success，缺东西返回 error。不会静默跳过。
 
@@ -189,4 +191,4 @@ $ npm view @deepseek-ai/dsh-experimental-agent-team-profile version
 
 `next` 现在指向 `0.2.2-rc.1`，就是本插件钉的版本；`alpha`（`0.2.2-alpha.3`）是同一条线的早期预览。
 
-两代各自怎么开启、怎么判代际，见 [agent-teams.md](agent-teams.md)。
+两代各自怎么开启、怎么判哪一代，见 [agent-teams.md](agent-teams.md)。

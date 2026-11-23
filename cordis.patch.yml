@@ -60,7 +60,7 @@
       config:
         id: lead-ptc
         name: Lead · PTC
-        description: 只决策、拆活、派活、验收。PTC 形态：只有 run_code 能直调。需要先开 dsh 官方 Agent Teams。
+        description: 只决策、拆活、派活、验收。PTC 会话：只有 run_code 能直调。需要先开 dsh 官方 Agent Teams。
         order: 5
         plugins:
           - id: persona
@@ -210,7 +210,7 @@
       config:
         id: lead-cordis
         name: Lead · 创造
-        description: 只决策、拆活、派活、验收。创造形态：能直调工具、能改 DSH 自己。需要先开 dsh 官方 Agent Teams。
+        description: 只决策、拆活、派活、验收。native 会话：能直调工具、能改 DSH 自己。需要先开 dsh 官方 Agent Teams。
         order: 6
         plugins:
           # The dsh-doc skill owns plugin implementation and authorization guidance.

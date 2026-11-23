@@ -21,7 +21,7 @@ A Lead mode for DSH: the model judges, delegates, and reports the conclusion; me
 
 ## What this is
 
-A Lead mode plugin for DSH (DeepSeek Harness). Version 0.2.13, requires host (the program running dsh) >= 0.2.2-rc.3, MIT licensed.
+A Lead mode plugin for DSH (DeepSeek Harness). Version 0.2.14, requires host (the program running dsh) >= 0.2.2-rc.3, MIT licensed.
 
 It covers the method layer. The official Agent Teams runtime hands you tools: the older generation has `spawn_teammate`, `send_message`, `team_task_*`; the newer one builds members with `subagent`, keeps `send_message` and `team_task_*`, and gets completion notices from the runtime instead of `wait_agent` polling. When to delegate, to whom, how to wait, how to review, how to merge several streams — none of that comes with the runtime.
 
@@ -153,7 +153,7 @@ Additive only, nothing modified. If a same-named skill or command already exists
 |---|---|
 | Host | `>=0.2.2-rc.3` (`engines.dsh`), Node `>=20` |
 | Agent Teams | Both generations supported; judged by the tool list, not by version number |
-| Preset shape | Both presets are copied from the web-app presets and only fit desktop or Web profiles |
+| Preset source | Both presets are copied from the web-app presets and only fit desktop or Web profiles |
 | Subagent models | The host's Subagent → Model selection is off by default; while off, explicit provider/model is rejected and members inherit the Lead's route. Changes apply to new sessions only |
 | Interrupting members | Newer hosts ship `interrupt_agent` off (`interrupt: false`); ask the user to enable it before a hard interrupt |
 | Host footprint | `cordis.patch.yml` is three `insert` rows in total: this plugin and its two presets. No tools registered, no agent lifecycle hooks, no request interception; uninstalling reclaims it all |
@@ -197,9 +197,9 @@ Once installed, every session gains a Fleet tab (to the right of Context), and t
 | Section | What you see |
 |---|---|
 | Overview | Member status, live context, estimated spend, task progress |
-| Agent Network | The current agent, its parent, and all subagents — one card each |
+| Agent Network | The current agent, its parent, and every member below it — one card each |
 | Fleet Members | Each member's role, model, latest reply, runtime, step count, open task count |
-| Tasks | Team tasks and subagent delegations together, grouped by owner, with blocked-by chains |
+| Tasks | Team tasks and member delegations together, grouped by owner, with blocked-by chains |
 | Agent Comms | Who said what to whom: team messages, mailbox deliveries, runtime settlement notices |
 
 ## License

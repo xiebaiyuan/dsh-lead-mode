@@ -9,6 +9,7 @@ package.json          包元数据，dsh.bundle.patch 指向 cordis.patch.yml
 cordis.patch.yml      三行 insert：本插件 + lead-ptc 预置 + lead-cordis 预置
 lib/index.js          host 半边：扫 skills/ 逐个注册、注册命令、启动自检
 skills/lead-mode/     Lead 工作法正文
+skills/lead-mode/references/   四份外挂：ptc-calls、old-gen、member-models、tool-signatures
 skills/team-digest/   团队汇总正文
 dsh-plugin.naming.json  命名清单
 test/                 行为断言，零依赖（fixtures/ 是官方预置原样副本）
