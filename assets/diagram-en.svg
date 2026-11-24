@@ -1,55 +1,91 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="460" viewBox="0 0 1280 460" role="img" aria-label="How Lead mode delegates: request → Lead splits and assigns → shared task board and worklog → members work and report → an independent member accepts, then back to Lead for the next round">
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="480" viewBox="0 0 1280 480" role="img" aria-label="How Lead mode delegates: Request → Lead (control plane) → Task board &amp; worklogs → Parallel members → Independent acceptance → Completion notice loop">
   <title>How Lead mode delegates</title>
   <defs>
-    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto">
-      <path d="M0,0 L10,5 L0,10 z" fill="#4D6BFE"/>
+    <pattern id="dotGridEn" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="12" cy="12" r="1.1" fill="#60A5FA" opacity="0.12"/>
+    </pattern>
+    <linearGradient id="canvasBgEn" x1="0" y1="0" x2="1280" y2="480" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#070D1E"/>
+      <stop offset="1" stop-color="#0C152C"/>
+    </linearGradient>
+    <radialGradient id="leadGlowEn" cx="358" cy="176" r="210" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4D6BFE" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#4D6BFE" stop-opacity="0"/>
+    </radialGradient>
+    <marker id="arrowBlueEn" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8.5" markerHeight="8.5" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M0,1 L9,5 L0,9 z" fill="#60A5FA"/>
+    </marker>
+    <marker id="arrowMutedEn" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7.5" markerHeight="7.5" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M0,1 L9,5 L0,9 z" fill="#64748B"/>
     </marker>
   </defs>
 
-  <rect x="0.75" y="0.75" width="1278.5" height="458.5" rx="28" fill="#0B1220" stroke="#1E2A45" stroke-width="1.5"/>
+  <rect x="0.75" y="0.75" width="1278.5" height="478.5" rx="24" fill="url(#canvasBgEn)" stroke="#1E2E52" stroke-width="1.5"/>
+  <rect x="1" y="1" width="1278" height="478" rx="24" fill="url(#dotGridEn)"/>
+  <circle cx="358" cy="176" r="210" fill="url(#leadGlowEn)"/>
 
-  <g font-family="PingFang SC, Helvetica Neue, Arial, sans-serif">
-    <text x="60" y="72" font-size="28" font-weight="700" fill="#E6EDF3">How Lead mode delegates</text>
+  <g font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', 'Hiragino Sans GB', 'Helvetica Neue', Arial, sans-serif">
+    <!-- Header -->
+    <text x="44" y="64" font-size="27" font-weight="700" fill="#F1F5F9">How Lead mode delegates</text>
+    <rect x="960" y="37" width="276" height="36" rx="18" fill="#101D3B" stroke="#284074" stroke-width="1.2"/>
+    <text x="1098" y="60" font-size="14" font-weight="600" text-anchor="middle" fill="#93C5FD">Control plane vs. Work plane</text>
 
-    <!-- nodes -->
-    <g>
-      <rect x="60" y="118" width="120" height="112" rx="16" fill="#121C33" stroke="#2B3A5C" stroke-width="1.5"/>
-      <text x="115" y="178" font-size="26" font-weight="600" text-anchor="middle" fill="#E6EDF3">Request</text>
-      <text x="115" y="208" font-size="20" text-anchor="middle" fill="#8FA3C4">user asks</text>
-    </g>
-    <g>
-      <rect x="222.5" y="118" width="240" height="112" rx="16" fill="#14224A" stroke="#4D6BFE" stroke-width="2"/>
-      <text x="342.5" y="178" font-size="26" font-weight="600" text-anchor="middle" fill="#E6EDF3">Lead delegates</text>
-      <text x="342.5" y="208" font-size="20" text-anchor="middle" fill="#9FB2D4">split · assign</text>
-    </g>
-    <g>
-      <rect x="505" y="118" width="240" height="112" rx="16" fill="#121C33" stroke="#2B3A5C" stroke-width="1.5"/>
-      <text x="625" y="178" font-size="26" font-weight="600" text-anchor="middle" fill="#E6EDF3">Task board · log</text>
-      <text x="625" y="208" font-size="20" text-anchor="middle" fill="#8FA3C4">owner · write scope</text>
-    </g>
-    <g>
-      <rect x="787.5" y="118" width="210" height="112" rx="16" fill="#121C33" stroke="#2B3A5C" stroke-width="1.5"/>
-      <text x="892.5" y="178" font-size="26" font-weight="600" text-anchor="middle" fill="#E6EDF3">Members work</text>
-      <text x="892.5" y="208" font-size="20" text-anchor="middle" fill="#8FA3C4">own context</text>
-    </g>
-    <g>
-      <rect x="1040" y="118" width="180" height="112" rx="16" fill="#121C33" stroke="#2B3A5C" stroke-width="1.5"/>
-      <text x="1130" y="162" font-size="20" font-weight="600" text-anchor="middle" fill="#E6EDF3"><tspan x="1130">Independent</tspan><tspan x="1130" dy="22">member accepts</tspan></text>
-      <text x="1130" y="208" font-size="20" text-anchor="middle" fill="#8FA3C4">checks evidence</text>
+    <!-- Parallel background layer hint under Card 4 (x=782, w=216) -->
+    <rect x="794" y="106" width="216" height="124" rx="16" fill="#0E1832" stroke="#223359" stroke-width="1.2" opacity="0.65"/>
+    <rect x="788" y="112" width="216" height="124" rx="16" fill="#101B38" stroke="#263963" stroke-width="1.2" opacity="0.85"/>
+
+    <!-- Card 1: Request (x=44, w=156, center=122) -->
+    <rect x="44" y="118" width="156" height="124" rx="16" fill="#101A34" stroke="#2A3C64" stroke-width="1.5"/>
+    <text x="122" y="146" font-size="12" font-weight="700" text-anchor="middle" fill="#7DD3FC">01 · INPUT</text>
+    <text x="122" y="180" font-size="22" font-weight="700" text-anchor="middle" fill="#F1F5F9">Request</text>
+    <text x="122" y="210" font-size="16" text-anchor="middle" fill="#94A3B8">Goal &amp; #1..#M</text>
+
+    <!-- Card 2: Lead (x=242, w=232, center=358) -->
+    <rect x="242" y="118" width="232" height="124" rx="16" fill="#14234B" stroke="#4D6BFE" stroke-width="2.2"/>
+    <text x="358" y="146" font-size="12" font-weight="700" text-anchor="middle" fill="#93C5FD">02 · CONTROL PLANE</text>
+    <text x="358" y="180" font-size="23" font-weight="700" text-anchor="middle" fill="#FFFFFF">Lead</text>
+    <text x="358" y="210" font-size="16" text-anchor="middle" fill="#CBD5E1">Judge · split · delegate</text>
+
+    <!-- Card 3: Task Board & Logs (x=516, w=224, center=628) -->
+    <rect x="516" y="118" width="224" height="124" rx="16" fill="#101A34" stroke="#2A3C64" stroke-width="1.5"/>
+    <text x="628" y="146" font-size="12" font-weight="700" text-anchor="middle" fill="#7DD3FC">03 · COORDINATION</text>
+    <text x="628" y="180" font-size="21" font-weight="700" text-anchor="middle" fill="#F1F5F9">Task board · log</text>
+    <text x="628" y="210" font-size="16" text-anchor="middle" fill="#94A3B8">owner · write scope</text>
+
+    <!-- Card 4: Parallel Members (x=782, w=216, center=890) -->
+    <rect x="782" y="118" width="216" height="124" rx="16" fill="#101A34" stroke="#36518A" stroke-width="1.6"/>
+    <text x="890" y="146" font-size="12" font-weight="700" text-anchor="middle" fill="#7DD3FC">04 · WORK PLANE</text>
+    <text x="890" y="180" font-size="21" font-weight="700" text-anchor="middle" fill="#F1F5F9">Parallel members</text>
+    <text x="890" y="210" font-size="16" text-anchor="middle" fill="#94A3B8">Own context &amp; files</text>
+
+    <!-- Card 5: Independent Acceptance (x=1040, w=196, center=1138) -->
+    <rect x="1040" y="118" width="196" height="124" rx="16" fill="#0E2036" stroke="#34D399" stroke-width="1.8"/>
+    <text x="1138" y="146" font-size="12" font-weight="700" text-anchor="middle" fill="#6EE7B7">05 · ACCEPTANCE</text>
+    <text x="1138" y="177" font-size="19" font-weight="700" text-anchor="middle" fill="#F1F5F9">
+      <tspan x="1138">Independent</tspan>
+      <tspan x="1138" dy="22">verifier</tspan>
+    </text>
+    <text x="1138" y="224" font-size="15" text-anchor="middle" fill="#A7F3D0">Re-run &amp; prove</text>
+
+    <!-- Forward arrows (centered at y=180) -->
+    <g stroke="#60A5FA" stroke-width="2.4" marker-end="url(#arrowBlueEn)">
+      <line x1="204" y1="180" x2="236" y2="180"/>
+      <line x1="478" y1="180" x2="510" y2="180"/>
+      <line x1="744" y1="180" x2="776" y2="180"/>
+      <line x1="1002" y1="180" x2="1034" y2="180"/>
     </g>
 
-    <!-- arrows -->
-    <g stroke="#4D6BFE" stroke-width="2" marker-end="url(#arrow)">
-      <line x1="188" y1="174" x2="212.5" y2="174"/>
-      <line x1="470.5" y1="174" x2="495" y2="174"/>
-      <line x1="753" y1="174" x2="777.5" y2="174"/>
-      <line x1="1005.5" y1="174" x2="1030" y2="174"/>
-    </g>
+    <!-- Downward branch for side items -> leftovers.md (below Lead card, x=242..474) -->
+    <line x1="278" y1="242" x2="278" y2="286" stroke="#64748B" stroke-width="1.8" stroke-dasharray="4 4" marker-end="url(#arrowMutedEn)"/>
+    <rect x="160" y="294" width="232" height="34" rx="10" fill="#0E172E" stroke="#2D3E63" stroke-width="1.2"/>
+    <text x="276" y="316" font-size="14" font-weight="500" text-anchor="middle" fill="#94A3B8">Side items → leftovers.md</text>
 
-    <!-- dashed loop -->
-    <path d="M1130 230 V330 H342.5 V246" fill="none" stroke="#4D6BFE" stroke-width="2.5" stroke-dasharray="10 8" opacity="0.75" marker-end="url(#arrow)"/>
-    <text x="700" y="316" font-size="20" text-anchor="middle" fill="#7E93B8">completion notice → next round</text>
+    <!-- Return dashed loop from Card 5 (1138, 242) down to y=378 and back up into Card 2 (424, 248) -->
+    <path d="M 1138 242 V 378 H 424 V 250" fill="none" stroke="#4D6BFE" stroke-width="2.4" stroke-dasharray="9 7" opacity="0.85" marker-end="url(#arrowBlueEn)"/>
+    <rect x="572" y="362" width="440" height="32" rx="16" fill="#0B1328" stroke="#243A6B" stroke-width="1"/>
+    <text x="792" y="383" font-size="15" font-weight="500" text-anchor="middle" fill="#93C5FD">Completion notice → next round (stop when #1..#M pass)</text>
 
-    <text x="60" y="408" font-size="21" fill="#8FA3C4">Lead decides, delegates, and reports; members do the work, an independent member accepts.</text>
+    <!-- Footer rule -->
+    <text x="44" y="440" font-size="16" fill="#94A3B8">Lead never waits with wait_agent or patches rework; members execute and an independent verifier confirms evidence.</text>
   </g>
 </svg>

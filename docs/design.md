@@ -1,34 +1,39 @@
 # 设计取舍
 
-[← 回到 README](../README.zh-CN.md)
+[← 返回 README](../README.zh-CN.md) · [English](en/design.md)
 
-本插件不改 dsh 本体，只在旁边加一层工作方法。下面三条是这一定位的具体动作，可以逐条核对。最后一节讲它和官方 `ptc`、`cordis` 两个预置的实际差别。为什么要有这个插件、边界在哪，看 [why.md](why.md)。
+本插件不在 DSH 本体上做侵入式改造，只在旁边叠加一层可卸载的工作方法。下面说明不干扰官方的具体约束，以及两个 Lead 预置与官方基线之间的逐项差异。需要了解动机与边界，见 [why.md](why.md)。
 
-## 怎么做到不干扰官方
+## 如何做到不干扰官方
 
-只新增，不修改。`cordis.patch.yml` 全文只有三行 `insert`：一行本插件，两行新建预置 `lead-ptc` 与 `lead-cordis`。官方预置一个字没动，两个新预置分别逐字段照抄官方 `ptc` 与 `cordis`，只换 persona。
-
-不注册任何工具，不监听 agent 生命周期，不拦截任何请求。`lib/index.js` 只往两个注册表写：`skills`（两个 skill）与 `commands`（一个命令）；启动时另打一条 warn。卸载后这些条目全部消失，官方行为回到原样。
-
-唯一可能撞的地方是同名 skill 或命令。你已经装了 `lead-mode` 或 `team-digest` 时，宿主按先到先得处理，打一条 warn，忽略本插件那条。撞了也是本插件让位。
+- **只增不改**：`cordis.patch.yml` 全文仅包含三条 `insert`：插件本体（`dsh-lead-mode`）以及两个新建预置（`lead-ptc`、`lead-cordis`）。官方 `standard`、`ptc`、`cordis` 预置一字未改。
+- **零工具注入与零拦截**：插件不注册任何工具、不监听 agent 生命周期、不拦截请求。`lib/index.js` 只往 `skills` 与 `commands` 注册表写入两项 skill 和一条命令，并在启动缺少服务时输出一条 warning。卸载包即可完整回收。
+- **冲突让位**：唯一可能冲突的位置是同名 skill 或命令。若宿主或用户已有同名 `lead-mode` / `team-digest` 注册，DSH 按先到先得保留前者，仅记录 warning 并跳过本插件那一条。
 
 ## 与官方预置的差异
 
-Lead 只换工作方法，不改工具能力，所以两个预置各照抄一个官方预置：
+Lead 层只改变工作方式，不增减工具集，因此两个预置各自逐字段复制官方预置：
 
-| 预置 | 行数 | 基线 | 与基线的差异 |
+| 预置 | 插件行数 | 官方基线 | 与基线的差异 |
 |---|---|---|---|
-| `lead-ptc` | 24 | `ptc` | 只有 persona |
-| `lead-cordis` | 23 | `cordis`（创造） | persona；`skill-filesystem` 不带 `customSkillDirs` |
+| `lead-ptc` | 24 | `ptc` | 仅更换 `persona.config.prefix` |
+| `lead-cordis` | 23 | `cordis`（创造） | 更换 `persona.config.prefix`；`skill-filesystem` 省略 `customSkillDirs` |
 
-两个预置的 persona 逐字相同，468 字，分六段：只做决策、拆活、派活，调查与验收都派成员，结论由自己判断并讲给用户；先保主目标、枝节记遗留，判据要具体，退回返工不自己补位；加载 `lead-mode` skill（两代差异、从零或继承、挑模型、任务板、写作用域、并行、验收、长程止损、难度升级都在里面）；派活前先用 `list_subagent_models` 从清单挑 provider/model（清单只有一条，说明没有授权别的模型）；派完活结束回合，不调 `wait_agent`，等通知不轮询，互不依赖的活一次派完，别一件一件等；开局先确认 Team 开没开，没开就停手让用户敲 `/lead-mode`；要求成员第一步建工作日志。字数上限 479（到 480 才报错），放宽是为了留余量。官方 persona 只有一句英文：`You are a coding agent powered by the {{model}} model.`。
+两个预置共用逐字相同的 468 字 persona prefix（官方默认英文是一句 `You are a coding agent powered by the {{model}} model.`），分六段锚定核心动作：
 
-`lead-ptc` 照抄 `ptc` 相对 `standard` 的四处差异：新增 `tool-executor-ptc`，禁用 `workflow-ptc` 和 `tool-workflow`，`tool-plugin-manager` 直接禁用。结果这个预置里只有 `run_code` 能直调，其他工具都在程序里用 `tools.xxx()` 调，没有 workflow 工具。
+1. 只做决策、拆活与派活，调查与验收全派成员，结论由自己判断并讲给用户；先保主目标、枝节记遗留，判据具体且返工不自己补位。
+2. 派活前加载 `lead-mode` skill（覆盖两代差异、从零或继承、挑模型、任务板、写作用域、并行、验收、长程止损、难度升级）。
+3. 派活先用 `list_subagent_models` 成对挑选 `provider/model`，禁止编造 id（只有一条时跟随父模型）。
+4. 派完活立刻结束回合等通知，不调 `wait_agent`、不轮询，催人用 `send_message`；互不依赖的活一次全派完。
+5. 开局核对 `team_task_*` 判断 Team 是否开启，没开即停手并请用户敲 `/lead-mode`。
+6. 要求成员第一步建 `.scratch/<effort>/worklog-<mate>.md`，收尾前补完最后一轮。
 
-`lead-cordis` 照抄 `cordis` 的形状：带 `tool-cordis` 和 `planning` 分组，工具能直调；`ptc` 侧的 `tool-executor-ptc` 与 `tool-office` 本来就不在这条线上，workflow 两行仍然启用。
+字数上限设为 479 字（达到 480 触发检查报错），为规则留余量的同时避免每轮常驻上下文膨胀。
 
-只有一处和官方不同。`cordis` 的 `skill-filesystem` 行带 `customSkillDirs`，值是一条 `!!js` 表达式，按 patch 文件自己的 `baseUrl` 解析 `@deepseek-ai/dsh-agent-preset/package.json` 再拼 `skills`。官方预置的 `baseUrl` 在 app.asar 里；本插件的 `baseUrl` 是 profile 的 `node_modules/dsh-lead-mode/`，那里没有那个包，照抄会在加载时抛错。所以 `lead-cordis` 这一行不带 config。代价是 `dsh-doc` skill 不在这个预置的文件系统 skill 目录里。
+### 各预置具体配置差异
 
-0.2.2-rc.3 的两处新增同批照抄，但落点不同：`present` 之后加 `tool-office` 行只在 `lead-ptc`（ptc 侧原本就有这行）；`tool-subagent-control` 加 `config.interrupt: false` 两个预置都有。后者让 `interrupt_agent` 默认不出现，skill 里所有打断写法都改成有条件执行。
-
-classic subagent 三行（`tool-subagent-control`、`tool-subagent`、`tool-subagent-fork`）保持启用，没有禁用。`list_agents` 现在由 `tool-subagent-control` 自己注册，不再单列一行。Team 工具由 host 决定，不由预置决定。
+- **`lead-ptc`**：完整镜像官方 `ptc` 相对 `standard` 的四处差异：引入 `tool-executor-ptc`、禁用 `workflow-ptc` 与 `tool-workflow`、直接禁用 `tool-plugin-manager`。因此只有 `run_code` 可直调，其余工具均在沙箱 TypeScript 中通过 `tools.xxx()` 调用。
+- **`lead-cordis`**：完整镜像官方 `cordis` 形态：包含 `tool-cordis` 与 `planning` 分组，工具可直调，启用 workflow 两行，且按官方基线不含 `tool-executor-ptc` 与 `tool-office`。
+- **`customSkillDirs` 的唯一省略**：官方 `cordis` 的 `skill-filesystem` 行带有 `!!js` 表达式，按 `cordis.patch.yml` 自身的 `baseUrl` 解析 `@deepseek-ai/dsh-agent-preset/package.json` 来拼 `skills` 目录。官方预置的 `baseUrl` 位于 `app.asar` 内，而本插件在 profile 的 `node_modules/dsh-lead-mode/` 下加载，解析不到宿主包会直接抛错，因此该行去掉 config；代价是 `dsh-doc` 不在该预置的 filesystem skill 目录里。
+- **0.2.2-rc.3 同步项**：`present` 后新增的 `tool-office` 行按官方只加在 `lead-ptc`；`tool-subagent-control` 的 `config.interrupt: false` 两个预置同步保留，因此 skill 中的硬打断动作全部写成有条件触发。
+- **保持 classic subagent 启用**：`tool-subagent-control`、`tool-subagent`、`tool-subagent-fork` 保持启用（`list_agents` 已随 0.2.2 并入 `tool-subagent-control`），Team 工具本身始终由宿主运行时控制，不由预置决定。

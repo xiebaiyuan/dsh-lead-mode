@@ -1,196 +1,167 @@
 # 安装与用法
 
-[← 回到 README](../README.zh-CN.md)
+[← 返回 README](../README.zh-CN.md) · [English](en/usage.md)
 
-这一篇是从装包到日常使用的细节：两条安装路径、三步用法、五样能力分别怎么用、依赖哪些官方 bundle、老一代宿主（跑 dsh 的那个程序）的安装命令为什么必须带版本号。只想先跑起来，看 README 里的「30 秒上手」就够；想知道它为什么这么设计，看 [design.md](design.md)。
+本篇覆盖从安装到日常使用的完整细节：两条安装路径、三步上手、五项能力细则、官方依赖包清单，以及老一代宿主安装命令必须钉死版本号的原因。如果想快速了解，看 README 里的「快速上手」即可；如果想了解设计取舍，见 [design.md](design.md)。
 
-## 装本插件
+## 安装插件
 
-两条路，选一条。
+任选一种安装方式：
 
-从 npm：
+从 npm 安装：
 
 ```bash
 dsh plugin --profile <你的 profile 名> add dsh-lead-mode
 ```
 
-从 GitHub：
+从 GitHub 安装：
 
 ```bash
 dsh plugin --profile <你的 profile 名> add https://github.com/xiebaiyuan/dsh-lead-mode
 ```
 
-装完重启 dsh。在预置列表里选一个 Lead 预置：「Lead · PTC」或「Lead · 创造」。
+装完重启 DSH，在新会话的预置下拉列表里就能看到「Lead · PTC」与「Lead · 创造」。
 
-## 用法
+## 三步上手
 
-三步。
+1. **切换 Lead 预置**：在新会话预置列表里选择「Lead · PTC」或「Lead · 创造」。切换后，system prompt 第 0 段即替换成 Lead 人设，并附上 `lead-mode` skill 指针。两个预置的 persona 逐字相同，只差工具集。
+2. **输入 `/lead-mode` 检查依赖**：该命令不派活，只诊断当前会话的 Team 运行时与两个预置注册状态；若缺组件，按当前宿主代际给出会话开关提示或老宿主装包命令。
+3. **开始派活**：依赖齐备后，模型会自动拆解任务、并行派给成员、等通知验收并收尾；若 Team 工具未挂载，模型第一句话就会停手并提示开启。
 
-**1. 切到 Lead 预置。** 新会话的预置列表里选「Lead · PTC」或「Lead · 创造」。切过去之后，模型 system prompt 的第一段就换成 Lead 人设，里面那句指向 `lead-mode` skill 的短指针跟着进去。两个预置的人设逐字相同，只有工具集不同。
+## 只用 skill，不切换预置
 
-**2. 敲 `/lead-mode` 查依赖。** 这条命令不派活，只报状态。缺东西时它按你属于哪一代给下一步：新一代提示会话开关，老一代给出带版本号的安装命令。
+不换预置也能用这套方法。只要插件已安装，在 `standard`、`ptc` 或自定义预置的会话里输入 `/skill lead-mode` 即可加载工作法（模型认为需要时也会自己调用）。
 
-**3. 让模型干活。** 派活工具齐了，模型会自己拆活、派给成员、等齐再收尾。工具不齐，它第一句就是让你去开 Team 运行时。
+区别在于系统不会在每轮开头附带 persona 短指针，因此首次使用建议先敲一次 `/lead-mode` 确认 Team 运行时状态。`team-digest` 同理，不绑定预置，任意会话收尾前均可按触发条件使用。
 
-## 只用 skill，不换预置
+## 提供的五项能力
 
-预置不动也能用。插件装好，预置保持 `standard`、`ptc` 或你自己的，任何会话敲 `/skill lead-mode` 就加载那套方法；模型判断任务需要时也会自己加载。
+所有能力均为只增不改，不侵入 DSH 本体（详见 [design.md](design.md)）：
 
-少了一样东西：persona 里那句短指针只在 `lead-mode` 预置里，不切过去就看不到。所以第一次先敲 `/lead-mode` 看依赖：缺 Team 运行时它会给下一步，新一代是会话开关，老一代才是带版本号的安装命令。
-
-`team-digest` 同理。它不绑预置，任何会话可用，收尾时模型自己判断要不要写汇总。
-
-## 提供的能力
-
-五样东西，都不碰 dsh 本体。
-
-| 能力 | 入口 | 你要做什么 |
+| 能力 | 入口 | 你需要做什么 |
 |---|---|---|
-| Lead 预置（两个） | 预置下拉里的「Lead · PTC」或「Lead · 创造」 | 挑一个切过去 |
-| Lead 工作法 skill | `/skill lead-mode`，模型也会自己加载 | 不用管 |
-| 团队汇总 skill | `/skill team-digest`，模型收尾前自己判断写不写 | 不用管 |
-| 依赖自检 | `/lead-mode` | 依赖不对时敲一下 |
-| 两层开场提示 | 自动 | 不用管 |
-
-下面逐样说。为什么能做到不碰宿主，看 [design.md](design.md)。
+| Lead 预置（两个） | 预置下拉「Lead · PTC」或「Lead · 创造」 | 选择一个切换 |
+| Lead 工作法 skill | `/skill lead-mode`（模型可自动加载） | 不用管 |
+| 团队汇总 skill | `/skill team-digest`（收尾前按条件加载） | 不用管 |
+| 依赖自检命令 | `/lead-mode` | 怀疑缺依赖时运行 |
+| 两层开场提示 | 写入 persona 与启动 warning | 自动生效 |
 
 ### 一、Lead 预置（两个）
 
-切过去，这个会话的模型就换成 Lead 人设。
+Lead 只换协作方法，不改变工具能力，因此两个预置逐字段镜像对应的官方预置：
 
-Lead 只换方法、不换能力，所以两个预置分别镜像官方两个预置：
-
-| 预置 | 行数 | 基线 | 差异 |
+| 预置 | 插件行数 | 基线 | 差异 |
 |---|---|---|---|
-| `lead-ptc` | 24 | 官方 `ptc` 逐字段 | 只换 persona |
-| `lead-cordis` | 23 | 官方 `cordis`（创造）逐字段 | persona，外加 `skill-filesystem` 不带 `customSkillDirs` |
+| `lead-ptc` | 24 | 官方 `ptc` 逐字段复制 | 只换 persona |
+| `lead-cordis` | 23 | 官方 `cordis`（创造）逐字段复制 | 换 persona；`skill-filesystem` 不带 `customSkillDirs` |
 
-`lead-ptc` 的工具都在，是 PTC：只有 `run_code` 能直调，bash、文件读写、搜索、web、todo、skill、goal、plan、compaction、subagent、office、`team_task_*` 都在程序里用 `tools.xxx()` 调。`workflow` 两行被 `ptc` 禁用，这个预置里也没有。
+- **`lead-ptc`**：PTC 形态。只有 `run_code` 能直接调用，bash、文件读写、搜索、web、todo、skill、goal、plan、compaction、subagent、office 与 `team_task_*` 都在 TypeScript 程序里通过 `tools.xxx()` 调用；`workflow` 两行沿用官方 `ptc` 的禁用配置。
+- **`lead-cordis`**：native 创造形态。工具可直接调用，保留 `tool-cordis`、`planning` 分组与 `workflow` 行，适合修改 DSH 本体或编写插件；不包含 `ptc` 侧的 `tool-executor-ptc` 与 `tool-office`。
 
-`lead-cordis` 对应官方「创造」预置：工具能直调，带 `tool-cordis`，适合要改 DSH 自己的会话；它有 `planning` 分组，但没有 `ptc` 侧的 `tool-executor-ptc` 与 `tool-office`，这些差异全部照抄官方。
+`lead-cordis` 唯独省略了 `skill-filesystem` 里的 `customSkillDirs`：官方表达式用 patch 文件自身的 `baseUrl` 去解析 `@deepseek-ai/dsh-agent-preset`，外部插件目录解析不到宿主包会加载抛错，因此去掉该配置（代价是 `dsh-doc` skill 不在此预置的文件系统目录中）。
 
-只有一处和官方不同：官方 `cordis` 的 `skill-filesystem` 行带 `customSkillDirs`。那条 `!!js` 按 patch 文件自己的位置解析 `@deepseek-ai/dsh-agent-preset`，本包从那里解析不到宿主包，照抄会在加载时抛错，所以去掉。代价是 `dsh-doc` skill 不在这个预置的文件系统 skill 目录里。
+#### 人设里的四条硬边界
 
-也就是说，切到 Lead 预置不会让你少任何能力，只是换了工作方式。
-
-### 人设里写死的四条边界
-
-| 规矩 | 怎么落地 |
+| 边界 | 落地方式 |
 |---|---|
-| 只判断、派活、讲结论 | Lead 碰的是控制面：`list_subagent_models` 挑模型、`list_agents` 看名册、`team_task_*` 管任务板、`send_message` 催人，这些自己调。业务面不碰：代码、文件、日志、CI、包都派成员去看。派不下去就停下让用户开 Team，不自己干完，也不拿 `subagent` 顶替成员 |
-| 验收派独立成员 | 跑测试、比 diff、看 CI、核包内容交给没参与实现的成员，把命令和输出带回来；本轮只有实现者本人时，另派一个只读成员复跑，不能退回自己跑。Lead 据此判断能不能收尾 |
-| 标准定高，返工不自己补位 | 判据写成能粘贴的命令、能对照的数字、能指到的行号；「已通过」不算证据，核不到就退回。退回时说清缺哪一条。返工有上限：同一件事退回两次还不过，就换人、缩范围或停下来问用户，不硬耗，也不自己上手补。缩范围是砍掉做不到的部分、明说砍了什么，判据不降 |
-| 派谁的模型从清单里挑 | 派活前先调 `list_subagent_models`，从返回的可选 provider/model 里成对挑（可带推理档），不许编造 id。清单只有一条 = 没有别的可选（没开开关，或只勾了父模型），别硬写 |
+| 只判断、派活、讲结论 | 控制面（`list_subagent_models`、`list_agents`、`team_task_*`、`send_message`）由 Lead 自调；代码、文件、日志、CI、包检查等业务面一律派给成员。缺 Team 即停手，不用 `subagent` 冒充团队成员 |
+| 验收派独立成员 | 测试、diff 核对、CI 与包内容检查交给未参与实现的独立成员带回命令与输出；若本轮只有实现者本人，则另派一个只读成员复跑，不退回 Lead 自己跑 |
+| 标准定高，返工不自己补位 | 判据写成可执行命令、精确数字或 `路径:行号`；只说「已通过」不算证据。同一件事退回两次仍不通过，就换人、砍掉做不到的部分（判据不降）或停下来问用户 |
+| 从可选清单挑成员模型 | 派活前先调 `list_subagent_models`，从返回清单成对挑选 `provider/model`（可带推理档），禁止编造 id；清单只有一条说明未授权其他模型，别强行指定 |
 
-**「派活时从模型清单里挑」那条的前提，是宿主开关打开且清单里勾了别的模型。** 「子智能体 → 模型选择」这一项宿主默认是关的，关着时任何显式选择都只认父路由，传别的 provider/model 直接被拒。要真正按成员挑模型，先去 设置 → 子智能体 → 模型选择，打开「允许 Agent 为子智能体选择模型」，再到「Agent 可选择的模型」里勾上允许的组合。打开之前，成员一律继承 Lead 当前的 provider、model 和推理档——不是自动挑便宜的。
+**关于按成员挑模型的前提**：宿主「设置 → 子智能体 → 模型选择」默认关闭。关闭状态下，显式传别的 `provider/model` 会直接报错，所有成员继承 Lead 当前的模型与推理档，不会自动挑更便宜的模型。如需分模型派活，请先打开「允许 Agent 为子智能体选择模型」并勾选允许列表，再**新开会话**生效（老会话会在创建时锁定模型授权清单，继续用老会话可能报 `child LLM route "…" is not allowed for this Session`）。
 
-改完设置只有新会话生效。0.2.2-rc.5 装的这版宿主在会话开始时把授权清单钉进会话事件，老会话里派活报 `child LLM route "…" is not allowed for this Session` 就是撞上这条；新开会话读新清单。
+### 二、Lead 工作法 skill（`lead-mode`）
 
-### 二、Lead 工作法 skill
+`skills/lead-mode/SKILL.md`（462 行）随包扫描注册，不绑定预置，覆盖整套 Lead 运转流程：
 
-一套拆活、派活、验收的方法，随包分发。
+- **开工判型与目标对齐**：先区分 PTC 还是 native、判断老一代还是新一代 Team、没开就停手；开工前定清主目标 `#1..#M` 判据。
+- **分级拆活与并行派单（§12 & §9.2）**：先按主目标、支撑（必须写明阻塞判据与停止线）、枝节分级，再按文件写作用域判并行；枝节和降级耗时验收不进并行队列，直接记入 `.scratch/<effort>/leftovers.md`（降级查法需为可粘贴命令、路径或「对象 + 入口 + 判据」走查步骤）。
+- **消息驱动与任务板**：熟练运用 `team_task_*` `list/get/claim/complete`，醒来先核主目标进度（§9.3），不因枝节回报新派单。
+- **独立验收与止损**：判据全过即停，独立验收只核既有判据与直接回归、不扩范围；极端场景可按严格三条件与五限制触发一次同模型方案专家。
+- **上下文交接与多轮控制**：涵盖压缩检测、交接四步、`worklog` / `handoff` 规范，以及多轮长程控制。
 
-它不绑预置。任何会话都能加载，两条路：
+主文件之外配备五份按需参考（位于 `skills/lead-mode/references/`，通过注册时传入的 `resourceBase: { kind: 'directory', path }` 基准目录解析，不占常驻上下文）：
 
-- 模型判断需要时自己加载（skill 标记为模型可调用）
-- 你直接敲 `/skill lead-mode`
+| 参考文件 | 何时按需读取 | 核心内容 |
+|---|---|---|
+| `ptc-calls.md` | 处于 `lead-ptc` 会话 | PTC 下 `run_code` 调用形状与安全并发读 |
+| `old-gen.md` | 宿主仍有 `spawn_teammate` | 老一代建成员参数、状态值与上限说明 |
+| `member-models.md` | 需按任务挑成员模型 | 路由选型指南与长程停滞模型升级联动 |
+| `tool-signatures.md` | 编写派活调用前 | 两代工具名与参数对照表 |
+| `long-horizon.md` | 预计 ≥2 轮派单或跨模块长程任务 | `N/M` 进度账与 `todo_write`/`create_goal` 边界、分层验收（全量默认最多 2 次）、连续 2 轮无增长切更强模型（如 Opus）`fresh` 跑 1 轮再止损、Lead 压缩后三步重锚 |
 
-覆盖这些内容：你的角色（控制面自己调、业务面派成员）、开工先判断 PTC 还是 native、哪一代、Team 开没开（没开就停手）、开工前先定三件事、派活的 prompt 与收尾消息（为什么不等成员、派完就结束回合，见 [agent-teams.md](agent-teams.md)）、六维过一遍（派活方式由你判断）、老一代 `spawn_teammate` 与新一代 `subagent` 各走哪条路、写作用域与并行（先按 §12 判级再按 §9.2 判并行、醒来先核主目标见 §9.3，细节在 [agent-teams.md](agent-teams.md) 的「哪些活能并行派」一节）、共享任务板（list/get/claim/complete 流程）、上下文变长怎么办（压缩、复用、交接四步、换人）、验收与收尾（拆活先分主目标、支撑、枝节，支撑须写明阻塞判据与停止线，枝节与降了优先级的耗时验收进 `.scratch/<effort>/leftovers.md`，降级查法支持可粘贴命令、文件路径或「对象 + 入口 + 判据」走查步骤，见 [skills/lead-mode/SKILL.md](../skills/lead-mode/SKILL.md) 的 §12「主目标优先：枝节进遗留清单」一节；标准定高、判据全过即停、独立验收只核既有判据不扩范围、退回返工不自己补位，同一件事退回两次还不过就换人、缩范围或停下来问；难度升级——一次同模型专家的三条件与五条硬限制见 [skills/lead-mode/SKILL.md](../skills/lead-mode/SKILL.md) 的「难度升级：一次同模型专家」一节，不是默认手段）、dsh-context 编队页（可选）、回报怎么写。
+**读宿主源码确认的两条关键行为**：
 
-正文（462 行）之外还有五份外挂，放在 `skills/lead-mode/references/`，要哪份读哪份，不占常驻上下文：`ptc-calls.md`（PTC 下的调用形状，PTC 会话才读）、`old-gen.md`（老一代：`spawn_teammate` 的细节，只有这个工具的会话才读）、`member-models.md`（按活挑成员模型，要按活挑才读；并联动长程停滞升级）、`tool-signatures.md`（两代工具名与参数差异，写调用前对一眼）、`long-horizon.md`（多轮长程控制回路，121 行，预计 ≥2 轮派单/验收或跨模块推进时才读：覆盖 N/M 进度账与 `todo_write`/`create_goal` 边界、分层验收默认全量最多 2 次、连续 2 轮无增长先查 `list_subagent_models` 切更强模型如 Opus `fresh` 接手跑 1 轮再止损问用户、Lead 压缩后三步重锚）。
-
-正文里能用 `references/*.md` 这样的相对路径指到它们，靠的是注册 skill 时传的 `resourceBase: { kind: 'directory', path }`：宿主只在 `kind` 是 `directory` 时渲染一行 `Base directory for this skill: <路径>`，并不代理解析路径，模型是拿这行当基准目录自己去拼（`lib/index.js`）。
-
-其中两条是读源码才确认的，容易踩：
-
-| 事实 | 为什么重要 |
+| 宿主事实 | 操作含义 |
 |---|---|
-| 成员收尾会自动通知你，通知里带它收尾那条消息 | 派完活结束回合就够，不用盯着等 |
-| task 变更不会唤醒空闲的 Lead | 别指望「它把 task 标 complete 了我就知道了」。老一代只唤醒正在 `wait_agent` 的调用方；新一代谁都不唤醒，`wait_agent` 只等自己的收件箱 |
+| 成员收工会自动触发结算通知，内含收尾消息（`Its closing message:`） | 派完活结束回合即可，不必挂着等待 |
+| `team_task_*` 状态变更不会唤醒空闲的 Lead | 老一代只唤醒正在等 `wait_agent` 的调用方；新一代只看自己收件箱。不能指望靠任务标 complete 触发通知 |
 
-所以 skill 的规矩是：派完活就结束回合等通知（用户立刻看到进展）。**Lead 不调 `wait_agent`**——它只等自己收件箱，挡不住成员干活，还白耗 `run_code` 的 120 秒预算；要催成员就 `send_message`，也别反复 `list_agents` 轮询。
+因此 Lead **不调用 `wait_agent`**（它只等自己收件箱，还会空耗 `run_code` 的 120 秒默认预算），也不用 `list_agents` 轮询；需要催办直接发 `send_message`，并在派活 prompt 中要求成员把交付物写进收尾消息。
 
-派活 prompt 里要要求成员 **把交付物写进收尾那条消息**——那条消息会随通知回到你手上。
+### 三、团队汇总 skill（`team-digest`）
 
-### 三、团队汇总 skill
-
-收尾时全队产出散在 N 条收尾消息和 N 份工作日志里，没人合并，过一周想回看就得重新查一遍。这个 skill 把它们合成一份 `reports/<YYYY-MM-DD>-<effort>.md`（`<effort>` 是这轮活的名字）。
+多成员协作收尾时，产出容易分散在多条收尾消息和多份工作日志里。`team-digest` 将它们收拢为一份持久化的团队汇总：
 
 | 项 | 规则 |
 |---|---|
-| 什么时候写 | 给最终答复前，这轮活有 2 个以上成员，或跨 2 轮以上 |
-| 写到哪 | `reports/<YYYY-MM-DD>-<effort>.md`，单一路径，收尾一次成型 |
-| 六块骨架 | 结论 / 谁干了什么 / 验收证据 / 偏离与未验证 / 死路与决策 / 未决与下一步 |
-| 原料分层 | 收尾消息做骨架，工作日志补过程细节，会话日志兜底 |
+| 触发条件 | 给最终答复前，本轮有 2 个以上成员或跨 2 轮以上 |
+| 输出路径 | `reports/<YYYY-MM-DD>-<effort>.md`，收尾一次成型 |
+| 六块固定骨架 | 结论 / 谁干了什么 / 验收证据 / 偏离与未验证 / 死路与决策 / 未决与下一步 |
+| 取材顺序 | 先读收尾消息搭骨架，工作日志补细节，会话日志兜底 |
 
-六块标题写死，第 1 块「结论」首行固定报 `主目标：达成/部分达成/未达成（N/M）`（单独调用缺主目标判据时降级写 `主目标：未验证（缺主目标判据）`），某块没内容就写「无」。原料按顺序取，上层够用就不下钻。`reports/` 下两份早期历史样例（`2026-10-29-team-digest.md`、`2026-11-11-readme-redesign.md`）已加历史说明横幅，不作当前范例效仿。细节看 `team-digest` skill（九节，按写汇总的顺序排）。
+第 1 块「结论」首行固定报 `主目标：达成/部分达成/未达成（N/M）`（单独调用缺主目标判据时降级写 `主目标：未验证（缺主目标判据）`），某块无内容写「无」。`reports/` 下两份早期样例（`2026-10-29-team-digest.md`、`2026-11-11-readme-redesign.md`）已标注历史说明横幅，不作为当前范例效仿。细节见 [skills/team-digest/SKILL.md](../skills/team-digest/SKILL.md)（共九节）。
 
-### 四、依赖自检命令
+### 四、依赖自检命令（`/lead-mode`）
 
-`/lead-mode` 报告当前依赖状态。
-
-| 报什么 | 内容 |
+| 检查项 | 报告内容 |
 |---|---|
-| Team 运行时 | 挂没挂；老一代挂了再报 `maxMembers` |
-| 两个预置 | `lead-ptc`、`lead-cordis` 各自注册没注册；只生效一个会点名缺的那个 |
-| 缺东西时 | 按你属于哪一代给下一步：新一代先提示会话开关，老一代给带版本号的安装命令 |
+| Team 运行时 | 是否挂载；老一代已挂载时顺带报 `maxMembers` |
+| 两个预置 | `lead-ptc` 与 `lead-cordis` 各自注册状态；只生效一半会点名缺的那个 |
+| 缺失指引 | 新一代提示会话开关；老一代提供带版本号的安装命令 |
 
-依赖齐全返回 success，缺东西返回 error。不会静默跳过。
+依赖齐全返回 success，缺失任一项返回 error，不静默跳过。
 
 ### 五、两层开场提示
 
-**本会话没有 Team 工具时，提醒你去开官方 Agent Teams，而不是让模型硬干。**
+当会话缺 Team 工具时，插件通过两条通道让模型停手并给出提示：
 
-走两条路：
-
-| 通道 | 谁看得见 | 什么时候出现 |
+| 通道 | 读者 | 触发时机 |
 |---|---|---|
-| persona 第一段 | 模型 | 一切到 Lead 预置就在。system prompt 的第 0 段 |
-| 启动 warn 与 `/lead-mode` | 用户 | 检测到 Team 运行时缺失时 |
+| persona 第 0 段 | 模型 | 切到 `lead-ptc` 或 `lead-cordis` 时自动进入 system prompt |
+| 启动 warning 与 `/lead-mode` | 用户 | 检测到 `agentTeams` 缺失或手动执行自检命令时 |
 
-两条都让你在 Team 工具不齐时先停下。persona 只带判据和停手规则；下一步怎么做（新宿主开会话开关、老宿主装 profile 包）在 `/lead-mode` 输出和 skill 里，好让每轮上下文保持短。
-
-老一代宿主上，模型不会假装能派活，也不会拿 `subagent` 顶替成员；新一代的成员本来就是 `subagent` 建的，这条不适用。
+在老一代宿主上，模型遇到缺 Team 工具会立即停下，不拿 `subagent` 顶替团队成员；新一代宿主的成员本来就是通过 `subagent` 建立的，但仍以 `team_task_*` 是否存在判断是否已开启团队协作开关。
 
 ## 依赖的官方 bundle 与版本
 
-本插件不捆绑下面这些包。它们由宿主或官方 bundle 提供；带版本约束的那些写在 `peerDependencies` 里，profile 包不在其中，要用户自己装。
+本插件不捆绑以下包，它们由 DSH 宿主提供（或老宿主由用户显式安装）：
 
-| 包 | 版本要求 | 谁提供 | 缺了会怎样 |
+| 包名 | 版本要求 | 提供方 | 缺失影响 |
 |---|---|---|---|
-| `@deepseek-ai/dsh-experimental-agent-team-profile` | `0.2.2-rc.1` | 用户显式安装，只给老一代宿主 | 只在老一代宿主上：派不了活，`/lead-mode` 报 error，启动 warn |
-| `@deepseek-ai/dsh` | `>=0.2.2-rc.3` | 宿主 | 装不上 |
-| `@deepseek-ai/cordis` | `^4.0.5` | 宿主 | 装不上 |
-| `@deepseek-ai/schemastery` | `^3.18.5` | 宿主 | 装不上 |
-| `@deepseek-ai/dsh-agent-preset-registry` | `>=0.2.2-rc.3` | 宿主 | 预置行不生效，`/lead-mode` 报「查不到」 |
-| `@deepseek-ai/dsh-skill` | `>=0.2.2-rc.3` | 宿主 | skill 不注册，启动 warn |
-| `@deepseek-ai/dsh-commands` | `>=0.2.2-rc.3` | 宿主 | `/lead-mode` 不注册，启动 warn |
+| `@deepseek-ai/dsh-experimental-agent-team-profile` | `0.2.2-rc.1` | 仅老一代宿主需用户安装 | 老宿主无法派活，`/lead-mode` 报 error 并启动 warning |
+| `@deepseek-ai/dsh` | `>=0.2.2-rc.3` | 宿主 | 无法安装插件 |
+| `@deepseek-ai/cordis` | `^4.0.5` | 宿主 | 无法安装插件 |
+| `@deepseek-ai/schemastery` | `^3.18.5` | 宿主 | 无法安装插件 |
+| `@deepseek-ai/dsh-agent-preset-registry` | `>=0.2.2-rc.3` | 宿主 | 预置不生效，`/lead-mode` 报「查不到」 |
+| `@deepseek-ai/dsh-skill` | `>=0.2.2-rc.3` | 宿主 | skill 无法注册，启动 warning |
+| `@deepseek-ai/dsh-commands` | `>=0.2.2-rc.3` | 宿主 | `/lead-mode` 无法注册，启动 warning |
 
-目标宿主版本写在 `package.json` 的 `dshTarget` 字段：`0.2.2-rc.3`。
+`package.json` 中的 `dshTarget` 为 `0.2.2-rc.3`（对应新一代宿主基线）。第一行的 `@deepseek-ai/dsh-experimental-agent-team-profile` 在新一代宿主已移入 `RETIRED_BUNDLES`，切勿在新宿主安装。
 
-第一行只管老一代宿主。新一代宿主上这个包已进 `RETIRED_BUNDLES`，不需要装，也装不住。
-
-## 为什么老一代的安装命令要带版本号
+## 为什么老一代安装命令要带 `@0.2.2-rc.1`
 
 `@deepseek-ai/dsh-experimental-agent-team-profile` 在 npm 上有三个 dist-tag：
 
-| dist-tag | 版本 | 配哪个宿主 |
+| dist-tag | 版本 | 适配宿主 |
 |---|---|---|
-| `latest` | 0.1.5-alpha.2 | 0.1.x |
-| `alpha` | 0.2.2-alpha.3 | 0.2.2 线早期预览 |
-| `next` | 0.2.2-rc.1 | 0.2.2 |
+| `latest` | `0.1.5-alpha.2` | 0.1.x |
+| `alpha` | `0.2.2-alpha.3` | 0.2.2 线早期预览 |
+| `next` | `0.2.2-rc.1` | 0.2.2 老一代 |
 
-裸写包名，npm 解析 `latest`，装到 0.1.5-alpha.2。这个版本是给 0.1.x 宿主用的，在 0.2.2 宿主上挂不上。装完 dsh 里看不到 Team 工具，`/lead-mode` 还是报「未挂载」。
+不带版本号安装会解析 `latest`（`0.1.5-alpha.2`），与 0.2.2 宿主完全不匹配，装完也无法挂载 Team 工具（2026-10-26 实测 `npm view @deepseek-ai/dsh-experimental-agent-team-profile version` 仍返回 `0.1.5-alpha.2`）。
 
-实测（2026-10-26，npm 11.20.0）：
+因此本插件的所有老宿主指引（`/lead-mode` 输出、启动 warning、`SKILL.md`）都显式钉死 `@0.2.2-rc.1`，对应老一代最后发布线的 `next` 标签（而 `package.json` 的 `dshTarget: 0.2.2-rc.3` 则用于约束新一代宿主最低兼容版本）；persona prefix 故意不塞长命令，以节省每轮常驻上下文。
 
-```
-$ npm view @deepseek-ai/dsh-experimental-agent-team-profile version
-0.1.5-alpha.2
-```
-
-所以本插件文案里所有出现安装命令的地方都带 `@0.2.2-rc.1`：`/lead-mode` 输出、启动 warn、SKILL.md，也就是当前的 `dshTarget`。persona prefix 故意不带命令，`test/preset.test.mjs` 反过来断言它不该出现，好让每轮上下文保持短。
-
-`next` 现在指向 `0.2.2-rc.1`，就是本插件钉的版本；`alpha`（`0.2.2-alpha.3`）是同一条线的早期预览。
-
-两代各自怎么开启、怎么判哪一代，见 [agent-teams.md](agent-teams.md)。
+两代具体参数与并行规则见 [agent-teams.md](agent-teams.md)。

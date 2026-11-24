@@ -1,108 +1,100 @@
 # Agent Teams 两代对照
 
-[← 回到 README](../README.zh-CN.md)
+[← 返回 README](../README.zh-CN.md) · [English](en/agent-teams.md)
 
-Lead 模式靠 dsh 官方的 Team 运行时派活，本插件不带它。这套运行时在两代宿主（跑 dsh 的那个程序）上是两套 API。判定属于哪一代，看工具清单，不看版本号。这一篇讲这几件事：两代有哪些差别、怎么判断自己属于哪一代、每一代怎么开。倒数第二节说明插件为什么不把运行时塞进预置，最后一节讲哪些活能并行派。
+Lead 模式依靠 DSH 官方的 Team 运行时派活，本插件不内置运行时。这套运行时在两代宿主上是两套 API，判断属于哪一代看会话工具清单，不看版本号。下面对照两代差异、判定方法、各自开启步骤、PTC 调用注意，以及并行派活边界。
 
-## 两代 Agent Teams 定义
+## 两代 Agent Teams 对比
 
-这套运行时在两代宿主上是两套 API：老一代停在已发布的 0.2.2-rc.1；新一代从 0.2.2-rc.3 起随 npm 发布，当前 `latest` 是 0.2.2-rc.5。
+老一代运行时止步于 `0.2.2-rc.1`；新一代从 `0.2.2-rc.3` 起随主包下发（如 `0.2.2-rc.5`）。
 
-| 维度 | 老一代：宿主 0.2.2-rc.1 | 新一代：宿主 0.2.2-rc.3 起 |
+| 维度 | 老一代（宿主 `<= 0.2.2-rc.1`） | 新一代（宿主 `>= 0.2.2-rc.3`） |
 |---|---|---|
-| 定义在哪 | 桌面端 asar 内的 `@deepseek-ai/dsh-experimental-tool-agent-team@0.2.2-rc.1` | `packages/team/tool-agent-team` 与 `packages/subagent/*` |
-| 建成员 | `spawn_teammate({ name, description, prompt, context })` | `subagent({ name?, description, prompt, cwd?, agent_preset?, provider?, model?, reasoning_effort? })`；要继承历史用 `subagent_fork` |
-| 成员身份 | 持久命名的成员，带 `target` | Session id 加一个 agent 名；名字是从根算起的路径（如 `reviewer/checker`），根固定叫 `lead` |
+| 实现位置 | 桌面端 asar 内的 `@deepseek-ai/dsh-experimental-tool-agent-team@0.2.2-rc.1` | `packages/team/tool-agent-team` 与 `packages/subagent/*` |
+| 创建成员 | `spawn_teammate({ name, description, prompt, context })` | `subagent({ name?, description, prompt, cwd?, agent_preset?, provider?, model?, reasoning_effort? })`；继承历史用 `subagent_fork` |
+| 成员身份 | 持久命名的成员，使用 `target` 寻址 | Session id + 从根算起的 agent 路径（如 `reviewer/checker`），根固定为 `lead` |
 | 发消息 | `send_message({ target, message })` | `send_message({ agent, message })`，返回 `{ messageId }` |
-| 打断 | `interrupt_agent({ target })` | `interrupt_agent({ agent })`，返回 `{ accepted }`。新宿主默认关闭（`tool-subagent-control` 的 `interrupt: false`），要开才有 |
-| 名册 | `list_agents({})` 列 Lead 加成员 | `list_agents({})` 列整棵树，每行 `{ name, status, description? }`，状态多了 `corrupt`、`unsupported`、`unavailable` |
-| 等待语义 | team 作用域：等成员状态、消息、任务变更；没人能产出变更时立刻回 `noProgress` | 普通 subagent 控制工具：等调用者自己的下一条输入（成员消息、完成通知、用户插话），只回 `{ timedOut }`，没有 `noProgress` |
-| 任务板 owner | `team_task_*` 四个工具，owner 填成员名 | 同样四个工具，owner 填成员名或 Session id；判据字段从 `ownerName` 变成 `ownerId` |
-| 开启方式 | 装 profile 包 `@deepseek-ai/dsh-experimental-agent-team-profile@0.2.2-rc.1` | 不要装这个包：它已进 `RETIRED_BUNDLES`，app-boot 会把 profile 里的它删掉。Team 插件随 base 与 web 组合下发，按会话开：模型与推理等级菜单里的「开启智能体团队协作」（旧宿主叫「使用智能体团队」） |
-| 成员模型 | 继承 Lead，`spawn_teammate` 没有模型参数 | `subagent` 有 `provider`、`model`、`reasoning_effort`（本插件 preset 已开 `modelSelection`）；`agent_preset` 可指定预置 |
-| 成员上限 | `agentTeams.config.maxMembers` | 配置键 `maxMembers` 已被拒绝，读不到上限 |
+| 打断 | `interrupt_agent({ target })` | `interrupt_agent({ agent })`，返回 `{ accepted }`。新宿主默认关闭（`interrupt: false`） |
+| 名册 | `list_agents({})` 列出 Lead 与成员 | `list_agents({})` 列出整棵树，每行 `{ name, status, description? }`，状态新增 `corrupt`、`unsupported`、`unavailable` |
+| 等待语义 | team 作用域：等成员状态、消息或任务变更；无人推进时立刻返回 `noProgress` | subagent 控制工具：只等调用者自己的收件箱（成员消息、完成通知、用户插话），只返回 `{ timedOut }`，无 `noProgress` |
+| 任务板 owner | `team_task_*` 四个工具，owner 填成员名 | 同一组四个工具，owner 可填成员名或 Session id；判定字段由 `ownerName` 变为 `ownerId` |
+| 开启方式 | 安装 `@deepseek-ai/dsh-experimental-agent-team-profile@0.2.2-rc.1` | **不要装 profile 包**（已入 `RETIRED_BUNDLES`，启动时会被自动删除）。按会话在「模型与推理等级」菜单开启「开启智能体团队协作」（旧版叫「使用智能体团队」） |
+| 成员模型 | 继承 Lead，`spawn_teammate` 无模型参数 | `subagent` 支持 `provider`、`model`、`reasoning_effort`（本插件已开 `modelSelection`）及 `agent_preset` |
+| 成员上限 | 读自 `agentTeams.config.maxMembers` | 配置键 `maxMembers` 已被拒绝，读不到上限 |
 
-新一代删掉了 `spawn_teammate`。`wait_agent` 从 team 工具搬到 subagent 控制工具，语义换成「等自己的收件箱」。
+新一代移除 `spawn_teammate`，并把 `wait_agent` 移出 team 工具组、改为只等待当前调用者自己的收件箱。
 
-## 怎么知道自己属于哪一代
+## 如何判断当前属于哪一代
 
-不按版本号认，按工具清单认。
+按工具清单判定，不按版本号硬猜：
 
-| 你看到的 | 属于 | 下一步 |
+| 会话工具清单现象 | 判定结果 | 下一步动作 |
 |---|---|---|
-| 有 `spawn_teammate` | 老一代 | 装 profile 包，见下一节 |
-| 没有 `spawn_teammate`，但有 `subagent` 和 `team_task_*` | 新一代 | 不用装，确认会话开关已开 |
-| `team_task_*` 一个都没有 | Team 没开 | 先找会话开关；确认是老一代宿主没有这个开关，才去装包 |
+| 存在 `spawn_teammate` | 老一代 | 确认已按宿主版本安装 profile 包 |
+| 无 `spawn_teammate`，但同时有 `subagent` 与 `team_task_*` | 新一代 | 无需装包，确认会话级 Team 开关已开启 |
+| 没有任何 `team_task_*` | Team 未开启 | 先找会话级开关；确认为无开关的老宿主再去装包 |
 
-顺序不能反。新一代宿主上不能让人去装 profile 包：那个包会被 app-boot 移除，装了也白装。
+顺序不能倒置。在新宿主上安装已退役的 profile 包会被 app-boot 自动清理，装了也无效。
 
-## 老一代：装 profile 包
+## 老一代开启方式：安装 profile 包
 
 ```bash
 dsh plugin --profile <你的 profile 名> add @deepseek-ai/dsh-experimental-agent-team-profile@0.2.2-rc.1
 ```
 
-上面写的 `0.2.2-rc.1` 是当前宿主线，按你自己 `dsh --version` 的输出替换。
+其中 `0.2.2-rc.1` 是老一代最后发布的宿主线，请按你本机 `dsh --version` 的输出替换版本号。**必须带版本号且与宿主一致**：不带会装到 `latest`（`0.1.5-alpha.2`），在 0.2.2 宿主上无法挂载；装完需重启 DSH，并用 `/lead-mode` 确认。
 
-**必须带版本号，而且要和宿主版本一致。** 不带会装到 `latest` 上的 0.1.5-alpha.2，那是给 0.1.x 宿主用的，在 0.2.2 宿主上用不了。`next` 指向的 0.2.2-rc.1 才是这条线现在对的版本，也是本插件文案里钉的那个。团队包把 `dsh-*` 的 peer 钉死到具体版本，老 rc 装到新宿主上，peer 对不上。装完重启 dsh。
+dist-tag 实测记录见 [usage.md](usage.md) 最后一节。
 
-不确定装没装？进 dsh 敲 `/lead-mode`，它会报依赖状态。
+## 新一代开启方式：打开会话开关
 
-版本号为什么不能省，dist-tag 的实测输出在 [usage.md](usage.md) 的最后一节。
+新一代宿主不要运行上面的安装命令（`@deepseek-ai/dsh-experimental-agent-team-profile` 已进 `RETIRED_BUNDLES`）。Team 插件已随 base 与 web 组合下发。
 
-## 新一代：不要装 profile 包，开会话开关
+打开会话的**「模型与推理等级」**菜单，开启**「开启智能体团队协作」**（较早版本叫「使用智能体团队」）。这是一个会话级开关，不是 profile 级配置。
 
-新一代宿主上不要执行上面那条命令。`@deepseek-ai/dsh-experimental-agent-team-profile` 已进官方的 `RETIRED_BUNDLES`，app-boot 会把它从 profile 里删掉。Team 插件随 base 与 web 组合下发。
+## PTC 下如何调用这些工具
 
-开法是按会话开：打开「模型与推理等级」菜单，把「开启智能体团队协作」开关打开，旧宿主这个开关叫「使用智能体团队」。这个开关是会话级的，不是 profile 级的。
+`lead-ptc` 走 PTC 执行，而 `lead-cordis` 是 native 直调。使用差异如下：
 
-## PTC 下怎么调这些工具
+- **仅 `lead-ptc`**：只有 `run_code` 能直接调用；`team_task_*`、`subagent`、`send_message`、`wait_agent` 都在 TypeScript 沙箱里以 `await tools.team_task_list({})` 形式调用。
+- **仅 `lead-ptc`**：`team_task_list`、`team_task_get`、`list_agents` 已标记并发安全，程序内可用 `Promise.all` 并发读取。
+- **两个预置通用**：严禁使用 `wait_agent` 等成员（会阻塞并白耗 `run_code` 默认 120 秒 / 上限 600 秒预算）；派完活立刻结束回合等通知，催办用 `send_message`。
+- **两个预置通用**：新宿主默认禁用 `interrupt_agent`（`interrupt: false`）。需要硬打断时请用户先开启配置；未开启时改为发消息让成员停在安全点。
 
-`lead-ptc` 预置是 PTC（只能直调 `run_code`），`lead-cordis` 是 native（工具能直调）。下面四条注意：第 1、3 条只对 `lead-ptc` 成立，第 2、4 条两个预置一样。
+## 为什么预置不直接内嵌 Team 运行时
 
-- 只有 `run_code` 能直调。`team_task_*`、`subagent`、`send_message`、`wait_agent` 都在 system prompt 的 SDK 块里，程序里写 `await tools.team_task_list({})` 这种。
-- 不要用 `wait_agent` 等成员（本插件两个预置都不许）。一次 `run_code` 默认 120 秒、上限 600 秒；派完活结束回合，通知会回来。要催成员用 `send_message`。
-- `team_task_list`、`team_task_get`、`list_agents` 是并发安全的读工具，程序里可以用 `Promise.all` 一起读。
-- 新宿主默认没有 `interrupt_agent`（`interrupt: false`）。要打断成员，先让用户把它开成 `true`；没有就发消息要求成员停在安全点。
-
-## 为什么预置里不塞 Team 运行时
-
-`@deepseek-ai/dsh-experimental-tool-agent-team` 的 `apply()` 监听全局 `agent/created`，给每个 agent 都装上 Team 工具。它是宿主级插件，放进预置会漏到所有会话。
-
-所以本插件的定位是：预置 + 两个 skill + 提醒。开不开 Team 运行时：老一代宿主由用户装官方 profile 包决定，新一代由会话开关决定。
+`@deepseek-ai/dsh-experimental-tool-agent-team` 的 `apply()` 监听全局 `agent/created` 并为所有 agent 挂载工具，属于宿主级插件；放进单个预置会导致宿主与预置双挂冲突。因此本插件只交付预置、skill 与检查提醒，Team 运行时由宿主开关或用户装包决定。
 
 ## 哪些活能并行派
 
-默认是并行，但先按 [skills/lead-mode/SKILL.md](../skills/lead-mode/SKILL.md) §12 判级，再按下面两条判并行：只留主目标与阻塞主目标的支撑进并行队列，枝节即使写作用域不重叠也不进队列，直接记入遗留清单。串行不是更安全的选择，只是把整件活拖长；进了队列的块只要下面两条都满足，就一次全派完，是「就该」，不是「可以」。
+默认优先并行，但必须严格遵守先后裁决顺序：先按 [skills/lead-mode/SKILL.md](../skills/lead-mode/SKILL.md) §12 对任务判级，只允许**主目标**与**阻塞主目标的支撑**进入并行队列；**枝节**即使文件写作用域完全不重叠，也不进并行队列，直接记入遗留清单。
 
-- **判据一：后一块不需要读前一块的产出。** 自查问法：前一块的结论一变，后一块的活是不是就白干了？是，就有依赖，得串起来。
-- **判据二：写作用域不重叠。** 按文件或目录分，不按时间错开。两个成员同一时刻改同一个文件，改动会互相覆盖，错开时间也救不了。
+进入队列的任务，满足以下两条判据就该一次全部派完：
 
-两条都满足还分批派，那是白等。
+1. **无产出依赖**：后一块不需要读取前一块的结果（若前一块结论变化，后一块会白干，就必须串行）。
+2. **写作用域不重叠**：按文件或目录严格隔离，不能两人同时写同一份文件或抢同一份可变状态。
 
-这个仓库里天然能并行的四类：
+仓库内常见可并行与禁止并行的划分方式：
 
-| 类型 | 怎么切 | 例 |
+| 类型 | 拆分原则 | 示例 |
 |---|---|---|
-| 只读查证 | 同一个问题从几个角度各派一人 | 一人查 `skills/lead-mode/SKILL.md` 正文，一人查 `docs/` 里的口径，一人查外部资料 |
-| 盘点或扫描 | 多个目录、多个维度分开数 | 一人数术语出现次数，一人数测试覆盖点 |
-| 独立验收 | 一块交付就验一块，不必攒到全部做完 | 文档那摊先回来，就先验它那份：`pnpm test` 加 `git diff --stat docs/` |
-| 互不重叠的实现 | 不同文件、不同模块、不同 skill 各派一人 | 一人改 `docs/`，一人改 `skills/`，一人改 `test/` |
+| 只读查证 | 同一问题从不同视角拆分 | 一人读 `skills/` 规矩，一人查 `docs/` 口径，一人查外部资料 |
+| 盘点扫描 | 按目录或维度切分 | 一人数术语一致性，一人核对测试覆盖 |
+| 独立验收 | 交付一块即可立即开验（不占写作用域） | 文档先交付就先跑测试与 diff，不必等其他实现全部收尾 |
+| 无冲突实现 | 不同目录或独立模块各派一人 | 一人改 `docs/`，一人改 `skills/`，一人补 `test/` |
 
-只读验收不占写作用域：一块交付就开验，别的实现还在跑也不用等。
+必须避开的三类并行禁忌：
 
-不能并行的三类，是硬约束不是建议：
+- 后一块依赖前一块的产出：用 `blocked_by` 明确前后顺序。
+- 两人同改一个文件：后写会静默覆盖先写。
+- 争抢可变共享状态：例如两个成员同时跑 `git commit` 争抢 `.git/index.lock`、共用同一临时 profile 或同一监听端口。
 
-- 后一块要读前一块的产出。用 `blocked_by` 串起来。
-- 两个人同时改同一个文件。后写的把先写的盖掉，还不报错。
-- 抢同一份可变状态：git index（两边同时 commit 会抢 `.git/index.lock`，后到的那次直接报错）、同一个临时 profile、同一个端口。真要并行就各用各的副本，别抢。
+派单执行要点：
 
-怎么派：
+- 每次派单不设人为数量上限，仅受当前会话成员上限约束（老宿主可通过 `/lead-mode` 查看 `maxMembers`，新宿主无此字段）。
+- 每张派单写明四项：**级别与服务判据 `#k`、成员名、写作用域、具体验收判据**。
+- 派完立刻结束回合等运行时结算通知；不要派一个等一个。
+- 使用 `blocked_by` 只串起真正有依赖的任务，其余任务同时派出。
+- 醒来先核对主目标 `#1..#M` 进度，不被先返回的枝节带偏；属于主目标或阻塞支撑的块随到随处理，不必等全队凑齐。
 
-- 一次派几个不设数字上限，唯一的硬顶是成员上限。老一代宿主上 `/lead-mode` 报 `maxMembers`；新一代读不到，就别提数字。
-- 每一块写清四样：**级别与服务判据 `#k`、名字、写作用域、判据**。缺一样，成员就自己去猜边界，猜偏了还得返工。
-- 派完**立刻结束回合**等运行时通知。派一个盯着一个等，本身就是串行。
-- `blocked_by` 只处理「必须串」的那部分：把要等前一块的活挂成它的后继，别的照样一起派。
-- 醒来先核主目标判据进度，不被先回来的枝节带偏；几个成员的结论分开讲，同属主目标或阻塞支撑的块哪个先回来先处理，不必凑齐才动手。
-
-前面「PTC 下怎么调这些工具」那节说 `team_task_list`、`team_task_get`、`list_agents` 可以用 `Promise.all` 一起读。那讲的是读工具能不能并发调用，和派活要不要并行是两件事。
+注：上文 `Promise.all` 讲的是只读工具在一次 `run_code` 中的并发查询，与向多个成员并行派活属于不同层面。

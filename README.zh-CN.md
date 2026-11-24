@@ -4,7 +4,7 @@
 
 # dsh-lead-mode
 
-给 DSH 加 Lead 模式：模型只做判断、派活、讲结论，写代码、了解现状、验收都交给成员。工具官方给，方法这里补。
+给 DeepSeek Harness（DSH）加上 Lead 工作法：模型只做判断、拆活、派活与讲结论，查证、写代码与独立验收交给成员。工具官方给，方法这里补。
 
 [![npm 版本](https://img.shields.io/npm/v/dsh-lead-mode?color=4D6BFE)](https://www.npmjs.com/package/dsh-lead-mode)
 [![dsh 版本](https://img.shields.io/badge/dsh-%3E%3D0.2.2--rc.3-4D6BFE)](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/package.json)
@@ -21,23 +21,23 @@
 
 ## 这是什么
 
-DSH（DeepSeek Harness）的 Lead 模式插件。当前版本 0.2.16，对宿主（跑 dsh 的那个程序）的要求是 >= 0.2.2-rc.3，MIT 许可。
+DSH（DeepSeek Harness）的 Lead 工作法插件。当前版本 `0.2.16`，要求宿主 `>= 0.2.2-rc.3`，MIT 许可。
 
-它补的是方法层。官方的 Agent Teams 运行时给工具：老一代是 `spawn_teammate`、`send_message`、`team_task_*`；新一代用 `subagent` 建成员，`send_message` 与 `team_task_*` 还在；成员收尾由运行时通知，不需要 `wait_agent` 轮询。什么时候派活、派给谁、怎么等结果、怎么验收、多路产出怎么合并，运行时不管。
+官方 Agent Teams 运行时只提供派活原语：老一代有 `spawn_teammate`、`send_message`、`team_task_*`；新一代用 `subagent` 建成员，保留 `send_message` 与 `team_task_*`，并由运行时自动投递收工通知，不需要 `wait_agent` 轮询。至于什么时候拆活、文件怎么隔离、怎么等齐、怎么独立验收、卡住何时止损，运行时不管。
 
-装完多出四样东西：两个预置（「Lead · PTC」「Lead · 创造」）、两个 skill（`lead-mode`、`team-digest`）、一条 `/lead-mode` 命令、两条开场提示。官方预置一个字没改，宿主行为也没改。
+装上本插件后多出四样东西：两个预置（「Lead · PTC」「Lead · 创造」）、两个运行时 skill（`lead-mode`、`team-digest`）、一条 `/lead-mode` 自检命令和两层开场提示。官方预置一字不改，宿主行为也保持原样。
 
-不替代官方 Team 模式。没开 Team 时它不会假装能派活，而是停手，把下一步交给你。
+它和官方 Team 模式配合工作，不替代 Team 运行时。没开 Team 时，模型会停手并给出下一步操作，不会硬撑着自己干完。
 
 ## 为什么值得用
 
-官方的 Agent Teams 默认不开。官方预置里没有 Team 工具，它由会话开关单独控制；老一代宿主还要先装一个 profile 包。工具不齐时，模型常见两种反应：自己串行干完，或者拿 `subagent` 顶替成员。两种都不对，而且用户和模型都不知道缺了哪一步。
+官方 Agent Teams 默认关闭。新一代宿主靠会话开关控制，老一代还要另装 profile 包。Team 工具没挂载时，会话常踩进两个坑：模型自己在单个上下文里串行干完，或者拿普通 `subagent` 顶替团队成员。两种都不对，用户也看不出究竟缺了哪一步。
 
 本插件做三件事：
 
-1. 两个预置，只换 persona。其余字段逐行照抄官方 `ptc`（24 行）与 `cordis`（23 行），能用的工具一点不少。
-2. 两个 skill，把拆活、派活、共享任务板、验收、收尾合并成一套可执行的规矩。
-3. 一条自检命令加两条提醒，Team 不齐时让模型停手，下一步写成可粘贴的命令或具体开关。
+1. **两个不减能力的预置**：除 persona 外，其余插件行逐行镜像官方 `ptc`（24 行）和 `cordis`（23 行），工具集一点不少。
+2. **可执行的团队工作法**：两个 skill 把主目标判级、写作用域隔离、共享任务板、独立验收、长程止损和团队汇总写进固定流程。
+3. **带下一步指引的自检**：一条 `/lead-mode` 命令加两层开场提示，缺 Team 时让模型停手，并直接报出要开的开关或可粘贴的安装命令。
 
 愿景：
 
@@ -45,78 +45,85 @@ DSH（DeepSeek Harness）的 Lead 模式插件。当前版本 0.2.16，对宿主
 
 200% 是目标，不是实测数字。
 
-三条不变量：
+三条设计底线：
 
-1. 方法比工具活得久。工具换名、宿主换代，工作法不变。两代 Agent Teams 兼容是这条的第一次压力测试。
-2. 交付物落在文件里。工作日志、收尾消息、团队汇总都在磁盘上，过一周还能回看。
-3. 缺东西就给下一步。不沉默，也不硬撑。
+1. **方法比工具活得久。** 工具改名、宿主换代，工作法不变；同时兼容两代 Agent Teams 就是对这条规则的验证。
+2. **交付物落在文件里。** 工作日志、交接文档与团队汇总都写入磁盘，一周后照样能直接回看。
+3. **缺依赖就给下一步。** 绝不静默跳过，也不拿临时方案凑合。
 
-## 装
+## 快速上手
 
-两步。
+两步完成配置：
 
-**一、装插件。**
+1. **安装插件。**
 
 ```bash
 dsh plugin --profile <你的 profile 名> add dsh-lead-mode
 ```
 
-**二、开 Team 运行时。**
-
-新一代宿主（0.2.2-rc.3 起）打开「模型与推理等级」菜单里的「开启智能体团队协作」，旧宿主这个开关叫「使用智能体团队」。老一代宿主没有这个开关，装官方 profile 包，版本号按 `dsh --version` 的输出换：
+2. **开启官方 Team 运行时。**
+   - **新一代宿主（`>= 0.2.2-rc.3`）**：打开会话右上「模型与推理等级」菜单里的**「开启智能体团队协作」**（旧版本叫「使用智能体团队」）。
+   - **老一代宿主（`<= 0.2.2-rc.1`）**：菜单里没有这个开关，需安装官方 profile 包，并把版本号换成 `dsh --version` 的输出：
 
 ```bash
 dsh plugin --profile <你的 profile 名> add @deepseek-ai/dsh-experimental-agent-team-profile@0.2.2-rc.1
 ```
 
-重启 dsh，在新会话的预置列表里挑「Lead · PTC」或「Lead · 创造」，敲 `/lead-mode` 看依赖状态。返回 success 就齐了。
+重启 dsh，在新会话预置列表里选择 **「Lead · PTC」** 或 **「Lead · 创造」**，输入 `/lead-mode` 检查依赖。返回 success 即可派活。
 
-不换预置也能用：任何会话敲 `/skill lead-mode` 或 `/skill team-digest`。少掉的是 persona 里那句短指针，方法本身照常加载。
+不切换预置也能用：任何会话直接敲 `/skill lead-mode` 或 `/skill team-digest` 即可加载方法，只是 system prompt 里少了 persona 那段短指针。
 
 ## 两个预置怎么选
 
-Lead 只换方法、不换能力，所以两个预置各镜像一个官方预置：
+Lead 只换工作法、不改能力面，因此两个预置各自镜像一个官方预置：
 
-| 预置 | 行数 | 基线 | 差异 |
+| 预置 | 插件行数 | 官方基线 | 差异 |
 |---|---|---|---|
-| `lead-ptc` | 24 | 官方 `ptc` 逐字段 | 只换 persona |
-| `lead-cordis` | 23 | 官方 `cordis`（创造）逐字段 | persona，外加 `skill-filesystem` 不带 `customSkillDirs` |
+| `lead-ptc` | 24 | 官方 `ptc`（逐字段复制） | 只换 persona |
+| `lead-cordis` | 23 | 官方 `cordis` / 创造（逐字段复制） | 换 persona，`skill-filesystem` 不带 `customSkillDirs` |
 
-**选 `lead-ptc`**：会话要写程序、跑命令、批量改文件。这是 PTC：只有 `run_code` 能直调，其余工具在程序里用 `tools.xxx()` 调。Lead 的派活、建任务、发消息都按这个写法走。
+- **选 `lead-ptc`**：适合写代码、跑命令、批量改文件与数据处理。PTC 下只有 `run_code` 能直调，其余工具在 TypeScript 代码里用 `tools.xxx()` 调用。
+- **选 `lead-cordis`**：工具可直调且带 `tool-cordis`，适合修改 DSH 本体或编写插件的会话（「创造」即 `cordis` 预置）。
 
-**选 `lead-cordis`**：工具能直调，带 `tool-cordis`，适合要改 DSH 自己或要直接调工具的会话。这台宿主上「创造」就是这个意思。
+`lead-cordis` 故意不带 `customSkillDirs`：官方那条 `!!js` 表达式按 `cordis.patch.yml` 自身位置解析 `@deepseek-ai/dsh-agent-preset`，外部插件包在加载期解析不到宿主包会直接报错。代价是 `dsh-doc` skill 不在 `lead-cordis` 的文件系统 skill 目录中。
 
-`customSkillDirs` 是故意不带的：官方那条表达式按 patch 文件自己的位置解析 `@deepseek-ai/dsh-agent-preset`，本包从那里解析不到宿主包，照抄会在加载时抛错。代价是 `dsh-doc` skill 不在 `lead-cordis` 的文件系统 skill 目录里。
-
-两个预置都按 web-app 的预置抄，只适合桌面端或 Web profile。headless profile 没有这些工具行，别在那边切 Lead 预置。
+两个预置均按 web-app 预置镜像，仅适用于桌面端或 Web profile；headless profile 缺少对应工具行，请勿切换。
 
 ## 它怎么派活
 
-![机制图：需求进入 Lead，Lead 拆活派活，成员在共享任务板上动手并回报，独立成员验收](https://raw.githubusercontent.com/xiebaiyuan/dsh-lead-mode/main/assets/diagram-zh.svg)
+![机制图：需求进入 Lead（控制面），Lead 分级拆活并通过共享任务板与工作日志派给并行成员（业务面），最后由独立成员验收并带回证据，收工通知驱动下一轮](https://raw.githubusercontent.com/xiebaiyuan/dsh-lead-mode/main/assets/diagram-zh.svg)
 
-四拍：需求进来，Lead 拆活派活，成员在共享任务板上动手并回报，第四拍是验收：派没参与实现的成员跑，Lead 拿回证据判断能不能收尾。虚线是验收不通过时的回路。
+整套流程把**控制面**（Lead）和**业务面**（成员）彻底分开，分三块运转：
 
-**拆活。** Lead 只做三件事：判断、派活、把结论讲给用户。它碰的是控制面：`list_subagent_models` 挑模型、`list_agents` 看名册、`team_task_*` 管任务板、`send_message` 催人，这些自己调，那本身就是派活。业务面不碰：代码、文件、日志、CI、包都交给成员，调查与验收都派，验收要派没参与实现的那位；本轮只有实现者本人时，另派一个只读成员复跑，不退回自己跑。派不下去就停手，让你去开 Team，不自己干完，也不拿 `subagent` 顶替成员。派活前先调 `list_subagent_models`，从返回的清单里成对挑 provider/model，可以带推理档，不许编造 id。清单只有一条，说明宿主没授权别的模型，成员一律继承 Lead 的路由。
+### 1. 控制面与业务面分离
 
-**共享任务板与工作日志。** 成员各有自己的上下文。建不建任务板由 Lead 判：多成员、要交叉等待或互相发消息才建，一个人一轮能干完的直接派。建了板，Lead 在 `team_task_*` 上建单、写清目标与验收判据，成员领单后动手；每个成员第一步建 `.scratch/<effort>/worklog-<mate>.md`（`<effort>` 是这轮活的名字，`worklog-*.md` 是工作日志），只追加轮次记录，收尾前补完最后一轮。写作用域（各成员只改自己那摊文件）按文件或目录分开，不重叠就同时开工，重叠时用任务依赖排顺序。谁领了哪张单、卡在谁身上，看板子，不看聊天记录。
+Lead 只负责判断、拆活、派活和汇报结论。它只碰控制面工具（`list_subagent_models`、`list_agents`、`team_task_*`、`send_message`）；看代码、改文件、跑测试、看 CI 和查包全交给成员。
 
-**验收。** Lead 不等。派完活结束回合，成员收尾的通知会起下一轮；催人用 `send_message`，不调 `wait_agent` 轮询。两代 Agent Teams 都按这个规矩：老一代 `send_message` 的参数叫 `target`，新一代叫 `agent`。成员回报要带来源标记：`路径:行号`、能粘贴的命令、工作日志段名，或 `session-<id>#seq`。关键结论要让独立成员跑过才算数，Lead 看完证据再给最终答复。
+- 派活前先调 `list_subagent_models`，按返回值成对选择 `provider/model` 与推理档，不许编造 id；清单只有一条时，成员直接继承 Lead 的路由。
+- 没开 Team 时停手并提示用户开启，不退回自己单干，也不拿普通 `subagent` 顶替团队成员。
 
-## 看到的样子
+### 2. 共享任务板、工作日志与主目标护栏
 
-![仓库社交预览图：左边图标，右边标题与一行定位语](https://raw.githubusercontent.com/xiebaiyuan/dsh-lead-mode/main/assets/social-preview.png)
+- **拆活先判级（§12）**：把事项分为**主目标**（`#1..#M` 必过判据）、**支撑**（阻塞主目标的前置活，必须写明停止线）和**枝节**。枝节即使文件不重叠也不进并行队列，直接记入 `.scratch/<effort>/leftovers.md`。
+- **写作用域隔离与任务板**：互不依赖、文件不重叠的块一次并行全派；有先后依赖的用 `blocked_by` 串起来。成员第一步先建 `.scratch/<effort>/worklog-<mate>.md`（只追加轮次记录），防止上下文压缩丢过程。
 
-仓库的社交预览图，1280×630。左边图标，右边标题与一行定位语。
+### 3. 消息驱动与独立验收
+
+Lead 派完活立刻结束回合，绝不调 `wait_agent` 轮询。成员收工会自动触发带回 `Its closing message:` 的结算通知，中途催人用 `send_message`（老一代传 `target`，新一代传 `agent`）。
+
+每条结论必须挂来源标记（`路径:行号`、可粘贴命令、工作日志段名或 `session-<id>#seq`）。最终验收必须交给没参与实现的独立成员复跑核证；本轮只有实现者本人时，另派只读成员复跑，Lead 不自己下场跑检查。
+
+## 实际效果
 
 ![预置下拉里的 Lead · PTC 与 Lead · 创造](https://raw.githubusercontent.com/xiebaiyuan/dsh-lead-mode/main/assets/screenshots/preset-picker.png)
 
-新会话的预置下拉。两个入口分别是「Lead · PTC」与「Lead · 创造」。
+*新会话的预置下拉列表，可直接切换「Lead · PTC」与「Lead · 创造」。*
 
-![斜杠面板里的 /lead-mode：指令与技能两条入口](https://raw.githubusercontent.com/xiebaiyuan/dsh-lead-mode/main/assets/screenshots/lead-mode-command-panel.png)
+![斜杠面板里的 /lead-mode：同时提供指令与技能两条入口](https://raw.githubusercontent.com/xiebaiyuan/dsh-lead-mode/main/assets/screenshots/lead-mode-command-panel.png)
 
-在会话里输入 `/lead-mode`，斜杠面板给出「指令」与「技能」两条入口。
+*输入 `/lead-mode` 时，斜杠面板同时列出依赖自检指令与 `lead-mode` 技能。*
 
-敲下去报的是这些（0.2.7 装在 0.2.2-rc.5 宿主上的实际输出）：
+在宿主 `0.2.2-rc.5` 上运行 `/lead-mode` 的实际输出：
 
 ```text
 Team 运行时：已挂载（新一代，teammate 走 subagent）
@@ -131,61 +138,65 @@ Team 开关是会话级的：模型与推理等级菜单里打开「开启智能
 
 | 能力 | 入口 | 你要做什么 |
 |---|---|---|
-| Lead 预置 | 预置下拉里的「Lead · PTC」或「Lead · 创造」 | 挑一个切过去 |
-| Lead 工作法 skill | `/skill lead-mode`，模型也会自己加载 | 不用管 |
-| 团队汇总 skill | `/skill team-digest`，模型收尾前自己判断写不写 | 不用管 |
-| 依赖自检 | `/lead-mode` | 依赖不对时敲一下 |
-| 两层开场提示 | 自动 | 不用管 |
+| Lead 预置 | 预置下拉里的「Lead · PTC」或「Lead · 创造」 | 挑一个切换 |
+| Lead 工作法 skill | `/skill lead-mode`（模型也会按需加载） | 不用管 |
+| 团队汇总 skill | `/skill team-digest`（收尾前自动触发） | 不用管 |
+| 依赖自检命令 | `/lead-mode` | 怀疑依赖没配齐时敲一下 |
+| 两层开场提示 | 写入 persona 与启动日志 | 自动触发 |
 
-`lead-mode` skill 覆盖这些：开工前先定目标；按工具清单判哪一代；派活自包含；写作用域不重叠；共享任务的 list/get/claim/complete 流程；为什么不等成员；成员模型从哪来；上下文变长后的交接四步；标准定高、判据写成能对照的命令与数字，退回返工由成员做（同一件事退回两次还不过就换人、缩范围或停下来问，缩范围是砍做不到的部分、判据不降）；最终验证派独立成员做；活反复做不对、三个条件都够时，可派一个与 Lead 同模型的独立成员只出方案（难度升级，是最后手段，不是默认手段）。
+### `lead-mode` 技能与五份按需参考
 
-拆活先按 [skills/lead-mode/SKILL.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/skills/lead-mode/SKILL.md) §12 判级（主目标、支撑、枝节），再按 §9.2 判并行：枝节即使写作用域不重叠也不进并行队列，直接和降了优先级的耗时验收一起记进 `.scratch/<effort>/leftovers.md`（降级查法支持可粘贴命令、文件路径，或「对象 + 入口 + 判据」走查步骤）；判据全过即停，独立验收只核既有判据与主目标直接回归、不扩范围。
+[skills/lead-mode/SKILL.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/skills/lead-mode/SKILL.md) 规范了全套执行动作：定主目标、识别宿主代际、写自包含派单、隔离写作用域、操作 `team_task_*`、派完结束回合、上下文压缩四步交接、两轮返工上限（换人、不降判据缩范围或停下问用户）、独立验收不扩范围，以及极端场景下一次同模型方案专家的受控升级。
 
-`lead-mode` 正文外挂 5 份按需参考（`skills/lead-mode/references/`：`ptc-calls.md`、`old-gen.md`、`member-models.md`、`tool-signatures.md`、`long-horizon.md`）。预计 ≥2 轮派单/验收或跨模块推进的长程任务按需加载 [long-horizon.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/skills/lead-mode/references/long-horizon.md)：维护主目标判据 `N/M` 进度账、分层验收（全量默认最多 2 次）、连续 2 轮 `N` 无增长先查 `list_subagent_models` 切更强模型（如 Opus 等旗舰推理档）`fresh` 接手跑 1 轮，无可切或切后仍无增长再止损问用户，以及 Lead 上下文压缩后三步重锚。
+`skills/lead-mode/references/` 下五份参考文档按场景按需加载，不占日常上下文：
 
-`team-digest` 把全队收尾合成一份 `reports/<YYYY-MM-DD>-<effort>.md`，六块骨架：结论（首行固定 `主目标：达成/部分达成/未达成（N/M）`）/ 谁干了什么 / 验收证据 / 偏离与未验证 / 死路与决策 / 未决与下一步。这轮活有 2 个以上成员，或跨 2 轮以上，才写。
+| 参考文档 | 何时读取 | 主要内容 |
+|---|---|---|
+| `ptc-calls.md` | 使用 `lead-ptc` 时 | `run_code` 内 `tools.xxx()` 写法与 `Promise.all` 并发读 |
+| `old-gen.md` | 宿主存在 `spawn_teammate` 时 | 老一代参数、成员状态值与限制 |
+| `member-models.md` | 需要按任务挑模型时 | `list_subagent_models` 选型规则与停滞升级联动 |
+| `tool-signatures.md` | 编写派活调用前 | 两代工具名与字段参数速查表 |
+| `long-horizon.md` | 跨模块或 `>= 2` 轮长程任务 | `N/M` 进度账、分层验收（全量默认最多 2 次）、连续 2 轮无增长切更强模型 `fresh` 跑 1 轮再止损、Lead 压缩后三步重锚 |
 
-派活用到三组工具：`subagent` / `subagent_fork` 建成员，`send_message` 续聊与催办，`team_task_create` / `team_task_get` / `team_task_list` / `team_task_update` 管共享任务。老一代对应 `spawn_teammate` 与 `send_message({ target })`，规矩一样，参数名不同。
+### `team-digest` 与常驻人设
 
-两个预置的 persona 逐字相同，468 字，常驻锚定「先保主目标，枝节记遗留」与「长程止损」，每轮都进 system prompt；细节按需从 skill 与 5 份外挂加载，不占常驻上下文。
-
-只新增，不修改。同名 skill 或命令撞了，宿主先到先得，本插件让位。
+- **`team-digest`**（[skills/team-digest/SKILL.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/skills/team-digest/SKILL.md)）：本轮有 `>= 2` 个成员或跨 `>= 2` 轮时，在 `reports/<YYYY-MM-DD>-<effort>.md` 汇总六块固定骨架，首行固定报告 `主目标：达成/部分达成/未达成（N/M）`。
+- **三组派活工具**：`subagent` / `subagent_fork`（老一代为 `spawn_teammate`）建成员，`send_message` 续聊与催办，`team_task_create` / `team_task_get` / `team_task_list` / `team_task_update` 管任务板。
+- **低上下文开销与零冲突**：两个预置共用同一段 468 字 persona，只在每轮锚定「先保主目标，枝节记遗留」与「长程止损」。全部注册均为只增不改；若同名 skill 或命令已存在，宿主先到先得，本插件自动让位。
 
 ## 兼容与限制
 
 | 项 | 说明 |
 |---|---|
-| 宿主 | `>=0.2.2-rc.3`（`engines.dsh`），Node `>=20` |
-| Agent Teams | 两代都支持，按工具清单判哪一代，不看版本号 |
-| 预置来自哪 | 两个预置都按 web-app 预置抄，只适合桌面端或 Web profile |
-| 子智能体模型 | 宿主「子智能体 → 模型选择」默认关闭；关着时显式 provider/model 会被拒，成员继承 Lead 的路由。改完设置只有新会话生效 |
-| 打断成员 | 新宿主 `interrupt_agent` 默认关闭（`interrupt: false`）；要硬打断，先让用户打开 |
-| 不碰宿主 | `cordis.patch.yml` 全文三行 `insert`：本插件加两个预置。不注册工具、不监听 agent 生命周期、不拦截请求；卸载即回收 |
-| 缺服务 | `skills` / `commands` / `agentTeams` 任一缺失时插件照常挂载，只打 warn，丢掉对应的那部分工具 |
-| 不代开 Team | 老一代装 profile 包、新一代开会话开关，都是用户显式动作 |
+| 宿主与 Node | 要求 `dsh >= 0.2.2-rc.3`（`engines.dsh`），Node.js `>= 20` |
+| Agent Teams | 两代均支持，按运行时工具清单判断，不看版本号 |
+| 预置适用面 | 镜像自 web-app 预置，只适用于桌面端与 Web profile |
+| 子智能体模型 | 宿主「子智能体 → 模型选择」默认关闭；关着时传 `provider/model` 会被拒，成员继承 Lead 路由；修改设置仅对新会话生效 |
+| 打断成员 | 新宿主默认关闭 `interrupt_agent`（`interrupt: false`），硬打断前需请用户开启 |
+| 宿主零侵入 | `cordis.patch.yml` 只有三行 `insert`（插件本体 + 两个预置），不注册工具、不监听生命周期、不拦截请求，卸载即回收 |
+| 缺服务降级 | `skills`、`commands`、`agentTeams` 任一缺失时插件仍挂载，仅打 warning 并停用对应能力 |
+| 不代开 Team | 开会话开关或装老版本 profile 包都必须由用户显式执行 |
 
-老一代与新一代码差异的逐项对照在 [docs/agent-teams.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/agent-teams.md)，装错版本的后果在 [docs/why.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/why.md)。
+两代工具字段逐项对照见 [docs/agent-teams.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/agent-teams.md)，版本错配与兼容性 preflight 分析见 [docs/why.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/why.md)。
 
 ## 文档索引
 
-| 想看什么 | 去哪 |
-|---|---|
-| 为什么需要、问题拆解、边界 | [docs/why.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/why.md) |
-| 安装、开启 Team、用法、能力细说、依赖表 | [docs/usage.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/usage.md) |
-| 两代 Agent Teams 对照与判定 | [docs/agent-teams.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/agent-teams.md) |
-| 设计取舍：不干扰官方、预置差异 | [docs/design.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/design.md) |
-| 目录、开发、测试、发版 | [docs/development.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/development.md) |
-| Lead 工作法原文 | [skills/lead-mode/SKILL.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/skills/lead-mode/SKILL.md) |
-| 团队汇总规则 | [skills/team-digest/SKILL.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/skills/team-digest/SKILL.md) |
-| 术语 | [GLOSSARY.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/GLOSSARY.md) |
-| 版本记录 | [CHANGELOG.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/CHANGELOG.md) |
-| 团队汇总样例 | [reports/](https://github.com/xiebaiyuan/dsh-lead-mode/tree/main/reports) |
+| 主题 | 中文 | English |
+|---|---|---|
+| 动机、问题拆解与能力边界 | [docs/why.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/why.md) | [docs/en/why.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/en/why.md) |
+| 安装、开启 Team、用法与依赖表 | [docs/usage.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/usage.md) | [docs/en/usage.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/en/usage.md) |
+| 两代 Agent Teams 对照与并行规则 | [docs/agent-teams.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/agent-teams.md) | [docs/en/agent-teams.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/en/agent-teams.md) |
+| 设计取舍与官方预置差异 | [docs/design.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/design.md) | [docs/en/design.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/en/design.md) |
+| 仓库结构、本地测试与发布流程 | [docs/development.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/development.md) | [docs/en/development.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/docs/en/development.md) |
+| Lead 工作法全文 | [skills/lead-mode/SKILL.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/skills/lead-mode/SKILL.md) | — |
+| 团队汇总规则全文 | [skills/team-digest/SKILL.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/skills/team-digest/SKILL.md) | — |
+| 术语表、更新日志与汇总样例 | [GLOSSARY.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/GLOSSARY.md) · [CHANGELOG.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/CHANGELOG.md) · [reports/](https://github.com/xiebaiyuan/dsh-lead-mode/tree/main/reports) | — |
 
-`docs/` 不进 npm 包，这几篇只在 GitHub 上有；链接都写成绝对地址，在 npm 页面上也能点开。
+`docs/` 目录不打进 npm 发布包，所有链接均使用 GitHub 绝对地址，在 npmjs.com 页面同样可直接打开。
 
 ## 友链：dsh-context
 
-本插件只做 Lead 模式。整队状态与通信的可视化是 [dsh-context](https://github.com/bowenliang123/dsh-context) 的活，那是另一个项目。
+本插件只管 Lead 工作法；整支团队的状态监控、花费与跨智能体通信可视化由独立项目 [dsh-context](https://github.com/bowenliang123/dsh-context) 提供。
 
 | 项 | 值 |
 |---|---|
@@ -194,17 +205,17 @@ Team 开关是会话级的：模型与推理等级菜单里打开「开启智能
 | 许可 | Apache-2.0 |
 | 装法 | `dsh plugin --profile <你的 profile 名> add dsh-context` |
 
-它不随本插件安装，也不是本插件的依赖。只有装了它，编队页才存在。
+它不随本插件安装，也不是本插件的依赖；只有单独安装它后，编队页面才会出现。
 
-装好后每个会话多一个「编队 / Fleet」标签页（在 Context 右边），右栏的 Context 面板里有同一张卡，五个区块：
+安装后每个会话在 Context 右侧增加「编队 / Fleet」标签页，右栏 Context 面板同步展示同一张卡片，包含五个区块：
 
 | 区块 | 看什么 |
 |---|---|
-| 概要 | 成员状态、实时上下文、预估花费、任务进度 |
-| Agent Network | 当前 agent、它的父级、全部下级成员，一人一张卡 |
-| Fleet Members | 每个成员的角色、模型、最新回复、运行时长、步数、在办任务数 |
-| Tasks | 团队任务与成员派活放一起，按 owner 分组，带 blocked-by 链 |
-| Agent Comms | 谁跟谁说了什么：团队消息、邮箱投递、运行时的结算通知 |
+| 概要 | 成员状态、实时上下文用量、预估花费、任务进度 |
+| Agent Network | 当前 agent、父级及所有下级成员（一人一张卡） |
+| Fleet Members | 各成员角色、模型、最新回复、运行时长、步数与在办任务数 |
+| Tasks | 团队任务与成员派活按 owner 分组展示，含 `blocked_by` 依赖链 |
+| Agent Comms | 团队消息、邮箱投递与运行时结算通知流水 |
 
 ## 许可
 

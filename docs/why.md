@@ -1,160 +1,142 @@
 # 为什么需要 dsh-lead-mode
 
-## 问题：Agent Teams 默认不开
+[← 返回 README](../README.zh-CN.md) · [English](en/why.md)
 
-DSH 有两套派活的工具。
+## 问题一：Agent Teams 默认不开启
 
-| | classic subagent | Agent Teams |
+DSH 有两套派活工具，能力边界不同：
+
+| 对比维度 | classic subagent | Agent Teams |
 |---|---|---|
 | 工具名 | `subagent`、`subagent_fork` | 老一代：`spawn_teammate`、`send_message`、`team_task_*`；新一代：`subagent`、`send_message`、`team_task_*` |
-| 子 agent 之间 | 互相看不见 | 共享任务板，能互相发消息 |
-| 谁派活 | 父 agent 一次派一个，拿回结果就结束 | Lead 常驻，成员也常驻，可以多轮 |
-| 能不能中途改主意 | 不能，子 agent 跑完才回来 | 能，`send_message` 在下一个 step 边界改方向 |
-| 默认装不装 | 不装。Team 由会话开关控制，与预置无关 | 不装。老一代要单独加 profile 包；新一代随 base 与 web 组合下发，按会话打开开关 |
+| 子 agent 之间 | 互相不可见 | 共享任务板，可互相发消息 |
+| 协作方式 | 父 agent 派一次，拿回结果即结束 | Lead 常驻，成员常驻，支持多轮协作 |
+| 中途改方向 | 不行，必须等子 agent 跑完返回 | 可以，通过 `send_message` 在下一个 step 边界调整 |
+| 默认是否开启 | 否。Team 由会话开关控制，与预置无关 | 否。老一代需加 profile 包；新一代随 base 与 web 组合下发，按会话打开开关 |
 
-用官方预置（默认 `standard`，也可选 `ptc`）开会话，模型手里只有 `subagent`。想干「三个人并行改三个模块、中途还能调整」这种活，模型只能拿 `subagent` 凑：派三个子 agent，等它们各自跑完，中间插不进话，也看不到彼此进度。
+用官方预置（`standard`、`ptc` 或 `cordis`）开会话时，模型手里默认只有 `subagent`。一旦遇到「三个人并行改三个模块、途中还要互相配合」的活，模型只能拿 `subagent` 凑数：同时派三个子 agent，等它们各自跑完返回，中途既插不进话，彼此也看不到进度。
 
-这不是模型能力问题。工具没挂上，它就派不了。
+这说明问题不在模型能力，而在工具没挂载。
 
-## 问题二：提醒没地方放
+## 问题二：缺工具时缺乏明确提示
 
-官方 Team 运行时在两代宿主上来源不同。宿主就是跑 dsh 的那个程序。
+两代宿主（跑 DSH 的程序）提供官方 Team 运行时的方式不同：
 
-老一代（≤ 0.2.2-rc.1）由 profile 包提供，要用户显式安装：
+- **老一代宿主（`<= 0.2.2-rc.1`）**：由官方 profile 包提供，需要用户显式安装：
 
-```
+```bash
 dsh plugin --profile <你的 profile 名> add @deepseek-ai/dsh-experimental-agent-team-profile@0.2.2-rc.1
 ```
 
-`0.2.2-rc.1` 是当前宿主线，按 `dsh --version` 的输出替换。
+其中 `0.2.2-rc.1` 是老一代最后发布的宿主线，实际安装请按 `dsh --version` 的输出替换版本号。
 
-新一代不走这个包。Team 插件随 base 与 web 组合下发，只是会话里默认不开，开关在「模型与推理等级」菜单里，叫「开启智能体团队协作」（旧宿主叫「使用智能体团队」）。`@deepseek-ai/dsh-experimental-agent-team-profile` 已进 `RETIRED_BUNDLES`，新宿主上不要装。
+- **新一代宿主（`>= 0.2.2-rc.3`）**：不再使用上述 profile 包。Team 插件随 base 与 web 组合下发，会话里默认关闭，开关在「模型与推理等级」菜单里，叫**「开启智能体团队协作」**（较早预览版叫「使用智能体团队」）。`@deepseek-ai/dsh-experimental-agent-team-profile` 已进入官方的 `RETIRED_BUNDLES`，新宿主上不要安装。
 
-用户不知道这一步。模型也不知道，因为它拿到的 system prompt 里没有任何一句说「本会话缺 Team 工具，你应该让用户去开」。
+由于官方预置的 system prompt 里没有任何提示告诉模型「当前会话缺 Team 工具，应当请用户先去打开」，结果往往变成两种误操作：模型硬着头皮用 `subagent` 顶替团队成员，或者自己在单个上下文里串行干完。两种都没用上团队协作，用户也不知道问题出在哪一步。
 
-于是常见结果是：用户说「你找几个人并行干」，模型硬着头皮用 `subagent` 顶替，或者干脆自己串行做完。两种都不对。
+## 本插件做什么
 
-## 这个插件做什么
-
-三件事，都不改宿主行为。
+三件事，且均不修改宿主既有行为：
 
 ### 1. 两个预置：`lead-ptc` 与 `lead-cordis`
 
-`cordis.patch.yml` 里插两行 `@deepseek-ai/dsh-agent-preset`。一行 `config.plugins` 逐行照抄官方 `ptc`（24 行），另一行照抄官方 `cordis`（创造，23 行）。两边都只改一处：persona 的 prefix 换成 Lead 人设。
+`cordis.patch.yml` 插入两行 `@deepseek-ai/dsh-agent-preset`：一行按字段照抄官方 `ptc`（24 行），另一行照抄官方 `cordis`（创造，23 行）。两者都只替换 `persona.config.prefix`（`lead-cordis` 另有 `customSkillDirs` 的省略，原因见 [design.md](design.md)）。
 
-为什么要两个：Lead 只换方法、不换能力。PTC 会话与创造会话的工具集本来就不一样，合成一个预置等于替用户做能力取舍。
+拆成两个预置是因为 Lead 只改变工作方法，不增减能力面：PTC 会话与创造会话的工具集本来就不同，强行合二为一等于替用户做能力取舍。
 
-prefix 468 字，六段：只做决策、拆活、派活，调查与验收都派成员，结论由自己判断并讲给用户；先保主目标、枝节记遗留，判据要具体，退回返工不自己补位；加载 `lead-mode` skill，两代差异、从零或继承、挑模型、任务板、写作用域、并行、验收、长程止损、难度升级都在里面；派活先 `list_subagent_models` 从可选清单挑 provider/model；派完活结束回合、不调 `wait_agent`，互不依赖的活一次派完，别一件一件等；开局先确认 Team 开没开、没开就停手让用户敲 `/lead-mode`；要求成员第一步建工作日志。字数那条线从 400 提到 480（写满 479 通过，到 480 报错），给后面加规则留余量。两代工具的参数、装包命令、长程控制与工作法细节，全在 `lead-mode` skill、五份外挂与命令输出里。prefix 每轮都进上下文，所以不带细节。
+共用一段 468 字的 persona prefix，分成六小段常驻在 `DEPLOYMENT_PERSONA_PREFIX`（每轮模型一定可见）：
 
-这段 prefix 进 system prompt 的 `DEPLOYMENT_PERSONA_PREFIX` 段，模型一定看得见。
+1. **角色与判级边界**：只做决策、拆活与派活，调查和验收全派成员，结论自己判断并汇报；先保主目标、枝节记遗留，判据具体且返工不自己补位。
+2. **加载工作法 skill**：派活前先读 `lead-mode` skill，获取两代差异、上下文策略、挑模型、任务板、写作用域、并行、验收、长程止损与难度升级细则。
+3. **模型清单约束**：派活前先调 `list_subagent_models`，从清单成对挑选 `provider/model`，不编造 id；只有一条时成员跟随父模型。
+4. **消息驱动与并行**：派完活立刻结束回合等通知，不调 `wait_agent`、不轮询，催人用 `send_message`；互不依赖的活一次全派完。
+5. **开局核对 Team 状态**：PTC 查 SDK 块、native 查工具清单是否有 `team_task_*`；缺失立即停手并请用户敲 `/lead-mode`，不单干也不拿 `subagent` 顶替成员。
+6. **工作日志约定**：要求成员第一步先建 `.scratch/<effort>/worklog-<mate>.md`，收尾前补完最后一轮。
 
-除 persona 之外每一行都与对应官方预置一致（`lead-cordis` 另有一处 `customSkillDirs` 的删除，原因见 [design.md](design.md)）。这个约束由 `test/preset.test.mjs` 守着：两份 fixture 各比一遍，行 id 集合必须完全相同，一个不多一个不少。以后谁往预置里塞东西，测试就红。
+字数上限放宽到 479 字（达到 480 报错），用于给规则留出清晰边界，而把工具参数、安装命令与长程细节全部留在按需加载的 skill 和参考文档中，避免常驻上下文膨胀。
 
-### 2. 两个 skill：`lead-mode` 与 `team-digest`
+`test/preset.test.mjs` 会对照官方预置 fixture 逐字段校验：除豁免行外，行 id 集合与字段必须完全一致。
 
-随包分发的 `skills/lead-mode/SKILL.md`（462 行，外挂 5 份按需参考），运行时注册进 skill 列表。内容是 Lead 工作法：派活自包含、拆活先按主目标/支撑/枝节判级、写作用域不重叠（各成员只改自己那摊文件）、共享任务 list/get/claim/complete、等齐成员再收尾、最终验证派独立成员做、多轮长程按需走 `references/long-horizon.md`。
+### 2. 两个运行时 skill：`lead-mode` 与 `team-digest`
 
-模型调到它就能拿到这些规则，不用用户每次复述。
+- **`lead-mode`**（[SKILL.md](../skills/lead-mode/SKILL.md)，外挂 5 份按需参考）：覆盖分级拆活、写作用域隔离、共享任务板 `list/get/claim/complete`、消息驱动等待、独立成员验收与长程控制。模型可自行加载，不用用户每次重述规则。
+- **`team-digest`**（[SKILL.md](../skills/team-digest/SKILL.md)）：不绑定特定预置。当本轮工作涉及 2 个以上成员或跨 2 轮以上时，将全队散落的收尾消息与工作日志汇总到 `reports/<YYYY-MM-DD>-<effort>.md`，首行固定输出 `主目标：达成/部分达成/未达成（N/M）`。
 
-另一个是 `skills/team-digest/SKILL.md`，同样不绑预置。收尾时全队产出散在 N 条收尾消息和 N 份工作日志里，它把这些合成一份 `reports/<YYYY-MM-DD>-<effort>.md`（`<effort>` 是这轮活的名字），第 1 块「结论」首行固定报 `主目标：达成/部分达成/未达成（N/M）`：这轮活有 2 个以上成员，或跨 2 轮以上，才写。
+### 3. `/lead-mode` 自检命令
 
-### 3. 一个 `/lead-mode` 斜杠命令
+输入 `/lead-mode` 立即检查两项状态：Team 运行时是否挂载、以及 `lead-ptc` 与 `lead-cordis` 预置是否各自注册。依赖齐就返回 success，缺哪项就按当前宿主代际直接给出可执行的下一步操作，不用临时翻文档。
 
-用户敲 `/lead-mode`，返回当前依赖状态：Team 运行时挂没挂、`lead-mode` 预置注册没注册、缺什么、下一步怎么开。
-
-开了就能用，没开就告诉你怎么开。不用翻文档。
-
-## 为什么老一代的安装命令要带版本号
+## 为什么老一代的安装命令必须带版本号
 
 `@deepseek-ai/dsh-experimental-agent-team-profile` 在 npm 上有三个 dist-tag：
 
 | dist-tag | 版本 | 说明 |
 |---|---|---|
-| `latest` | 0.1.5-alpha.2 | 旧版，配 0.1.x 宿主 |
-| `alpha` | 0.2.2-alpha.3 | 0.2.2 线早期预览 |
-| `next` | 0.2.2-rc.1 | 配 0.2.2 宿主 |
+| `latest` | `0.1.5-alpha.2` | 旧版，匹配 0.1.x 宿主 |
+| `alpha` | `0.2.2-alpha.3` | 0.2.2 线早期预览 |
+| `next` | `0.2.2-rc.1` | 匹配 0.2.2 老一代宿主 |
 
-裸写包名安装，npm 解析 `latest`，装到 0.1.5-alpha.2。这个版本和 0.2.2 宿主对不上，装完不挂。
+如果不写版本号，npm 默认拉取 `latest`（`0.1.5-alpha.2`），装到 0.2.2 宿主上挂不起来。因此本插件所有面向老宿主的安装命令都锁定了 `@0.2.2-rc.1`，并由 `test/preset.test.mjs` 与 `test/smoke.test.mjs` 守住这串版本号不被误删。同时实际安装版本必须与 `dsh --version` 一致。新一代宿主已不再使用这个包，本节仅适用于老一代宿主。
 
-所以插件里所有出现安装命令的地方都带 `@0.2.2-rc.1`，且 `test/preset.test.mjs` 与 `test/smoke.test.mjs` 都断言这个字符串在。防止以后有人图省事把版本号删掉。版本号还必须等于宿主版本（`dsh --version`）：团队包把 peer 钉死到具体版本，钉错 peer 对不上。新一代宿主不装这个包，这一节对它不适用。
+以下对照数据是在 `0.2.1-rc.3` 宿主线上实测保留的证据，当前 `0.2.2-rc.1` 包结构与它相同（同样未写 `engines.dsh`，peer 里同样只列 `cordis`，且精确锁定 `dsh-*` peer）。
 
-下面两处实测数据（manifest 对照、tarball 对比）是在 rc.3 上做的，保留原值作为证据。现在钉的 rc.1 结构相同：同样没写 `engines.dsh`，peer 里同样只有 `cordis`，同样把 `dsh-*` peer 钉到具体版本。
+### 为什么宿主兼容性预检拦不住错装
 
-### 兼容性预检为什么拦不住装错
+DSH 在装插件前会读 manifest 做预检（`dsh-plugin-manager/lib/index.js` 中的 `namedSpecManifest`），再交由 `dsh-app-boot/lib/index.js` 的 `unmetRequirements` 判定：
 
-dsh 在装插件前会做一次兼容性预检。看上去这该拦住装错版本，实际拦不住。
+1. 若 manifest 有 `engines.dsh`：只按它判定，忽略 peer。
+2. 若没有：只检查 `peerDependencies` 中名称等于 `@deepseek-ai/dsh` 或以 `@deepseek-ai/dsh-` 开头的条目。
 
-预检读插件 manifest 的方式是 `pnpm view <spec> name version engines peerDependencies --json`（`dsh-plugin-manager/lib/index.js` 的 `namedSpecManifest`）。它只读，不改选版本。读到什么就装什么，不兼容就整体拒绝（`nothing was installed`），兼容就原样交给 `pnpm add`。
-
-判定规则在 `dsh-app-boot/lib/index.js` 的 `unmetRequirements`：
-
-1. manifest 有 `engines.dsh` → 只用它判，peer 全部忽略
-2. 没有 → 只看 `peerDependencies` 里名字是 `@deepseek-ai/dsh` 或以 `@deepseek-ai/dsh-` 开头的项
-
-实测两个版本的 manifest：
+实测上游两个版本的 manifest：
 
 | 版本 | `engines` | `peerDependencies` |
 |---|---|---|
-| 0.1.5-alpha.2 | 无 | `@deepseek-ai/cordis: ^4.0.2` |
-| 0.2.1-rc.3 | 无 | `@deepseek-ai/cordis: ~4.0.5` |
+| `0.1.5-alpha.2` | 无 | `@deepseek-ai/cordis: ^4.0.2` |
+| `0.2.1-rc.3` | 无 | `@deepseek-ai/cordis: ~4.0.5` |
 
-两个版本都没写 `engines.dsh`，peer 里只有 `@deepseek-ai/cordis`。这个名字不匹配 `@deepseek-ai/dsh`，也不以 `@deepseek-ai/dsh-` 开头，判定循环里直接跳过。
+两者既没声明 `engines.dsh`，peer 里也只有 `@deepseek-ai/cordis`，预检循环直接跳过，最终判为兼容并静默装进 `0.1.5-alpha.2`。
 
-结果：`unmetRequirements` 返回空，预检判为完全兼容，0.1.5-alpha.2 被静默装进去。
+### 装错版本的后果
 
-插件作者不写 `engines.dsh` 就绕过了这套机制。这是上游包的问题，不是本插件能修的。本插件能做的只有两件事：安装命令带版本号，以及测试断言版本号在。
+对比两个版本的 `cordis.patch.yml` 可以看到四处实质差异：
 
-### 装错版本会怎样
-
-拆开两个 tarball 对比 `cordis.patch.yml`，三处实质差异：
-
-| | 0.1.5-alpha.2 | 0.2.1-rc.3 |
+| 条目 | `0.1.5-alpha.2` | `0.2.1-rc.3` |
 |---|---|---|
 | `tool-subagent` | 改配置，加 `backgroundMode: one-shot` | 整行 `disabled: true` |
 | `tool-subagent-fork` | 改配置，加 `backgroundMode: one-shot` | 整行 `disabled: true` |
-| `agent-team` 的 `maxPendingMessagesPerMember` | 有，值 64 | 没有这个字段 |
-| `ui-agent-team` | 没有这一行 | 有 |
+| `agent-team` 的 `maxPendingMessagesPerMember` | 有，值 64 | 无此字段 |
+| `ui-agent-team` | 无此行 | 有 |
 
-装错版本的后果：classic subagent 没被禁用，它和 Team 工具抢同名工具 `list_agents`、`send_message`、`interrupt_agent`；Web 界面那一半不出现。
+装成 `0.1.5-alpha.2` 后，classic subagent 不会被禁用，会和 Team 工具争抢 `list_agents`、`send_message`、`interrupt_agent` 同名工具，同时 Web 端 Team 界面也会缺失。
 
-0.2.1-rc.3 的 patch 注释写明这些禁用行是为了「keep direct delegation and coordination on the Team tools」。装成 0.1.5 版本，这个前提不成立。
+### 本插件如何避免错装
 
-### 本插件自己写了 engines.dsh
-
-本插件的 `package.json` 有 `engines.dsh: ">=0.2.2-rc.3"`。所以 dsh-lead-mode 会被预检正确判定，装到不兼容的宿主上会被拒绝，不会静默装错。
-
-官方 team profile 包没写这个字段。差别就在这里。
+本插件在 `package.json` 中显式声明了 `engines.dsh: ">=0.2.2-rc.3"`，宿主预检会严格校验目标宿主版本，不兼容时会直接拒绝安装，不会静默装错。
 
 ## 为什么插件不捆绑 Team 运行时
 
-早期想法是在 `cordis.patch.yml` 里顺手把 `@deepseek-ai/dsh-experimental-agent-team` 也插进去，用户装一个包就全齐。
+早期曾考虑直接在 `cordis.patch.yml` 里顺便插入 `@deepseek-ai/dsh-experimental-agent-team`，做到一包全齐，但实测行不通。`@deepseek-ai/dsh-experimental-tool-agent-team` 的 `apply()` 监听全局 `agent/created` 事件，属于宿主层全局插件；塞进预置会导致宿主和预置双挂冲突。
 
-这个想法行不通。`@deepseek-ai/dsh-experimental-tool-agent-team` 的 `apply()` 监听全局 `agent/created` 事件，给每个 agent 装 Team 工具。它是宿主那一层的插件，不是预置里的一行。
+因此本插件刻意将职责收敛为预置、skill 与自检提醒三件事，把 Team 运行时的开启权保留给宿主和用户显式操作。
 
-塞进预置的结果是双挂：宿主已经有一份，预置再挂一份，工具注册冲突。用 `!!js` 守卫判断「已存在就禁用」能绕开，但这是在跟宿主的装配方式较劲，不是解决问题。
+## 和手写 patch 相比
 
-所以定位收窄：本插件只负责预置、skill、提醒三件事。Team 运行时：老一代由官方 profile 包提供、用户显式装，新一代随 base 与 web 下发、按会话开开关。插件负责让用户和模型都知道该怎么开。
+即使不用本插件，也可以直接在 profile 的 `cordis.patch.yml` 里手动复制 `ptc`（24 行）和 `cordis`（23 行）、重写 persona 并自建 `SKILL.md`。两者的维护成本差异如下：
 
-## 和手写 patch 比
-
-不做这个插件也能达到同样效果：自己在 profile 的 `cordis.patch.yml` 里写两行 `@deepseek-ai/dsh-agent-preset`，把 `ptc` 的 24 行与 `cordis` 的 23 行抄过去，改 persona，再手写一个 SKILL.md。
-
-代价是：
-
-| | 手写 patch | 本插件 |
+| 对比项 | 手写 patch | 本插件 |
 |---|---|---|
-| 抄 47 行插件配置（24 + 23） | 自己抄，抄错不报错 | 已抄好，测试守着与官方一致 |
-| 官方预置（`standard` / `ptc` / `cordis`）升级后 | 自己比对追平 | 升级本插件版本 |
-| SKILL.md 分发 | 自己放，自己注册 | 随包走 |
-| 依赖状态自查 | 无 | `/lead-mode` 一条命令 |
-| 卸载 | 手动删行 | 卸载包 |
+| 维护 47 行配置（24 + 23） | 自己复制，错漏不提示 | 由测试守住与官方基线逐字段一致 |
+| 官方预置升级追平 | 手动 diff 补行 | 升级插件版本即可 |
+| SKILL.md 与参考文件分发 | 手工放置与注册 | 随包自动扫描注册 |
+| 依赖就绪自检 | 无 | `/lead-mode` 一键检查 |
+| 卸载清理 | 逐行手工删除 | 卸载包即完整回收 |
 
-如果你只想要一次性的东西，手写更快。如果你会在多个 profile、多台机器上用，插件省事。
+一次性实验手写很快；长期跨机器、跨 profile 复用，安装插件省事得多。
 
 ## 边界
 
-- 不改宿主行为。只插入预置行、注册 skill 和命令。
-- 不代开 Team 模式。老一代装 profile 包、新一代开会话开关，都是用户显式动作。
-- 缺服务只警告，不阻断。`skills` / `commands` / `agentTeams` 任一缺失时插件照常挂载，只丢掉对应的那部分功能。
+- **不改宿主行为**：只插入两个预置、注册两个 skill 与一条命令。
+- **不代开 Team 模式**：无论是新会话开关还是老版本装包，均由用户显式执行。
+- **缺服务只警告不阻断**：`skills`、`commands`、`agentTeams` 任一缺失时插件仍可挂载，只打 warning 并禁用对应能力。
 
-装包、开 Team、日常用法与能力细说见 [usage.md](usage.md)；不干扰官方的具体动作与预置差异见 [design.md](design.md)。
+安装与日常用法见 [usage.md](usage.md)；不干扰官方与预置差异细节见 [design.md](design.md)。

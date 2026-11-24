@@ -1,23 +1,79 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="dsh-lead-mode mark">
   <title>dsh-lead-mode mark</title>
+  <defs>
+    <linearGradient id="markOrbit" x1="210" y1="220" x2="810" y2="760" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#38BDF8"/>
+      <stop offset="0.5" stop-color="#4D6BFE"/>
+      <stop offset="1" stop-color="#38BDF8"/>
+    </linearGradient>
 
-  <!-- 图形整体下移 88，让包围盒在画布内垂直居中 -->
-  <g transform="translate(0 88)">
-    <!-- 三条派活连线：从中心点边缘到空心圆外缘 -->
-    <g stroke="#4D6BFE" stroke-width="34" stroke-linecap="round">
-      <line x1="512" y1="462" x2="512" y2="368"/>
-      <line x1="631.511" y1="669" x2="712.918" y2="716"/>
-      <line x1="392.489" y1="669" x2="311.082" y2="716"/>
-    </g>
+    <linearGradient id="markBeamTop" x1="512" y1="386" x2="512" y2="284" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4D6BFE"/>
+      <stop offset="1" stop-color="#38BDF8"/>
+    </linearGradient>
+    <linearGradient id="markBeamBR" x1="626.32" y1="584" x2="714.65" y2="635" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4D6BFE"/>
+      <stop offset="1" stop-color="#38BDF8"/>
+    </linearGradient>
+    <linearGradient id="markBeamBL" x1="397.68" y1="584" x2="309.35" y2="635" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4D6BFE"/>
+      <stop offset="1" stop-color="#38BDF8"/>
+    </linearGradient>
 
-    <!-- Lead：实心主圆点 -->
-    <circle cx="512" cy="600" r="138" fill="#4D6BFE"/>
+    <linearGradient id="markLeadCore" x1="418" y1="424" x2="606" y2="612" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6D8CFF"/>
+      <stop offset="0.52" stop-color="#4D6BFE"/>
+      <stop offset="1" stop-color="#2944D1"/>
+    </linearGradient>
+  </defs>
 
-    <!-- 三个成员：空心圆 -->
-    <g fill="none" stroke="#E6EDF3" stroke-width="40">
-      <circle cx="512" cy="248" r="100"/>
-      <circle cx="816.841" cy="776" r="100"/>
-      <circle cx="207.159" cy="776" r="100"/>
-    </g>
+  <!-- Subtle calibration ring -->
+  <circle cx="512" cy="518" r="214" fill="none" stroke="#4D6BFE" stroke-width="4" stroke-dasharray="8 14" opacity="0.24"/>
+
+  <!-- Outer orbital task-board ring -->
+  <g fill="none" stroke="url(#markOrbit)" stroke-width="14" stroke-linecap="round" opacity="0.72">
+    <path d="M 622.88 243.55 A 296 296 0 0 1 805.12 559.20"/>
+    <path d="M 694.24 751.25 A 296 296 0 0 1 329.76 751.25"/>
+    <path d="M 218.88 559.20 A 296 296 0 0 1 401.12 243.55"/>
+  </g>
+
+  <!-- Routing light tracks -->
+  <g stroke-linecap="round">
+    <line x1="512" y1="386" x2="512" y2="284" stroke="url(#markBeamTop)" stroke-width="28"/>
+    <line x1="626.32" y1="584" x2="714.65" y2="635" stroke="url(#markBeamBR)" stroke-width="28"/>
+    <line x1="397.68" y1="584" x2="309.35" y2="635" stroke="url(#markBeamBL)" stroke-width="28"/>
+
+    <line x1="512" y1="386" x2="512" y2="284" stroke="#E0F2FE" stroke-width="7" opacity="0.9"/>
+    <line x1="626.32" y1="584" x2="714.65" y2="635" stroke="#E0F2FE" stroke-width="7" opacity="0.9"/>
+    <line x1="397.68" y1="584" x2="309.35" y2="635" stroke="#E0F2FE" stroke-width="7" opacity="0.9"/>
+  </g>
+
+  <!-- Center Lead Beacon Core -->
+  <g>
+    <circle cx="512" cy="518" r="134" fill="#0B1530" stroke="#4D6BFE" stroke-width="12"/>
+    <circle cx="512" cy="518" r="106" fill="url(#markLeadCore)"/>
+    <path d="M 512 444 L 533 497 L 586 518 L 533 539 L 512 592 L 491 539 L 438 518 L 491 497 Z" fill="#F8FAFC"/>
+    <path d="M 512 518 L 586 518 L 533 539 L 512 592 Z" fill="#BFDBFE" opacity="0.45"/>
+  </g>
+
+  <!-- Top Station: Independent Verifier -->
+  <g>
+    <circle cx="512" cy="222" r="62" fill="#0D1834" stroke="#4D6BFE" stroke-width="20"/>
+    <circle cx="512" cy="222" r="22" fill="#34D399"/>
+    <circle cx="512" cy="222" r="9" fill="#D1FAE5"/>
+  </g>
+
+  <!-- Bottom-Right Station: Parallel Member -->
+  <g>
+    <circle cx="768.34" cy="666" r="62" fill="#0D1834" stroke="#4D6BFE" stroke-width="20"/>
+    <circle cx="768.34" cy="666" r="22" fill="#38BDF8"/>
+    <circle cx="768.34" cy="666" r="9" fill="#E0F2FE"/>
+  </g>
+
+  <!-- Bottom-Left Station: Parallel Member -->
+  <g>
+    <circle cx="255.66" cy="666" r="62" fill="#0D1834" stroke="#4D6BFE" stroke-width="20"/>
+    <circle cx="255.66" cy="666" r="22" fill="#38BDF8"/>
+    <circle cx="255.66" cy="666" r="9" fill="#E0F2FE"/>
   </g>
 </svg>
