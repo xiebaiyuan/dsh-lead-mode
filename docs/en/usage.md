@@ -73,7 +73,7 @@ Lead changes workflow discipline rather than tool availability, so each preset c
 
 ### 2. Lead method skill (`lead-mode`)
 
-`skills/lead-mode/SKILL.md` (462 lines) is auto-discovered from disk and registers without binding to a preset:
+`skills/lead-mode/SKILL.md` (456 lines) is auto-discovered from disk and registers without binding to a preset:
 
 - **Session detection & goal kickoff**: Detect PTC vs. native and legacy vs. subagent Team generation; stop if Team is off; establish primary criteria `#1..#M`.
 - **Priority triage & parallel dispatch (`§12` & `§9.2`)**: Classify work into **primary**, **supporting** (with explicit blocking criteria and stop line), and **side** items before checking parallelism. Side items and deprioritized slow checks skip the parallel queue and go straight to `.scratch/<effort>/leftovers.md` (requiring pasteable commands, paths, or reproducible `target + entry point + criterion` walkthrough steps).

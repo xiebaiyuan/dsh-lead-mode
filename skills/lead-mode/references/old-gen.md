@@ -1,47 +1,47 @@
 # 老一代：spawn_teammate 的细节
 
-只有 `spawn_teammate` 存在的会话读这一份。状态取值看主文件 §8.3，这里不重复。
+仅当本会话存在 `spawn_teammate` 时读本文件。状态取值见主文件 §8.3，此处不重复。
 
 ## 四个参数
 
 | 参数 | 要点 |
 |---|---|
-| `name` | 小写连字符。**永久，不可复用**，创建失败的名字也占着 |
-| `description` | 一行职责。给用户看，也给你后面对账 |
+| `name` | 小写连字符。**永久，不可复用**，创建失败的名字同样占位 |
+| `description` | 一行职责。给用户看，也供你后面对账 |
 | `prompt` | 全部指令。成员只看到这一段，写法见主文件 §5.1 |
 | `context` | `fresh`（默认）看不到你的历史；`fork` 继承你已完成的回合 |
 
-`context` 怎么挑，看活依赖什么：
+`context` 选型依据：
 
-- 活是自包含的，把上下文写进 prompt 就够：用 `fresh`。
-- 活依赖你已经掌握、又写不进 prompt 的东西：才用 `fork`。
+- 活是自包含的，上下文可写进 `prompt`：用 `fresh`。
+- 活依赖你上下文中未落盘的决策与细节：用 `fork`。
 
-取名字前先 `list_agents` 看一眼，别撞已占用的名字。
+命名前先调 `list_agents` 检查，避开已占用名称。
 
 ## 模型：只能整队换
 
-`spawn_teammate` 没有 model 或 provider 参数，**不能单独指定**。
+`spawn_teammate` 无 `model` 或 `provider` 参数，**不能单独指定**。
 
-成员继承你（Lead）在 spawn 那一刻的 provider 和 model。想换只有两条路：
+成员继承你（Lead）在 spawn 那一刻的 `provider` 与 `model`。切换模型只有两条路径：
 
 | 想要什么 | 怎么做 |
 |---|---|
-| 整队换模型 | 切 Lead 自己的模型。之后新 spawn 的成员跟着变 |
-| 按任务挑模型 | 用不了 team，改用经典 `subagent` 工具 |
+| 整队换模型 | 切换 Lead 自身模型。此后新 spawn 的成员跟着变 |
+| 按任务挑模型 | 无法使用 team，改用经典 `subagent` 工具 |
 
-经典 `subagent` 支持 `provider`、`model`、`reasoning_effort`、`agent_preset` 四个参数。本插件两个预置都开了 `modelSelection` 与 `modelDiscovery`，所以 `list_subagent_models` 在工具清单里。
+经典 `subagent` 支持 `provider`、`model`、`reasoning_effort`、`agent_preset` 四个参数。本插件两个预置均开启了 `modelSelection` 与 `modelDiscovery`，因此 `list_subagent_models` 在工具清单中。
 
-代价说清楚：经典 `subagent` 是一次性子代理，没有共享任务板，没有持久身份。要用团队就得接受统一模型。这段代价只对老一代成立，新一代的成员本身就是 `subagent`，也能按成员挑模型。
+代价说明：经典 `subagent` 是一次性子代理，无共享任务板与持久身份；选用团队能力即需接受统一模型。此代价仅对老一代成立，新一代成员本身即 `subagent`，支持按成员挑模型。
 
 ## 名册与上下文工具
 
-这一代的工具细节按老一代写：`list_agents` 给成员 id、`spawn_teammate` 建人、`interrupt_agent({ target })` 打断。
+老一代工具行为：`list_agents` 给成员 id、`spawn_teammate` 建人、`interrupt_agent({ target })` 打断。
 
-- `list_agents` 返回整棵树，行里带成员 id 与状态。
-- 建成员后立刻返回名字，不等它干完。
-- 只有 Lead 能创建和打断成员，打断不清空它排队的消息。
-- 成员会话被压缩时用 `session_event_search` 查 `compaction/start`，检测配方在主文件 §11 的「怎么检测」一节。新一代拿不到 id，那一步就跳过，照实写「未验证」，别硬编一个 id。
+- `list_agents` 返回整棵树，行内含成员 id 与状态。
+- 建成员后立即返回名称，不等其完成。
+- 仅 Lead 可创建和打断成员，打断不清空其排队消息。
+- 成员会话被压缩时用 `session_event_search` 查 `compaction/start`，检测步骤见主文件 §11「怎么检测」。新一代拿不到 id 时跳过检索，照实写「未验证」，不编造 id。
 
 ## 状态取值
 
-四种：`running`、`inactive`、`provisioning`、`failed`。表在主文件 §8.3，含义也在那里讲。
+四种：`running`、`inactive`、`provisioning`、`failed`。表与含义见主文件 §8.3。

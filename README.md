@@ -21,7 +21,7 @@ A Lead workflow plugin for DeepSeek Harness (DSH): the Lead model plans, delegat
 
 ## What it is
 
-A Lead workflow plugin for DSH (DeepSeek Harness). Current release: `0.2.16`, targeting hosts `>= 0.2.2-rc.3`, MIT licensed.
+A Lead workflow plugin for DSH (DeepSeek Harness). Current release: `0.2.17`, targeting hosts `>= 0.2.2-rc.3`, MIT licensed.
 
 The official Agent Teams runtime gives the model delegation primitives (`spawn_teammate`, `send_message`, `team_task_*` on older hosts; `subagent`, `send_message`, `team_task_*`, and automatic settlement notices on newer hosts). What the runtime leaves unspecified is the operating discipline: when to split work, who owns which files, how to wait without polling, how to verify output independently, and when to stop or escalate.
 

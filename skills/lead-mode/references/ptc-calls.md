@@ -1,10 +1,10 @@
 # PTC 下的调用形状
 
-只有 PTC 会话读这一份。native 会话直调工具，不用读。
+仅 PTC 会话读取；native 会话直调工具，跳过本文件。
 
 ## 预置
 
-本插件有两个预置：`lead-ptc` 走 PTC（照抄官方 `ptc`），`lead-cordis` 走创造模式（照抄官方 `cordis`，工具能直调）。判是不是 PTC 的规则在主文件 §2.1，这里只讲 PTC 下怎么调。
+本插件提供两个预置：`lead-ptc` 走 PTC（对应官方 `ptc`），`lead-cordis` 走创造模式（对应官方 `cordis`，工具可直调）。判别规则见主文件 §2.1，本文件只说明 PTC 调用方式。
 
 ## 调用形状只有一种
 
@@ -13,9 +13,9 @@ run_code({ code: "return await tools.team_task_list({})", description: "看任�
 ```
 
 - 直调 `team_task_list` 会被拒，报错原文是 `only run_code is callable directly`。
-- `team_task_*`、`subagent`、`subagent_fork`、`send_message`、`wait_agent` 都在 system prompt 的 SDK 块里（判据见主文件 §2.2），程序里写 `await tools.xxx(args)`。
-- 参数照 SDK 声明给。工具失败抛 `ToolCallError`，用 `try/catch` 捕获，可以接着跑。
-- 结果只取 `return` 或 `console.log` 出来的部分。中间返回值不回上下文，别把整个结果原样 return。
+- `team_task_*`、`subagent`、`subagent_fork`、`send_message`、`wait_agent` 都在 system prompt 的 SDK 块中（判据见主文件 §2.2），程序内写 `await tools.xxx(args)`。
+- 参数照 SDK 声明传入。工具失败抛 `ToolCallError`，用 `try/catch` 捕获即可继续执行。
+- 只 `return` 或 `console.log` 所需摘要，不将完整结果原样返回上下文。
 
 一次程序里建任务、派活：
 
@@ -32,14 +32,14 @@ run_code({
 })
 ```
 
-`subagent` 调用立刻返回名字，不等成员干完。所以一次程序里连派几个没问题。
+`subagent` 调用立即返回名称，不等成员完成，可在同一次 `run_code` 中连续派发多个成员。
 
 ## 并发读
 
-`team_task_list`、`team_task_get`、`list_agents` 这几个读工具是并发安全的，程序里可以用 `Promise.all` 一起读。
+`team_task_list`、`team_task_get`、`list_agents` 这几个读工具并发安全，程序内可用 `Promise.all` 并发读取。
 
-## 两件别做的事
+## 两项硬边界
 
-`wait_agent` 本 skill 一律不用，也别写进 `run_code`：一次程序默认 120 秒、上限 600 秒，等于空转。派完活结束回合，成员的通知会回来。
+禁止在 `run_code` 中调用 `wait_agent`：`wait_agent` 在此完全无效且 `run_code` 单次执行默认 120 秒、上限 600 秒，等待只会耗尽沙箱预算。派完活结束回合，等待成员通知唤醒。
 
-`workflow` 工具在 `lead-ptc` 里已禁用；`lead-cordis` 里它是启用的，但那是给创造会话自己用的，别拿它代替派活。
+`workflow` 工具在 `lead-ptc` 中已禁用；在 `lead-cordis` 中虽启用，但仅供创造会话自用，不用它替代派活。
