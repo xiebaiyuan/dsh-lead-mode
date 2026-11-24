@@ -217,6 +217,10 @@ Team 开关是会话级的：模型与推理等级菜单里打开「开启智能
 | Tasks | 团队任务与成员派活按 owner 分组展示，含 `blocked_by` 依赖链 |
 | Agent Comms | 团队消息、邮箱投递与运行时结算通知流水 |
 
+## 友链：LINUX DO
+
+- [LINUX DO](https://linux.do/) — 开发者与极客交流社区。
+
 ## 许可
 
 MIT。全文见 [LICENSE](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/LICENSE)。

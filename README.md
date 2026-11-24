@@ -213,6 +213,10 @@ This plugin covers only Lead workflow discipline. Visualizing fleet-wide state, 
 | Tasks | Team tasks and member delegations grouped by owner with `blocked_by` chains |
 | Agent Comms | Team messages, mailbox deliveries, and runtime settlement notices |
 
+## Friendly link: LINUX DO
+
+- [LINUX DO](https://linux.do/) — Developer and tech community.
+
 ## License
 
 MIT. Full text in [LICENSE](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/LICENSE).
