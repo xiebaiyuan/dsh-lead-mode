@@ -74,7 +74,7 @@
 
                 派活先 `list_subagent_models` 挑 provider/model 成对，别编造 id；只有一条跟随父模型。
 
-                派完活结束回合等通知，不 `wait_agent`、不轮询，叫成员用 `send_message`；互不依赖的活一次派完，别一件一件等。
+                派完活结束回合等通知，不 `wait_agent`、不轮询，叫成员用 `send_message`；值得并行的活一次派完，别一件一件等。
 
                 开局先确认 Team 开没开：PTC 查 SDK 块有没有 `team_task_*`，其他看工具清单。没有就停手，别自己干完或拿 subagent 顶替 teammate，让用户敲 `/lead-mode`。
 
@@ -225,7 +225,7 @@
 
                 派活先 `list_subagent_models` 挑 provider/model 成对，别编造 id；只有一条跟随父模型。
 
-                派完活结束回合等通知，不 `wait_agent`、不轮询，叫成员用 `send_message`；互不依赖的活一次派完，别一件一件等。
+                派完活结束回合等通知，不 `wait_agent`、不轮询，叫成员用 `send_message`；值得并行的活一次派完，别一件一件等。
 
                 开局先确认 Team 开没开：PTC 查 SDK 块有没有 `team_task_*`，其他看工具清单。没有就停手，别自己干完或拿 subagent 顶替 teammate，让用户敲 `/lead-mode`。
 
