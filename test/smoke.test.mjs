@@ -1330,3 +1330,60 @@ test('member-models.md、long-horizon.md 与 SKILL.md 锁定模型能力规划�
   const pickSec = sliceSection(body, '### 8.4 按成员挑模型', 'skills/lead-mode/SKILL.md')
   assert.ok(pickSec.includes('references/model-roster.json'), '§8.4 必须指向 references/model-roster.json')
 })
+
+test('references/long-horizon.md 锁定目标宪章 anchor.md、心跳重锚、防偏移与跨会话冷启动', async () => {
+  const lhLabel = 'skills/lead-mode/references/long-horizon.md'
+  const lhDoc = await readFile(resolve(repoRoot, lhLabel), 'utf8')
+
+  const sec2 = sliceSection(lhDoc, '## 2 主目标判据进度账（N/M）与工具边界', lhLabel)
+  for (const token of ['.scratch/<effort>/anchor.md', 'Non-Goals', '≤30 行', 'v1 → v2', '锚点脉冲头']) {
+    assert.ok(sec2.includes(token), `${lhLabel} §2 必须包含 ${token}`)
+  }
+
+  const sec3 = sliceSection(lhDoc, '## 3 分层验收与验收预算', lhLabel)
+  for (const token of ['防静默改标', 'anchor.md']) {
+    assert.ok(sec3.includes(token), `${lhLabel} §3 必须包含 ${token}`)
+  }
+
+  const sec4 = sliceSection(lhDoc, '## 4 连续 2 轮无增长：先升模型，再止损问用户', lhLabel)
+  for (const token of ['反支撑膨胀', '5 轮中期战报']) {
+    assert.ok(sec4.includes(token), `${lhLabel} §4 必须包含 ${token}`)
+  }
+
+  const sec5 = sliceSection(lhDoc, '## 5 Lead 上下文压缩后重锚', lhLabel)
+  for (const token of ['3 轮', '阶段切换', 'anchor.md', '跨会话']) {
+    assert.ok(sec5.includes(token), `${lhLabel} §5 必须包含 ${token}`)
+  }
+})
+
+test('lead-mode 与 GLOSSARY.md 锁定控制面台账边界、接受纠正优先、嵌套 maxDepth 与目标宪章词条', async () => {
+  const { body } = await readSkillBody()
+
+  const roleSec = sliceSection(body, '## 1 你的角色', 'skills/lead-mode/SKILL.md')
+  for (const token of ['anchor.md', '控制面台账']) {
+    assert.ok(roleSec.includes(token), `§1 必须包含 ${token}`)
+  }
+
+  const kickoff = sliceSection(body, '## 4 开工前先定三件事', 'skills/lead-mode/SKILL.md')
+  for (const token of ['接受纠正优先', 'anchor.md']) {
+    assert.ok(kickoff.includes(token), `§4 必须包含 ${token}`)
+  }
+
+  const msgSec = sliceSection(body, '### 8.2 发消息、续聊、打断', 'skills/lead-mode/SKILL.md')
+  for (const token of ['maxDepth', 'SubagentDepthError']) {
+    assert.ok(msgSec.includes(token), `§8.2 必须包含 ${token}`)
+  }
+
+  const wakeSec = sliceSection(body, '### 9.3 醒来动作', 'skills/lead-mode/SKILL.md')
+  assert.ok(wakeSec.includes('锚点脉冲头'), '§9.3 必须包含 锚点脉冲头')
+
+  const glossary = await readFile(resolve(repoRoot, 'GLOSSARY.md'), 'utf8')
+  assert.ok(/^\*\*目标宪章（anchor）\*\*:/m.test(glossary), 'GLOSSARY.md 必须定义「目标宪章（anchor）」词条')
+  const start = glossary.indexOf('**目标宪章（anchor）**:')
+  const rest = glossary.slice(start)
+  const end = rest.indexOf('\n\n')
+  const anchorTerm = end === -1 ? rest : rest.slice(0, end)
+  for (const token of ['.scratch/<effort>/anchor.md', 'Non-Goals', '不记每轮流水']) {
+    assert.ok(anchorTerm.includes(token), `目标宪章词条须包含 ${token}`)
+  }
+})

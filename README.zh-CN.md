@@ -9,7 +9,7 @@
 [![npm 版本](https://img.shields.io/npm/v/dsh-lead-mode?color=4D6BFE)](https://www.npmjs.com/package/dsh-lead-mode)
 [![dsh 版本](https://img.shields.io/badge/dsh-%3E%3D0.2.2--rc.3-4D6BFE)](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/package.json)
 [![许可](https://img.shields.io/badge/license-MIT-3DA639)](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/LICENSE)
-[![测试](https://img.shields.io/badge/tests-60%20passing-3DA639)](https://github.com/xiebaiyuan/dsh-lead-mode/actions/workflows/ci.yml)
+[![测试](https://img.shields.io/badge/tests-62%20passing-3DA639)](https://github.com/xiebaiyuan/dsh-lead-mode/actions/workflows/ci.yml)
 [![下载量](https://img.shields.io/npm/dm/dsh-lead-mode)](https://www.npmjs.com/package/dsh-lead-mode)
 [![CI](https://github.com/xiebaiyuan/dsh-lead-mode/actions/workflows/ci.yml/badge.svg)](https://github.com/xiebaiyuan/dsh-lead-mode/actions/workflows/ci.yml)
 
@@ -21,7 +21,7 @@
 
 ## 这是什么
 
-DSH（DeepSeek Harness）的 Lead 工作法插件。当前版本 `0.2.20`，要求宿主 `>= 0.2.2-rc.3`，MIT 许可。
+DSH（DeepSeek Harness）的 Lead 工作法插件。当前版本 `0.2.21`，要求宿主 `>= 0.2.2-rc.3`，MIT 许可。
 
 官方 Agent Teams 运行时只提供派活原语：老一代有 `spawn_teammate`、`send_message`、`team_task_*`；新一代用 `subagent` 建成员，保留 `send_message` 与 `team_task_*`，并由运行时自动投递收工通知，不需要 `wait_agent` 轮询。至于什么时候拆活、文件怎么隔离、怎么等齐、怎么独立验收、卡住何时止损，运行时不管。
 

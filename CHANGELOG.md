@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.21
+
+这版在保持零运行时 hook 的前提下补齐长程目标锚定与防漂移机制：一屏不可变目标宪章、每 3 轮心跳重锚、防支撑膨胀与防静默改标、5 轮中期战报、跨会话冷启动与嵌套深度护栏。
+
+- **一屏目标宪章与版本化**。`references/long-horizon.md` §2 与 `SKILL.md` §1 / §4 / §5.1 新增 `.scratch/<effort>/anchor.md`（≤30 行、不进 git，只放目标、Non-Goals、冻结判据 `#1..#M` 与模型编队，不记每轮流水），明确 Lead 控制面台账边界；确立「接受纠正优先」，需求变更时升版本（`v1 → v2`）并向活跃成员广播；派活单同步附 `anchor.md` 路径与 Non-Goals 红线。`GLOSSARY.md` 新增「目标宪章（anchor）」词条。
+- **机械心跳重锚与跨会话冷启动**。`long-horizon.md` §5 将重锚升级为三个机械触发点（每满 3 轮、阶段切换、压缩后）优先重读 `anchor.md`，并在 §2 / `SKILL.md` §9.3 要求每轮醒来首行输出锚点脉冲头；新增跨会话冷启动路径（新会话读 `anchor.md` + `leftovers.md` + 最新 `worklog` 头即可接续战局）。
+- **防偏移审计与嵌套护栏**。`long-horizon.md` §3 / `SKILL.md` §12 新增「独立验收防静默改标」（对照 `anchor.md` 原判据排查删弱测试）；`long-horizon.md` §4 新增反支撑膨胀熔断（同一 `#k` 支撑连跑 >2 轮视同无增长）与 5 轮中期战报检查点；`SKILL.md` §8.2 补入成员嵌套委派受宿主 `maxDepth`（`SubagentDepthError`）与共享预算约束。
+- **文档、测试与版本**。`test/smoke.test.mjs` 新增 2 条长程锚定与术语测试锁（共 62 条）；`docs/usage.md` 与 `docs/en/usage.md` 同步 `SKILL.md` 510 行与锚定说明；`package.json` 升至 `0.2.21`，两份 README 同步版本与 `62 passing` 测试徽章。
+
 ## 0.2.20
 
 这版给长程协作加上独立的模型能力参考配置与三档角色路由：按实返清单模糊匹配并取同族最大版本，缺档回退 Lead 同款，卡点升旗舰、破局后回落主力执行档。
