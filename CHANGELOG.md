@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.20
+
+这版给长程协作加上独立的模型能力参考配置与三档角色路由：按实返清单模糊匹配并取同族最大版本，缺档回退 Lead 同款，卡点升旗舰、破局后回落主力执行档。
+
+- **独立模型参考配置 `skills/lead-mode/references/model-roster.json`**。与路由规则解耦、可随时更新：Tier 1（规划/架构/审美/破局）覆盖 `opus`、Gemini `carbon`/`neon` 及 GPT 仅限 `sol`/`astra` 取最大版本号；Tier 2（主力执行/默认验收）暂定 DeepSeek `4.1flash`、Gemini `flash`/`h*`（排除 `thinking`/`high`/`carbon`/`neon`/`pro`/`lite`）与 `sonnet`；Tier 3 覆盖轻档查证；明确未知渠道名保守兜底、单条或无匹配清单回退 Lead 同款，传参必须逐字抄写 `list_subagent_models()` 原文。
+- **五角色路由与异构验收**。`references/member-models.md` 升级为五角色分档表（规划/架构、审美/UI 设计、常规执行、独立验收优先异构家族、探路/查证/汇总）与缺档回退链；`SKILL.md` §6 六维表与 §8.4 同步指向 `references/model-roster.json`（常驻 persona 未改动）。
+- **长程开局编队与破局回落**。`references/long-horizon.md` §1 新增开局模型编队（「两头重、中间快」）；§4 补入卡点打通后常规实现立刻回落主力执行档，避免持续占用旗舰配额。
+- **文档、测试与版本**。`test/smoke.test.mjs` 新增 2 条 JSON 契约与跨文档测试锁（共 60 条）；`docs/usage.md` 与 `docs/en/usage.md` 同步 `model-roster.json`；`package.json` 升至 `0.2.20`，两份 README 同步版本与 `60 passing` 测试徽章。
+
 ## 0.2.19
 
 这版给「实现 + 检验」补齐防反复返工的五道防线：实现前对齐尺子与契约，交卷前自验全绿，独立验收一次扫全，返工分级并走增量复验。

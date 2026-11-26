@@ -1264,3 +1264,69 @@ test('references/long-horizon.md 与 GLOSSARY.md 锁定增量复验、震荡无�
     '自验词条须写明它是交付门槛',
   )
 })
+
+test('references/model-roster.json 存在、合法且锁定 GPT/DeepSeek 匹配与回退规则', async () => {
+  const rosterPath = resolve(repoRoot, 'skills/lead-mode/references/model-roster.json')
+  const roster = JSON.parse(await readFile(rosterPath, 'utf8'))
+
+  assert.equal(roster.matchingRules?.caseInsensitive, true, '模糊匹配必须大小写不敏感')
+  assert.equal(roster.matchingRules?.preferHighestVersionNumber, true, '同族多版本必须取数字最大者')
+  assert.equal(roster.matchingRules?.strictVerbatimFromListTool, true, '必须逐字抄写 list_subagent_models 原文')
+  assert.equal(
+    roster.matchingRules?.fallbackWhenSingleOrUnmatched,
+    'inherit_lead',
+    '单条或无匹配清单必须回退 Lead 同款',
+  )
+
+  const tier1 = roster.tiers?.tier1_planner_designer?.candidates ?? []
+  const gpt = tier1.find((item) => item.family === 'gpt')
+  assert.ok(gpt !== undefined, 'tier1 必须包含 gpt 候选规则')
+  assert.ok(
+    Array.isArray(gpt.matchAny) && gpt.matchAny.includes('sol') && gpt.matchAny.includes('astra'),
+    'GPT 规则必须限定 sol 与 astra 系列',
+  )
+  assert.equal(gpt.versionRule, 'highest_number', 'GPT 规则必须取版本号数字最大者')
+  assert.ok(tier1.some((item) => item.family === 'claude' && item.matchAll?.includes('opus')), 'tier1 必须包含 claude opus')
+  assert.ok(
+    tier1.some((item) => item.family === 'gemini' && item.matchAny?.includes('carbon') && item.matchAny?.includes('neon')),
+    'tier1 必须包含 gemini carbon / neon',
+  )
+
+  const tier2 = roster.tiers?.tier2_implementer?.candidates ?? []
+  const ds = tier2.find((item) => item.family === 'deepseek')
+  assert.ok(ds !== undefined, 'tier2 必须包含 deepseek 候选规则')
+  assert.ok(
+    Array.isArray(ds.matchAll) &&
+      ds.matchAll.includes('deepseek') &&
+      ds.matchAll.includes('4.1') &&
+      ds.matchAll.includes('flash'),
+    'DeepSeek 规则必须锁定 4.1flash',
+  )
+
+  assert.equal(
+    roster.roleRouting?.independent_verifier?.preferDifferentFamilyFrom,
+    'implementer',
+    '独立验收者必须优先选与实现者不同家族的模型',
+  )
+})
+
+test('member-models.md、long-horizon.md 与 SKILL.md 锁定模型能力规划、模糊匹配与破局回落', async () => {
+  const mmLabel = 'skills/lead-mode/references/member-models.md'
+  const mmDoc = await readFile(resolve(repoRoot, mmLabel), 'utf8')
+  for (const token of ['references/model-roster.json', '模糊匹配', '异构', '4.1flash', 'sol', 'astra', '回落']) {
+    assert.ok(mmDoc.includes(token), `${mmLabel} 必须包含 ${token}`)
+  }
+
+  const lhLabel = 'skills/lead-mode/references/long-horizon.md'
+  const lhDoc = await readFile(resolve(repoRoot, lhLabel), 'utf8')
+  for (const token of ['references/model-roster.json', '回落']) {
+    assert.ok(lhDoc.includes(token), `${lhLabel} 必须包含 ${token}`)
+  }
+
+  const { body } = await readSkillBody()
+  const sixDims = sliceSection(body, '## 6 六维过一遍：派活方式由你判断', 'skills/lead-mode/SKILL.md')
+  assert.ok(sixDims.includes('references/model-roster.json'), '§6 六维表模型一行必须指向 references/model-roster.json')
+
+  const pickSec = sliceSection(body, '### 8.4 按成员挑模型', 'skills/lead-mode/SKILL.md')
+  assert.ok(pickSec.includes('references/model-roster.json'), '§8.4 必须指向 references/model-roster.json')
+})

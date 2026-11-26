@@ -81,15 +81,16 @@ Lead changes workflow discipline rather than tool availability, so each preset c
 - **Verification & escalation**: Require implementers to self-verify green before handoff; run independent verification in one full pass with verbatim 4-part defect bundles strictly within existing criteria and direct regressions; triage rework into four tiers with regression locks and run incremental re-verification for narrow fixes (outside the full-run cap), stopping once all `#1..#M` pass; apply a controlled one-time same-model plan-only specialist only when three strict conditions hold.
 - **Context handoff & long-horizon guardrails**: Covers compaction detection, 4-step escalation ladder, `worklog` / `handoff` file rules, and multi-round control.
 
-Five reference guides under `skills/lead-mode/references/` load only when needed (resolved via `resourceBase: { kind: 'directory', path }` so the host renders `Base directory for this skill: …`):
+Five reference guides and one standalone model capability config under `skills/lead-mode/references/` load only when needed (resolved via `resourceBase: { kind: 'directory', path }` so the host renders `Base directory for this skill: …`):
 
 | Reference | Load when | Focus |
 |---|---|---|
 | `ptc-calls.md` | Running inside `lead-ptc` | `run_code` call patterns and concurrency-safe `Promise.all` reads |
 | `old-gen.md` | Host exposes `spawn_teammate` | Legacy `spawn_teammate` args, member statuses, and limits |
-| `member-models.md` | Picking per-member models | Routing rules and link to stall escalation |
+| `member-models.md` | Picking per-member models | 3-tier role routing, cross-channel fuzzy matching, heterogeneous verification, fallback rules, and stall escalation/step-down |
+| `model-roster.json` | Mapping model lists or updating preferred versions | Standalone maintainable capability roster (Opus / Gemini Carbon·Neon / highest GPT `sol`·`astra`, DeepSeek `4.1flash` / Gemini `h*`, lightweight tier) and fallback rules |
 | `tool-signatures.md` | Before writing tool calls | Parameter differences across both Agent Teams generations |
-| `long-horizon.md` | Multi-round or cross-module work (`>= 2` rounds) | `N/M` criteria ledger, `todo_write`/`create_goal` boundaries, tiered acceptance (default max 2 full runs), stronger-model `fresh` takeover after 2 stagnant rounds, and 3-step post-compaction re-anchoring |
+| `long-horizon.md` | Multi-round or cross-module work (`>= 2` rounds) | Kickoff model roster, `N/M` criteria ledger, `todo_write`/`create_goal` boundaries, tiered acceptance (default max 2 full runs; narrow incremental checks excluded), stronger-model `fresh` takeover after 2 stagnant rounds with step-down after breakthrough, and 3-step post-compaction re-anchoring |
 
 **Two runtime facts verified from DSH source**:
 

@@ -1,0 +1,125 @@
+{
+  "$note": "独立模型能力参考配置：随渠道与主力版本迭代直接更新本文件；仅用于对 list_subagent_models() 实返清单做能力归档，实际传参必须逐字抄写实返原文。",
+  "updated": "2026-11-26",
+  "matchingRules": {
+    "caseInsensitive": true,
+    "ignoreProviderPrefix": true,
+    "ignoreSeparatorsInModelVersion": true,
+    "preferHighestVersionNumber": true,
+    "strictVerbatimFromListTool": true,
+    "fallbackWhenSingleOrUnmatched": "inherit_lead"
+  },
+  "tiers": {
+    "tier1_planner_designer": {
+      "label": "规划 / 架构 / 审美 / 疑难破局旗舰档",
+      "defaultEffort": "high",
+      "maxEffortWhenStalled": "max",
+      "roles": ["planner", "architect", "designer", "escalated_debugger"],
+      "candidates": [
+        {
+          "family": "claude",
+          "matchAll": ["opus"],
+          "versionRule": "highest_number",
+          "examples": ["Opus 5.5", "claude-opus-5-5"],
+          "strengths": ["planning", "architecture", "aesthetic", "root_cause"]
+        },
+        {
+          "family": "gemini",
+          "matchAny": ["carbon", "neon"],
+          "versionRule": "highest_number",
+          "examples": ["Gemini 4 Carbon", "Gemini 4 Neon"],
+          "strengths": ["planning", "aesthetic", "long_context"]
+        },
+        {
+          "family": "gpt",
+          "matchAny": ["sol", "astra"],
+          "versionRule": "highest_number",
+          "examples": ["gpt-sol (最大版本号)", "gpt-astra (最大版本号)"],
+          "note": "GPT 仅限 sol 或 astra 系列（渠道名可能带或不带 gpt 前缀），同族多个版本必选版本号数字最大者",
+          "strengths": ["planning", "architecture", "root_cause"]
+        }
+      ]
+    },
+    "tier2_implementer": {
+      "label": "主力执行 / 常规代码实现 / 默认独立验收档",
+      "defaultEffort": "medium_or_high",
+      "roles": ["implementer", "verifier_default"],
+      "candidates": [
+        {
+          "family": "deepseek",
+          "matchAll": ["deepseek", "4.1", "flash"],
+          "ignoreSeparators": true,
+          "versionRule": "pinned",
+          "examples": ["deepseek-4.1-flash", "deepseek/4.1flash", "deepseek-v4.1-flash"],
+          "note": "DeepSeek 当前暂定 4.1flash；后续有新主力版时直接改此配置",
+          "strengths": ["coding", "tool_calling", "throughput"]
+        },
+        {
+          "family": "gemini",
+          "matchAll": ["gemini"],
+          "matchAny": ["flash", "h-series"],
+          "matchHint": "匹配 flash 或以 h 开头的独立型号词段（如 hxxx），排除 thinking/high/carbon/neon/pro/lite",
+          "excludeAny": ["carbon", "neon", "pro", "lite", "thinking", "high"],
+          "versionRule": "highest_number",
+          "examples": ["gemini-h*", "gemini-flash"],
+          "strengths": ["coding", "fast_iteration"]
+        },
+        {
+          "family": "claude",
+          "matchAll": ["sonnet"],
+          "versionRule": "highest_number",
+          "examples": ["claude-sonnet"],
+          "strengths": ["coding", "balanced"]
+        }
+      ]
+    },
+    "tier3_explorer": {
+      "label": "只读探路 / 查证 / 日志扫描 / 汇总轻档",
+      "defaultEffort": "low",
+      "roles": ["explorer", "summarizer"],
+      "candidates": [
+        {
+          "family": "lightweight",
+          "matchAny": ["flash-lite", "lite", "haiku", "mini", "nano", "fast"],
+          "versionRule": "highest_number",
+          "note": "只读查证、日志扫描与汇总优先极速低价档；无匹配则回退 tier2 或 Lead 降推理档"
+        }
+      ]
+    }
+  },
+  "roleRouting": {
+    "planner_architect": {
+      "preferTier": "tier1_planner_designer",
+      "effort": "high",
+      "fallback": ["inherit_lead_with_high_effort"]
+    },
+    "aesthetic_designer": {
+      "preferTier": "tier1_planner_designer",
+      "preferFamilies": ["claude", "gemini"],
+      "effort": "high",
+      "fallback": ["tier1_any", "inherit_lead"]
+    },
+    "implementer": {
+      "preferTier": "tier2_implementer",
+      "effort": "medium_or_high",
+      "escalateOnStallTo": "tier1_planner_designer",
+      "fallbackAfterBreakthrough": "tier2_implementer",
+      "fallback": ["inherit_lead", "tier1_lower_effort"]
+    },
+    "independent_verifier": {
+      "preferTier": "tier2_implementer",
+      "preferDifferentFamilyFrom": "implementer",
+      "effort": "medium_or_high",
+      "forAestheticOrArchitectureFinal": "tier1_planner_designer",
+      "fallback": ["different_member_same_or_higher_tier"]
+    },
+    "explorer_summarizer": {
+      "preferTier": "tier3_explorer",
+      "effort": "low",
+      "fallback": ["tier2_implementer", "inherit_lead_low_effort"]
+    }
+  },
+  "unknownModelPolicy": {
+    "rule": "清单中未命中任何已知关键词的自定义渠道名不瞎猜能力档位；先查清单描述与推理档支持，仍难判定时保守按 Lead 同级处理，或仅派只读查证试探。"
+  }
+}

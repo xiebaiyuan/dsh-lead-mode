@@ -162,7 +162,7 @@ PTC 下的调用形状、报错与并发读法见 `references/ptc-calls.md`；na
 |---|---|---|
 | PTC 还是 native | 由会话决定，不可自选 | 仅能直调 `run_code` 时为 PTC；工具清单列出多个直调工具时为 native |
 | 上下文 | 复用已有成员（`send_message`）/ 从零（`subagent`）/ 继承（`subagent_fork`） | 先看能否复用已有成员（§6.1）。新建时：是否依赖你上下文中未落盘的决策、规格与已排死路，若依赖且 `prompt` 写不全，选继承；可写全则从零更快更干净 |
-| 模型与推理档 | 跟随父模型 / 显式成对传 `provider` + `model` | 先调 `list_subagent_models` 看清单。改代码、改文档选清单最强档，机械活选低档；清单只有一条则跟随父模型，不编造 id |
+| 模型与推理档 | 跟随父模型 / 显式成对传 `provider` + `model` | 先调 `list_subagent_models` 看清单，对照 `references/member-models.md` 与 `references/model-roster.json` 分角色模糊匹配（规划/审美用旗舰，常规实现用主力执行档，查证用轻档，验收优先异构）；清单只有一条或无匹配则跟随父模型，不编造 id |
 | 任务板 | 建 / 不建 | 是否建板与能否并行无关。多成员、需交叉等待或互发消息时建；多块互不依赖的任务需集中查看进度时也建；单人一轮完成且无需看他人进度，直接派 `subagent` 不建板 |
 | 写作用域 | 按文件切 / 合并给一人 / `blocked_by` 排队 | 同文件连续改动合并给一人比并行快；写作用域重叠须串行，见 §9 |
 | 并行度 | 一次全派 / 合并给一人 / 分批 | 先按 §12 判级拦下枝节；队列内满足 §9.2 三条判据（无依赖、写作用域不重叠、并行收益大于开销）的任务一次全派完；小块合并给一人；有依赖才分批或写 `blocked_by` |
@@ -247,9 +247,9 @@ PTC 下的调用形状、报错与并发读法见 `references/ptc-calls.md`；na
 
 ### 8.4 按成员挑模型
 
-成员模型的两层开关、错误码与挑法见 `references/member-models.md`；按活挑模型时再读，默认继承跳过。
+成员模型的两层开关、错误码、角色分档与跨渠道模糊匹配见 `references/member-models.md` 与可独立维护的参考配置 `references/model-roster.json`；按活挑模型时再读，默认继承跳过。
 
-要点：`subagent` 传 `provider`、`model`、`reasoning_effort`，三值均从 `list_subagent_models` 返回原文复制；清单只有一条则跟随父模型，不编造 id。
+要点：`subagent` 传 `provider`、`model`、`reasoning_effort`，三值均从 `list_subagent_models` 返回原文复制；渠道命名差异按 `references/model-roster.json` 模糊归档（同族多版本取数字最大者）；清单只有一条或无匹配则跟随父模型，不编造 id。
 
 ## 9 写作用域与并行
 

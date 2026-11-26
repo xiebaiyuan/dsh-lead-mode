@@ -30,16 +30,26 @@
 
 ## 怎么挑
 
-不传 `provider`/`model` 时，成员继承 Lead 当前的 `provider`、`model` 与推理档；这是默认行为，不代表自动选用低价模型。
+不传 `provider`/`model` 时，成员继承 Lead 当前的 `provider`、`model` 与推理档；这是默认行为，不代表自动选用低价模型。清单只有 1 条时全员继承 Lead 同款，绝不编造 id（若同模型支持多档 `reasoning_effort`，则靠推理档拉开规划与查证深度）。
 
-| 活的形状 | 怎么挑 |
-|---|---|
-| 改代码、改文档、判断力密集任务 | 清单里最强的模型，推理档给 `high` 或该模型最高档 |
-| 机械活：跑测试、汇总结论、整理表格 | 便宜够用的模型，推理档低一档 |
-| 只读核对、独立复核 | 与实现者**不同**的模型，交叉验证才有效 |
+不同渠道的模型命名各异，可先调 `list_subagent_models()` 拿到实返清单，再对照独立可维护配置 `references/model-roster.json` 做**模糊匹配**（大小写不敏感、忽略渠道前缀与分隔符；同族多版本取数字最大者）：
 
-`provider` 与 `model` 成对传入；`reasoning_effort` 在二者均传的前提下使用。三项均逐字复制 `list_subagent_models` 返回原文，大小写与分隔符保持一致。
+- **规划/审美旗舰（Tier 1）**：`opus`（如 Opus 5.5）、Gemini `carbon`/`neon`、GPT 仅限 `sol` 或 `astra` 系列且取数字最大版本号。
+- **主力执行（Tier 2）**：DeepSeek 当前暂定 `4.1flash`（如 `deepseek-4.1-flash` / `deepseek/4.1flash`）、Gemini 速执行档（`flash` 或以 `h` 开头的型号词段如 `hxxx`，排除 `thinking`/`high`/`carbon`/`neon`/`pro`/`lite`）、`sonnet`。
+- **只读轻量（Tier 3）**：`flash-lite`、`lite`、`haiku`、`mini`、`nano`、`fast`。
 
-**停滞升级联动（见 `references/long-horizon.md`）**：长程任务连续 2 轮主目标判据无增长时，优先调 `list_subagent_models` 从清单中切比现用执行成员更强的模型（如 Opus 等旗舰推理模型或更高推理档）`fresh` 接手卡点跑 1 轮；清单仅一条、已是最高档，或切换后仍无增长，则停下请示用户。
+后续模型换代或主力版本调整时，直接更新 `references/model-roster.json` 即可。
+
+| 成员角色 | 怎么挑 | 缺档回退 |
+|---|---|---|
+| 规划者 / 架构师（拆主目标、定契约、根因诊断） | Tier 1 旗舰，推理档给 `high` 或 `max` | 继承 Lead 同款 + 拉高推理档 |
+| 审美 / UI 设计者（视觉层级、版式、交互走查） | Tier 1 审美旗舰（优先 Claude Opus / Gemini Carbon·Neon），推理档 `high` | 继承 Lead 同款 |
+| 执行者 / 实现者（按契约改代码、带绿自验） | Tier 2 主力执行档（DeepSeek `4.1flash` / Gemini `h*` 或 `flash` / Sonnet），推理档 `medium` 或 `high` | 继承 Lead 同款，或 Tier 1 降一档推理档提速 |
+| 独立验收者（一次扫全、核 diff、交叉核对） | 优先选与实现者**不同家族的异构** Tier 2（审美/架构终审可用 Tier 1） | 不同独立成员且不低于实现者档位 |
+| 探路 / 查证 / 汇总（只读检索、读日志、写 `team-digest`） | Tier 3 极速便宜档，推理档给 `low` | 回退 Tier 2 或 Lead 降推理档 |
+
+`provider` 与 `model` 成对传入；`reasoning_effort` 在二者均传的前提下使用。三项均逐字复制 `list_subagent_models` 返回原文，大小写与分隔符保持一致。遇到清单里未命中任何已知关键词的自定义渠道名时不瞎猜，先核对描述与推理档支持，仍难判定则保守按 Lead 同级处理或仅派只读查证。
+
+**停滞升级联动与破局回落（见 `references/long-horizon.md`）**：长程任务连续 2 轮主目标判据无增长时，优先调 `list_subagent_models` 从清单中切比现用执行成员更强的模型（如 Opus 等旗舰推理模型或更高推理档）`fresh` 接手卡点跑 1 轮；卡点打通（`N` 增长）后，后续常规实现回落至 Tier 2 执行档；清单仅一条、已是最高档，或切换后仍无增长，则停下请示用户。
 
 先查清单再传参，避免触发预检拒绝导致该次派活浪费（工具启动前会向 LLM 运行时预检 `provider` 和 `model`）。清单无 `list_subagent_models` 工具时，不传任何模型参数。

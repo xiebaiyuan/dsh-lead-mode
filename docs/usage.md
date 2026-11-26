@@ -81,15 +81,16 @@ Lead 只换协作方法，不改变工具能力，因此两个预置逐字段镜
 - **独立验收与止损**：实现者带绿自验交卷后触发独立验收；独立验收一次扫全、原文附四件套缺陷包且只核既有判据与直接回归；返工按四类分流并带防回退锁，窄范围返工走增量复验（不占全量预算），判据全过即停；极端场景可按严格三条件与五限制触发一次同模型方案专家。
 - **上下文交接与多轮控制**：涵盖压缩检测、交接四步、`worklog` / `handoff` 规范，以及多轮长程控制。
 
-主文件之外配备五份按需参考（位于 `skills/lead-mode/references/`，通过注册时传入的 `resourceBase: { kind: 'directory', path }` 基准目录解析，不占常驻上下文）：
+主文件之外配备五份按需参考指南与一份独立模型能力配置（位于 `skills/lead-mode/references/`，通过注册时传入的 `resourceBase: { kind: 'directory', path }` 基准目录解析，不占常驻上下文）：
 
 | 参考文件 | 何时按需读取 | 核心内容 |
 |---|---|---|
 | `ptc-calls.md` | 处于 `lead-ptc` 会话 | PTC 下 `run_code` 调用形状与安全并发读 |
 | `old-gen.md` | 宿主仍有 `spawn_teammate` | 老一代建成员参数、状态值与上限说明 |
-| `member-models.md` | 需按任务挑成员模型 | 路由选型指南与长程停滞模型升级联动 |
+| `member-models.md` | 需按任务挑成员模型 | 角色三档路由、跨渠道模糊匹配、异构验收、缺档回退与停滞升级/回落联动 |
+| `model-roster.json` | 需按角色归档清单或调整主力版本 | 独立可维护的模型能力参考表（Opus / Gemini Carbon·Neon / GPT `sol`·`astra` 最大版、DeepSeek `4.1flash` / Gemini `h*`、轻档）与回退策略 |
 | `tool-signatures.md` | 编写派活调用前 | 两代工具名与参数对照表 |
-| `long-horizon.md` | 预计 ≥2 轮派单或跨模块长程任务 | `N/M` 进度账与 `todo_write`/`create_goal` 边界、分层验收（全量默认最多 2 次）、连续 2 轮无增长切更强模型（如 Opus）`fresh` 跑 1 轮再止损、Lead 压缩后三步重锚 |
+| `long-horizon.md` | 预计 ≥2 轮派单或跨模块长程任务 | 开局模型编队、`N/M` 进度账与 `todo_write`/`create_goal` 边界、分层验收（全量默认最多 2 次，窄范围增量复验不占预算）、连续 2 轮无增长切更强模型（如 Opus）`fresh` 跑 1 轮破局并回落、Lead 压缩后三步重锚 |
 
 **读宿主源码确认的两条关键行为**：
 
