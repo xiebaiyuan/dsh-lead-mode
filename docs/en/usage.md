@@ -73,12 +73,12 @@ Lead changes workflow discipline rather than tool availability, so each preset c
 
 ### 2. Lead method skill (`lead-mode`)
 
-`skills/lead-mode/SKILL.md` (493 lines) is auto-discovered from disk and registers without binding to a preset:
+`skills/lead-mode/SKILL.md` (508 lines) is auto-discovered from disk and registers without binding to a preset:
 
-- **Session detection & goal kickoff**: Detect PTC vs. native and legacy vs. subagent Team generation; stop if Team is off; establish primary criteria `#1..#M`.
+- **Session detection & goal kickoff**: Detect PTC vs. native and legacy vs. subagent Team generation; stop if Team is off; establish primary criteria `#1..#M`, and align a <=10-line change contract first on high-risk tasks.
 - **Priority triage & parallel dispatch (`§12` & `§9.2`)**: Classify work into **primary**, **supporting** (with explicit blocking criteria and stop line), and **side** items before checking parallelism. Side items and deprioritized slow checks skip the parallel queue and go straight to `.scratch/<effort>/leftovers.md` (requiring pasteable commands, paths, or reproducible `target + entry point + criterion` walkthrough steps).
 - **Task board & event-driven wakes**: Manage `team_task_*` (`list/get/claim/complete`), check primary criteria progress first on every wake (`§9.3`), and never spawn new work from side reports.
-- **Verification & escalation**: Stop once all `#1..#M` pass; keep independent verification strictly within existing criteria and direct regressions; apply a controlled one-time same-model plan-only specialist only when three strict conditions hold.
+- **Verification & escalation**: Require implementers to self-verify green before handoff; run independent verification in one full pass with verbatim 4-part defect bundles strictly within existing criteria and direct regressions; triage rework into four tiers with regression locks and run incremental re-verification for narrow fixes (outside the full-run cap), stopping once all `#1..#M` pass; apply a controlled one-time same-model plan-only specialist only when three strict conditions hold.
 - **Context handoff & long-horizon guardrails**: Covers compaction detection, 4-step escalation ladder, `worklog` / `handoff` file rules, and multi-round control.
 
 Five reference guides under `skills/lead-mode/references/` load only when needed (resolved via `resourceBase: { kind: 'directory', path }` so the host renders `Base directory for this skill: …`):

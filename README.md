@@ -9,7 +9,7 @@ A Lead workflow plugin for DeepSeek Harness (DSH): the Lead model plans, delegat
 [![npm version](https://img.shields.io/npm/v/dsh-lead-mode?color=4D6BFE)](https://www.npmjs.com/package/dsh-lead-mode)
 [![dsh version](https://img.shields.io/badge/dsh-%3E%3D0.2.2--rc.3-4D6BFE)](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/package.json)
 [![license](https://img.shields.io/badge/license-MIT-3DA639)](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/LICENSE)
-[![tests](https://img.shields.io/badge/tests-56%20passing-3DA639)](https://github.com/xiebaiyuan/dsh-lead-mode/actions/workflows/ci.yml)
+[![tests](https://img.shields.io/badge/tests-58%20passing-3DA639)](https://github.com/xiebaiyuan/dsh-lead-mode/actions/workflows/ci.yml)
 [![downloads](https://img.shields.io/npm/dm/dsh-lead-mode)](https://www.npmjs.com/package/dsh-lead-mode)
 [![CI](https://github.com/xiebaiyuan/dsh-lead-mode/actions/workflows/ci.yml/badge.svg)](https://github.com/xiebaiyuan/dsh-lead-mode/actions/workflows/ci.yml)
 
@@ -21,7 +21,7 @@ A Lead workflow plugin for DeepSeek Harness (DSH): the Lead model plans, delegat
 
 ## What it is
 
-A Lead workflow plugin for DSH (DeepSeek Harness). Current release: `0.2.18`, targeting hosts `>= 0.2.2-rc.3`, MIT licensed.
+A Lead workflow plugin for DSH (DeepSeek Harness). Current release: `0.2.19`, targeting hosts `>= 0.2.2-rc.3`, MIT licensed.
 
 The official Agent Teams runtime gives the model delegation primitives (`spawn_teammate`, `send_message`, `team_task_*` on older hosts; `subagent`, `send_message`, `team_task_*`, and automatic settlement notices on newer hosts). What the runtime leaves unspecified is the operating discipline: when to split work, who owns which files, how to wait without polling, how to verify output independently, and when to stop or escalate.
 

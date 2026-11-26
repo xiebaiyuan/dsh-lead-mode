@@ -1214,3 +1214,53 @@ test('GLOSSARY.md 锁定新增的主目标、支撑、枝节三词条', async ()
   const leftoversTerm = sliceTerm('遗留问题清单（leftovers）')
   assert.ok(leftoversTerm.includes('对象 + 入口 + 判据'), '遗留问题清单词条须同步走查步骤（对象 + 入口 + 判据）')
 })
+
+test('lead-mode 正文锁定防返工五道防线（契约对齐、带绿交卷、扫全缺陷包、返工分级与增量复验）', async () => {
+  const { body } = await readSkillBody()
+
+  const kickoff = sliceSection(body, '## 4 开工前先定三件事', 'skills/lead-mode/SKILL.md')
+  assert.ok(kickoff.includes('改动契约'), '§4 必须包含高风险任务先对齐改动契约的约束')
+  assert.ok(kickoff.includes('send_message'), '§4 必须写明改动契约通过 send_message 对齐')
+
+  const promptSec = sliceSection(body, '### 5.1 prompt 怎么写', 'skills/lead-mode/SKILL.md')
+  for (const token of ['可执行命令原文', '交付门槛', '全绿才允许交卷', '卡死 2 次']) {
+    assert.ok(promptSec.includes(token), `§5.1 prompt 怎么写必须包含 ${token}`)
+  }
+
+  const budget = sliceSection(body, '### 验收预算：验证成本花在主目标上', 'skills/lead-mode/SKILL.md')
+  for (const token of ['带绿交卷', '一次扫全', '缺陷包', '原文转发', '增量复验', '不计入全量验收 2 次预算']) {
+    assert.ok(budget.includes(token), `§12 验收预算必须包含 ${token}`)
+  }
+
+  const strict = sliceSection(body, '### 标准定高，返工不自己补位', 'skills/lead-mode/SKILL.md')
+  for (const token of ['防回退锁', '死路列表', '修 B 坏 A', '5 行根因诊断']) {
+    assert.ok(strict.includes(token), `§12 标准定高一节必须包含 ${token}`)
+  }
+})
+
+test('references/long-horizon.md 与 GLOSSARY.md 锁定增量复验、震荡无增长与自验边界', async () => {
+  const lhLabel = 'skills/lead-mode/references/long-horizon.md'
+  const lhDoc = await readFile(resolve(repoRoot, lhLabel), 'utf8')
+
+  const sec3 = sliceSection(lhDoc, '## 3 分层验收与验收预算', lhLabel)
+  for (const token of ['增量复验不占全量预算', '一次扫全']) {
+    assert.ok(sec3.includes(token), `${lhLabel} §3 必须包含 ${token}`)
+  }
+
+  const sec4 = sliceSection(lhDoc, '## 4 连续 2 轮无增长：先升模型，再止损问用户', lhLabel)
+  for (const token of ['修 B 坏 A', '5 行根因诊断']) {
+    assert.ok(sec4.includes(token), `${lhLabel} §4 必须包含 ${token}`)
+  }
+
+  const glossary = await readFile(resolve(repoRoot, 'GLOSSARY.md'), 'utf8')
+  assert.ok(/^\*\*自验\*\*:/m.test(glossary), 'GLOSSARY.md 必须定义「自验」词条')
+  const start = glossary.indexOf('**自验**:')
+  const rest = glossary.slice(start)
+  const end = rest.indexOf('\n\n')
+  const selfCheckTerm = end === -1 ? rest : rest.slice(0, end)
+  assert.ok(selfCheckTerm.includes('不替代独立验收'), '自验词条须写明不替代独立验收')
+  assert.ok(
+    selfCheckTerm.includes('交付') && selfCheckTerm.includes('门槛'),
+    '自验词条须写明它是交付门槛',
+  )
+})
