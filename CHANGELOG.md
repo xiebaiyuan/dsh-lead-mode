@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.22
+
+这版在 `0.2.21` 锚定体系基础上补齐长程「先探路自规划 + 非终局不断链自驱闭环」，并锁定 `create_goal` 宿主协同时的真实边界（回合权限、`ask_user_question` 挂起与并行先返豁免）。
+
+- **先探路自规划与波次路线图**。`SKILL.md` §2.3 / §4 与 `references/long-horizon.md` §1.1 新增「先探路再定盘」与「确认粒度分级」：仓内边界不明时先派 1 名 Tier 3 只读探路成员摸清事实，再由 Lead 自主生成 `Wave 0 探路定盘 → Wave 1 核心改造 → …` 波次路线图、`#1..#M` 判据与编队；区分歧义一次确认与放权/`exit_plan_mode` 后直接开跑，并明确 `plan-mode` 探路免写及不混用 `todo_write`；`GLOSSARY.md` 同步新增「自规划（self-planning）」并更新「目标宪章（anchor）」。
+- **非终局不断链自闭环与并行先返豁免**。`SKILL.md` §9.3 与 `long-horizon.md` §6 确立「核账与重锚 → 判退出门槛 → 滚动重规划 → 续派不断链 → 交还控制权等唤醒」五步回路，禁止在 `N < M` 且未止损时以场上 0 个 `running` 成员空手结束回合；同时明确并行成员先返但场上仍有其他 `running` 成员推进前置项时，写明等待对象后结束回合不算断链。`GLOSSARY.md` 新增「自驱闭环（self-loop）」。
+- **`create_goal` 宿主协同实测边界**。`long-horizon.md` §1.1 / §4 / §6.2 明确仅限人类直发回合调用 `create_goal`（规避 `GOAL_TOOL_AUTHORITY_REQUIRED`）、`waitForTreeWork` 与成员等待互斥、`complete` 须待 `<goal_round>` 回合调用、`blockedAfterConsecutiveRounds: 3`（`GOAL_TOOL_BLOCK_THRESHOLD`）门槛；授权 `create_goal` 时需要人工拍板或探路后歧义确认必须调用 `ask_user_question` 挂起，而 `N` 仍增长的第 5 轮仅附中期战报不停派（由 `max_goal_rounds` 控总上限）。
+- **常驻人设、文档、测试与版本**。`cordis.patch.yml` 两个预置的 persona prefix 在 skill 指针补入「自规划与闭环」（475 字）；`test/preset.test.mjs` 与 `test/smoke.test.mjs` 新增 2 条测试锁（共 64 条）；`docs/usage.md`、`docs/en/usage.md`、`docs/design.md`、`docs/en/design.md`、`docs/why.md`、`docs/en/why.md` 与两份 README 同步更新，`package.json` 升至 `0.2.22`。
+
 ## 0.2.21
 
 这版在保持零运行时 hook 的前提下补齐长程目标锚定与防漂移机制：一屏不可变目标宪章、每 3 轮心跳重锚、防支撑膨胀与防静默改标、5 轮中期战报、跨会话冷启动与嵌套深度护栏。

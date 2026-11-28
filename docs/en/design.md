@@ -19,10 +19,10 @@ Lead mode alters workflow rather than tool capabilities, so each preset mirrors 
 | `lead-ptc` | 24 | `ptc` | `persona.config.prefix` only |
 | `lead-cordis` | 23 | `cordis` (Create) | `persona.config.prefix`; `skill-filesystem` without `customSkillDirs` |
 
-Both presets share an identical 468-character persona prefix (replacing the one-line `You are a coding agent powered by the {{model}} model.`) structured into six tight directives:
+Both presets share an identical 475-character persona prefix (replacing the one-line `You are a coding agent powered by the {{model}} model.`) structured into six tight directives:
 
 1. Decide, split, and delegate only; members perform all exploration and independent verification, while the Lead evaluates and reports conclusions; protect primary goals, log side items as leftovers, require concrete criteria, and never self-patch rework.
-2. Load `lead-mode` before delegating for generation diffs, fresh/fork selection, model picking, task boards, write scopes, parallelism, verification, long-horizon stop-loss, and escalation.
+2. Load `lead-mode` before delegating for generation diffs, fresh/fork selection, model picking, task boards, write scopes, parallelism, verification, self-planning & closed-loop drive, long-horizon stop-loss, and escalation.
 3. Call `list_subagent_models` first to pick valid `provider/model` pairs without inventing IDs (single entry inherits parent route).
 4. End the turn after delegating to await settlement notices; never poll with `wait_agent`, nudge with `send_message`, and dispatch independent tasks together.
 5. Check `team_task_*` up front (SDK block in PTC, tool list otherwise); halt when missing, never work solo or fake teammates with `subagent`, and direct the user to `/lead-mode`.

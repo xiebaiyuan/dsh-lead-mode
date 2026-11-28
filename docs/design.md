@@ -19,10 +19,10 @@ Lead 层只改变工作方式，不增减工具集，因此两个预置各自逐
 | `lead-ptc` | 24 | `ptc` | 仅更换 `persona.config.prefix` |
 | `lead-cordis` | 23 | `cordis`（创造） | 更换 `persona.config.prefix`；`skill-filesystem` 省略 `customSkillDirs` |
 
-两个预置共用逐字相同的 468 字 persona prefix（官方默认英文是一句 `You are a coding agent powered by the {{model}} model.`），分六段锚定核心动作：
+两个预置共用逐字相同的 475 字 persona prefix（官方默认英文是一句 `You are a coding agent powered by the {{model}} model.`），分六段锚定核心动作：
 
 1. 只做决策、拆活与派活，调查与验收全派成员，结论由自己判断并讲给用户；先保主目标、枝节记遗留，判据具体且返工不自己补位。
-2. 派活前加载 `lead-mode` skill（覆盖两代差异、从零或继承、挑模型、任务板、写作用域、并行、验收、长程止损、难度升级）。
+2. 派活前加载 `lead-mode` skill（覆盖两代差异、从零或继承、挑模型、任务板、写作用域、并行、验收、自规划与闭环、长程止损、难度升级）。
 3. 派活先用 `list_subagent_models` 成对挑选 `provider/model`，禁止编造 id（只有一条时跟随父模型）。
 4. 派完活立刻结束回合等通知，不调 `wait_agent`、不轮询，催人用 `send_message`；互不依赖的活一次全派完。
 5. 开局核对 `team_task_*` 判断 Team 是否开启，没开即停手并请用户敲 `/lead-mode`。

@@ -44,10 +44,10 @@ Three additions, leaving host behavior untouched:
 
 Two separate presets exist because Lead discipline changes workflow, not tool capabilities. Merging PTC and direct-tool (`cordis`) presets would force an unnecessary capability tradeoff.
 
-Both presets share an identical 468-character persona prefix injected into `DEPLOYMENT_PERSONA_PREFIX` across six short blocks:
+Both presets share an identical 475-character persona prefix injected into `DEPLOYMENT_PERSONA_PREFIX` across six short blocks:
 
 1. **Role & priority boundaries**: Decide, split, and delegate only; members handle all exploration and verification, and the Lead reports conclusions. Protect primary goals first, move side items to leftovers, require concrete criteria, and never patch rework directly.
-2. **Load the workflow skill**: Load `lead-mode` before delegating for generation rules, context handling, model selection, task board flow, write scopes, parallel dispatch, acceptance, long-horizon stop-loss, and escalation.
+2. **Load the workflow skill**: Load `lead-mode` before delegating for generation rules, context handling, model selection, task board flow, write scopes, parallel dispatch, acceptance, self-planning & closed-loop drive, long-horizon stop-loss, and escalation.
 3. **Model list discipline**: Call `list_subagent_models` before spawning and pick valid `provider/model` pairs without inventing IDs (single entry means members inherit the parent model).
 4. **Event-driven waiting & parallelism**: End turns immediately after delegating without calling `wait_agent` or polling; nudge via `send_message`, and dispatch independent tasks in one parallel batch.
 5. **Startup Team check**: Check `team_task_*` in the PTC SDK block or tool list; if absent, stop immediately, avoid solo work or `subagent` stand-ins, and tell the user to run `/lead-mode`.

@@ -1387,3 +1387,87 @@ test('lead-mode 与 GLOSSARY.md 锁定控制面台账边界、接受纠正优先
     assert.ok(anchorTerm.includes(token), `目标宪章词条须包含 ${token}`)
   }
 })
+
+test('lead-mode、long-horizon.md 与 GLOSSARY.md 锁定长程自规划与非终局不断链自闭环', async () => {
+  const { body } = await readSkillBody()
+
+  const routing = sliceSection(body, '### 2.3 路由表：按你的组合读', 'skills/lead-mode/SKILL.md')
+  assert.ok(routing.includes('§4'), '§2.3 路由表须在 §4 开工自规划处即指向 long-horizon.md')
+  assert.ok(routing.includes('自规划') && routing.includes('自闭环'), '§2.3 路由表须标明自规划与自闭环')
+
+  const kickoff = sliceSection(body, '## 4 开工前先定三件事', 'skills/lead-mode/SKILL.md')
+  for (const token of ['先探路再定盘', '波次路线图', '确认粒度分级', 'exit_plan_mode', '滚动重规划']) {
+    assert.ok(kickoff.includes(token), `§4 必须包含 ${token}`)
+  }
+
+  const wakeSec = sliceSection(body, '### 9.3 醒来动作', 'skills/lead-mode/SKILL.md')
+  for (const token of ['长程自闭环接力', '滚动重规划', '续派下一波', '禁止只向用户汇报']) {
+    assert.ok(wakeSec.includes(token), `§9.3 必须包含 ${token}`)
+  }
+
+  const lhLabel = 'skills/lead-mode/references/long-horizon.md'
+  const lhDoc = await readFile(resolve(repoRoot, lhLabel), 'utf8')
+
+  const sec1 = sliceSection(lhDoc, '## 1 何时启用与开局自规划', lhLabel)
+  for (const token of ['先探路再定盘', '波次/阶段路线图', '确认粒度分级', 'exit_plan_mode']) {
+    assert.ok(sec1.includes(token), `${lhLabel} §1 必须包含 ${token}`)
+  }
+
+  const sec6 = sliceSection(lhDoc, '## 6 自驱闭环：5 步波次接力与双引擎协同', lhLabel)
+  for (const token of [
+    '核账与重锚',
+    '判退出门槛',
+    '滚动重规划',
+    '续派不断链',
+    '非终局不断链铁律',
+    'create_goal',
+    'GOAL_TOOL_AUTHORITY_REQUIRED',
+    'waitForTreeWork',
+    'GOAL_TOOL_BLOCK_THRESHOLD',
+  ]) {
+    assert.ok(sec6.includes(token), `${lhLabel} §6 必须包含 ${token}`)
+  }
+
+  const glossary = await readFile(resolve(repoRoot, 'GLOSSARY.md'), 'utf8')
+  for (const term of ['自规划（self-planning）', '自驱闭环（self-loop）']) {
+    assert.ok(
+      new RegExp(`^\\*\\*${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\*\\*:`, 'm').test(glossary),
+      `GLOSSARY.md 必须定义「${term}」词条`,
+    )
+  }
+})
+
+test('long-horizon.md、SKILL.md 与 GLOSSARY.md 锁定并行先返豁免、create_goal 挂起与 Wave 0 口径', async () => {
+  const lhLabel = 'skills/lead-mode/references/long-horizon.md'
+  const lhDoc = await readFile(resolve(repoRoot, lhLabel), 'utf8')
+
+  const sec1 = sliceSection(lhDoc, '## 1 何时启用与开局自规划', lhLabel)
+  assert.ok(sec1.includes('Wave 0 探路定盘'), `${lhLabel} §1 必须统一从 Wave 0 探路定盘编号`)
+  assert.ok(sec1.includes('ask_user_question'), `${lhLabel} §1 必须写明 create_goal 下探路后确认使用 ask_user_question`)
+
+  const sec4 = sliceSection(lhDoc, '## 4 连续 2 轮无增长：先升模型，再止损问用户', lhLabel)
+  for (const token of ['max_goal_rounds', '不停派']) {
+    assert.ok(sec4.includes(token), `${lhLabel} §4 必须区分 create_goal 无人值守下的 5 轮战报（${token}）`)
+  }
+
+  const sec6 = sliceSection(lhDoc, '## 6 自驱闭环：5 步波次接力与双引擎协同', lhLabel)
+  for (const token of ['running', '0 个活跃', 'ask_user_question']) {
+    assert.ok(sec6.includes(token), `${lhLabel} §6 必须包含 ${token}`)
+  }
+
+  const { body } = await readSkillBody()
+  const wakeSec = sliceSection(body, '### 9.3 醒来动作', 'skills/lead-mode/SKILL.md')
+  assert.ok(
+    wakeSec.includes('running') && wakeSec.includes('0 个 `running` 成员'),
+    'SKILL.md §9.3 必须写明并行先返等待 running 成员的豁免边界',
+  )
+
+  const glossary = await readFile(resolve(repoRoot, 'GLOSSARY.md'), 'utf8')
+  const start = glossary.indexOf('**目标宪章（anchor）**:')
+  const rest = glossary.slice(start)
+  const end = rest.indexOf('\n\n')
+  const anchorTerm = end === -1 ? rest : rest.slice(0, end)
+  for (const token of ['获确认或放权后', '阶段路线图简表']) {
+    assert.ok(anchorTerm.includes(token), `GLOSSARY.md 目标宪章词条必须包含 ${token}`)
+  }
+})

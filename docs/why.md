@@ -44,10 +44,10 @@ dsh plugin --profile <你的 profile 名> add @deepseek-ai/dsh-experimental-agen
 
 拆成两个预置是因为 Lead 只改变工作方法，不增减能力面：PTC 会话与创造会话的工具集本来就不同，强行合二为一等于替用户做能力取舍。
 
-共用一段 468 字的 persona prefix，分成六小段常驻在 `DEPLOYMENT_PERSONA_PREFIX`（每轮模型一定可见）：
+共用一段 475 字的 persona prefix，分成六小段常驻在 `DEPLOYMENT_PERSONA_PREFIX`（每轮模型一定可见）：
 
 1. **角色与判级边界**：只做决策、拆活与派活，调查和验收全派成员，结论自己判断并汇报；先保主目标、枝节记遗留，判据具体且返工不自己补位。
-2. **加载工作法 skill**：派活前先读 `lead-mode` skill，获取两代差异、上下文策略、挑模型、任务板、写作用域、并行、验收、长程止损与难度升级细则。
+2. **加载工作法 skill**：派活前先读 `lead-mode` skill，获取两代差异、上下文策略、挑模型、任务板、写作用域、并行、验收、自规划与闭环、长程止损与难度升级细则。
 3. **模型清单约束**：派活前先调 `list_subagent_models`，从清单成对挑选 `provider/model`，不编造 id；只有一条时成员跟随父模型。
 4. **消息驱动与并行**：派完活立刻结束回合等通知，不调 `wait_agent`、不轮询，催人用 `send_message`；互不依赖的活一次全派完。
 5. **开局核对 Team 状态**：PTC 查 SDK 块、native 查工具清单是否有 `team_task_*`；缺失立即停手并请用户敲 `/lead-mode`，不单干也不拿 `subagent` 顶替成员。

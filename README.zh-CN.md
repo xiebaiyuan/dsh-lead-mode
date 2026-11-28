@@ -9,7 +9,7 @@
 [![npm 版本](https://img.shields.io/npm/v/dsh-lead-mode?color=4D6BFE)](https://www.npmjs.com/package/dsh-lead-mode)
 [![dsh 版本](https://img.shields.io/badge/dsh-%3E%3D0.2.2--rc.3-4D6BFE)](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/package.json)
 [![许可](https://img.shields.io/badge/license-MIT-3DA639)](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/LICENSE)
-[![测试](https://img.shields.io/badge/tests-62%20passing-3DA639)](https://github.com/xiebaiyuan/dsh-lead-mode/actions/workflows/ci.yml)
+[![测试](https://img.shields.io/badge/tests-64%20passing-3DA639)](https://github.com/xiebaiyuan/dsh-lead-mode/actions/workflows/ci.yml)
 [![下载量](https://img.shields.io/npm/dm/dsh-lead-mode)](https://www.npmjs.com/package/dsh-lead-mode)
 [![CI](https://github.com/xiebaiyuan/dsh-lead-mode/actions/workflows/ci.yml/badge.svg)](https://github.com/xiebaiyuan/dsh-lead-mode/actions/workflows/ci.yml)
 
@@ -21,7 +21,7 @@
 
 ## 这是什么
 
-DSH（DeepSeek Harness）的 Lead 工作法插件。当前版本 `0.2.21`，要求宿主 `>= 0.2.2-rc.3`，MIT 许可。
+DSH（DeepSeek Harness）的 Lead 工作法插件。当前版本 `0.2.22`，要求宿主 `>= 0.2.2-rc.3`，MIT 许可。
 
 官方 Agent Teams 运行时只提供派活原语：老一代有 `spawn_teammate`、`send_message`、`team_task_*`；新一代用 `subagent` 建成员，保留 `send_message` 与 `team_task_*`，并由运行时自动投递收工通知，不需要 `wait_agent` 轮询。至于什么时候拆活、文件怎么隔离、怎么等齐、怎么独立验收、卡住何时止损，运行时不管。
 
@@ -156,13 +156,13 @@ Team 开关是会话级的：模型与推理等级菜单里打开「开启智能
 | `old-gen.md` | 宿主存在 `spawn_teammate` 时 | 老一代参数、成员状态值与限制 |
 | `member-models.md` | 需要按任务挑模型时 | `list_subagent_models` 选型规则与停滞升级联动 |
 | `tool-signatures.md` | 编写派活调用前 | 两代工具名与字段参数速查表 |
-| `long-horizon.md` | 跨模块或 `>= 2` 轮长程任务 | `N/M` 进度账、分层验收（全量默认最多 2 次）、连续 2 轮无增长切更强模型 `fresh` 跑 1 轮再止损、Lead 压缩后三步重锚 |
+| `long-horizon.md` | 跨模块或 `>= 2` 轮长程任务 | 先探路自规划与波次路线图、非终局不断链自闭环（含授权 `create_goal` 兜底）、`N/M` 进度账、分层验收（全量默认最多 2 次）、连续 2 轮无增长切更强模型 `fresh` 跑 1 轮再止损、Lead 压缩后三步重锚 |
 
 ### `team-digest` 与常驻人设
 
 - **`team-digest`**（[skills/team-digest/SKILL.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/skills/team-digest/SKILL.md)）：本轮有 `>= 2` 个成员或跨 `>= 2` 轮时，在 `reports/<YYYY-MM-DD>-<effort>.md` 汇总六块固定骨架，首行固定报告 `主目标：达成/部分达成/未达成（N/M）`。
 - **三组派活工具**：`subagent` / `subagent_fork`（老一代为 `spawn_teammate`）建成员，`send_message` 续聊与催办，`team_task_create` / `team_task_get` / `team_task_list` / `team_task_update` 管任务板。
-- **低上下文开销与零冲突**：两个预置共用同一段 468 字 persona，只在每轮锚定「先保主目标，枝节记遗留」与「长程止损」。全部注册均为只增不改；若同名 skill 或命令已存在，宿主先到先得，本插件自动让位。
+- **低上下文开销与零冲突**：两个预置共用同一段 475 字 persona，只在每轮锚定「先保主目标，枝节记遗留」、「自规划与闭环」与「长程止损」。全部注册均为只增不改；若同名 skill 或命令已存在，宿主先到先得，本插件自动让位。
 
 ## 兼容与限制
 

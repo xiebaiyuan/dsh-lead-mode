@@ -9,7 +9,7 @@ A Lead workflow plugin for DeepSeek Harness (DSH): the Lead model plans, delegat
 [![npm version](https://img.shields.io/npm/v/dsh-lead-mode?color=4D6BFE)](https://www.npmjs.com/package/dsh-lead-mode)
 [![dsh version](https://img.shields.io/badge/dsh-%3E%3D0.2.2--rc.3-4D6BFE)](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/package.json)
 [![license](https://img.shields.io/badge/license-MIT-3DA639)](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/LICENSE)
-[![tests](https://img.shields.io/badge/tests-62%20passing-3DA639)](https://github.com/xiebaiyuan/dsh-lead-mode/actions/workflows/ci.yml)
+[![tests](https://img.shields.io/badge/tests-64%20passing-3DA639)](https://github.com/xiebaiyuan/dsh-lead-mode/actions/workflows/ci.yml)
 [![downloads](https://img.shields.io/npm/dm/dsh-lead-mode)](https://www.npmjs.com/package/dsh-lead-mode)
 [![CI](https://github.com/xiebaiyuan/dsh-lead-mode/actions/workflows/ci.yml/badge.svg)](https://github.com/xiebaiyuan/dsh-lead-mode/actions/workflows/ci.yml)
 
@@ -21,7 +21,7 @@ A Lead workflow plugin for DeepSeek Harness (DSH): the Lead model plans, delegat
 
 ## What it is
 
-A Lead workflow plugin for DSH (DeepSeek Harness). Current release: `0.2.21`, targeting hosts `>= 0.2.2-rc.3`, MIT licensed.
+A Lead workflow plugin for DSH (DeepSeek Harness). Current release: `0.2.22`, targeting hosts `>= 0.2.2-rc.3`, MIT licensed.
 
 The official Agent Teams runtime gives the model delegation primitives (`spawn_teammate`, `send_message`, `team_task_*` on older hosts; `subagent`, `send_message`, `team_task_*`, and automatic settlement notices on newer hosts). What the runtime leaves unspecified is the operating discipline: when to split work, who owns which files, how to wait without polling, how to verify output independently, and when to stop or escalate.
 
@@ -154,13 +154,13 @@ Five reference guides under `skills/lead-mode/references/` load only when releva
 | `old-gen.md` | Host has `spawn_teammate` | Legacy `spawn_teammate` parameters, states, and limits |
 | `member-models.md` | Selecting per-member models | `list_subagent_models` routing and stall escalation link |
 | `tool-signatures.md` | Writing delegation calls | Side-by-side parameter diffs across both generations |
-| `long-horizon.md` | Multi-round or cross-module work (`>= 2` rounds) | `N/M` criteria ledger, tiered verification (default max 2 full runs), stronger-model `fresh` escalation after 2 stagnant rounds, and 3-step post-compaction re-anchoring |
+| `long-horizon.md` | Multi-round or cross-module work (`>= 2` rounds) | Scout-first self-planning & wave roadmaps, non-terminal continuous self-loop (plus authorized `create_goal` guard), `N/M` criteria ledger, tiered verification (default max 2 full runs), stronger-model `fresh` escalation after 2 stagnant rounds, and 3-step post-compaction re-anchoring |
 
 ### `team-digest` & shared persona
 
 - **`team-digest`** ([skills/team-digest/SKILL.md](https://github.com/xiebaiyuan/dsh-lead-mode/blob/main/skills/team-digest/SKILL.md)) consolidates worklogs and closing messages into `reports/<YYYY-MM-DD>-<effort>.md` whenever work involves `>= 2` members or `>= 2` rounds. It enforces six sections starting with `主目标：达成/部分达成/未达成（N/M）`.
 - **Delegation tool groups**: `subagent` / `subagent_fork` (`spawn_teammate` on older hosts) to spawn members, `send_message` to nudge or continue, and `team_task_create` / `team_task_get` / `team_task_list` / `team_task_update` for shared task tracking.
-- **Zero standing bloat**: Both presets share an identical 468-character persona prefix anchoring priority protection and long-horizon stop-loss; detailed rules load on demand. If a skill or command name collides, the host's existing registration wins and this plugin yields.
+- **Zero standing bloat**: Both presets share an identical 475-character persona prefix anchoring priority protection, self-planning & closed-loop drive, and long-horizon stop-loss; detailed rules load on demand. If a skill or command name collides, the host's existing registration wins and this plugin yields.
 
 ## Compatibility & limits
 
